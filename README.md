@@ -56,14 +56,14 @@ Every time we say “Merkle root/merkelize” we mean `keccak256` ordered merkle
   - The epoch change round HAS to be run to completion.
   - If we change the epoch we SHOULD cancel all previous rounds.
 - Proofs for BEEFY should contain the signatures to make sure during sync we can easily verify that the transitions were done correctly.
-  - The sync needs to be extended to fetch secondary justifications if we find them missing. (optional for MVP)
+  - The sync needs to be extended to fetch BEEFY justifications if we find them missing. (optional for MVP)
   - At the start we query runtime to learn about the starting block and the initial set.
 - Migration for existing blocks in the database to support multiple justifications: `Vec<(ConsensusEngineId, Blob)>`
-- The secondary-justifications for epoch blocks are part of the blockchain database - there probably should be an RPC to retrieve them.
-- Other non-epoch secondary-justifications can be stored only in memory (no need to persist them at all).
+- The BEEFY-justifications for epoch blocks are part of the blockchain database - there probably should be an RPC to retrieve them.
+- Other non-epoch BEEFY-justifications can be stored only in memory (no need to persist them at all).
 - RPC side:
   - Secondary-finalized-block-stream, something like grandpa_justifications RPC (Jon’s PR)
-  - On-demand retrieval of secondary-justifications from epoch-blocks stored in the DB. (getBlock is enough - cause it returns all justifications)
+  - On-demand retrieval of BEEFY-justifications from epoch-blocks stored in the DB. (getBlock is enough - cause it returns all justifications)
 
 #### Brain dump for the ETH contract:
 1. Imports:
