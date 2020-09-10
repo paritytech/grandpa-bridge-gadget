@@ -22,20 +22,20 @@ This means that we could verify finalilty interactively like this:
 ### General Notes
 Every time we say “Merkle root/merkelize” we mean `keccak256` ordered merkle trie (`keccak_256_ordered_root` function in Substrate).
 
-### BridgeGadget Substrate Pallet
+### BEEFY Substrate Pallet
 
-- Tracks a list of secp256k1 public keys on-chain (BridgeGadget frame runtime).
+- Tracks a list of secp256k1 public keys on-chain (BEEFY frame runtime).
 - The pallet hooks up into the session lifecycle.
 - Whenever the set is signalled we add a digest item to the header which contains a list of all Public Keys
 - Stores the checkpoint (starting block), where we actually start this secondary protocol.
 - Migration for session keys (session pallet) is required to support this extra key.
 
-### BridgeGadgetToMMR Converter Pallet
-- Take the list of validators from the (BridgeGadget Pallet) and merkelize them once per epoch (probably right after session change is triggered)
+### BeefyToMmr Converter Pallet
+- Take the list of validators from the (BEEFY Pallet) and merkelize them once per epoch (probably right after session change is triggered)
 - Insert the merkle root hash of the secp256k1 public keys into the MMR
 
-### GrandpaBridgeGadget Service (Client)
-- On the client side Grandpa produces a stream of finalized events and our new component (not-Grandpa) should do:
+### BEEFY Service (Client)
+- On the client side Grandpa produces a stream of finalized events and our new component (BEEFY) should do:
   - Fetch the finalized block header
   - Retrieve the digest and update the Authority Set (Grandpa guarantees finalizing blocks that signal change).
   - Or assume there was no change and keep the previous one 
@@ -43,7 +43,7 @@ Every time we say “Merkle root/merkelize” we mean `keccak256` ordered merkle
   - We can either use the Digest which contains MMR root hash
   - Or we can retrieve this from Offchain DB (MMR root hash pushed via Indexing API)
 - Produce & gossip a vote on “the thing to be voted on” and start collecting signatures of others (we have to support multiple “things to be voted on” - the rounds happens concurrently)
-  - We need to vote for every epoch change block (the ones that contain Not-Grandpa Digest item)
+  - We need to vote for every epoch change block (the ones that contain BEEFY Digest item)
   - If there is no such (pending) block, we vote roughly for 
     ```
     block_to_sign_on = last_block_with_signed_mmr_root 
@@ -55,7 +55,7 @@ Every time we say “Merkle root/merkelize” we mean `keccak256` ordered merkle
   - The round progresses concurrently - we might have multiple rounds happening at the same time.
   - The epoch change round HAS to be run to completion.
   - If we change the epoch we SHOULD cancel all previous rounds.
-- Proofs for Not-Grandpa FG should contain the signatures to make sure during sync we can easily verify that the transitions were done correctly.
+- Proofs for BEEFY should contain the signatures to make sure during sync we can easily verify that the transitions were done correctly.
   - The sync needs to be extended to fetch secondary justifications if we find them missing. (optional for MVP)
   - At the start we query runtime to learn about the starting block and the initial set.
 - Migration for existing blocks in the database to support multiple justifications: `Vec<(ConsensusEngineId, Blob)>`
