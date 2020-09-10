@@ -1,5 +1,5 @@
-# Grandpa Bridge Gadget
-Grandpa Bridge Gadget is a secondary protocol running along Grandpa Finality to support efficient bridging with non-Substrate blockchains, especially ETH mainnet.
+# BEEFY
+**BEEFY** (**B**ridge **E**fficiency **E**nabling **F**inality **Y**ielder) is a secondary protocol running along Grandpa Finality to support efficient bridging with non-Substrate blockchains, especially ETH mainnet. It can be think of as an (optional) Bridge-specific Gadget to the Grandpa Finality protocol.
 The Protocol piggybacks on many assumptions provided by Grandpa, and requires to be built on top of it to work correctly.
 
 Related issues:
