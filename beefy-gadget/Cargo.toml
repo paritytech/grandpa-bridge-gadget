@@ -5,3 +5,12 @@ authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
 
 [dependencies]
+futures = "0.3"
+log = "0.4"
+
+sp-consensus = "0.8.0"
+sp-runtime = "2.0.0"
+
+sc-client-api = "2.0.0"
+sc-network = "0.8.0"
+sc-network-gossip = "0.8.0"
