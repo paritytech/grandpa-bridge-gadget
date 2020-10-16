@@ -13,11 +13,30 @@ use sc_network_gossip::{
 use sp_consensus::SyncOracle as SyncOracleT;
 use sp_runtime::{
 	traits::{Block as BlockT, Hash as HashT, Header as HeaderT},
-	ConsensusEngineId,
+	ConsensusEngineId, KeyTypeId,
 };
 
 pub const BEEFY_ENGINE_ID: ConsensusEngineId = *b"BEEF";
 pub const BEEFY_PROTOCOL_NAME: &'static str = "/paritytech/beefy/1";
+
+/// Key type for BEEFY module.
+pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"beef");
+
+mod app {
+	use sp_application_crypto::{app_crypto, ecdsa};
+	app_crypto!(ecdsa, super::KEY_TYPE);
+}
+
+sp_application_crypto::with_pair! {
+	/// The BEEFY crypto scheme defined via the keypair type.
+	pub type AuthorityPair = app::Pair;
+}
+
+/// Identity of a BEEFY authority.
+pub type AuthorityId = app::Public;
+
+/// Signature for a BEEFY authority.
+pub type AuthoritySignature = app::Signature;
 
 /// Allows all gossip messages to get through.
 struct AllowAll<Hash> {
@@ -171,9 +190,12 @@ where
 	}
 
 	async fn run(mut self) {
-		let mut votes = Box::pin(self.gossip_engine.messages_for(topic::<Block>()).filter_map(|notification| async move {
-			VoteMessage::<Block::Hash, Id, Signature>::decode(&mut &notification.message[..]).ok()
-		}));
+		let mut votes = Box::pin(self.gossip_engine.messages_for(topic::<Block>()).filter_map(
+			|notification| async move {
+				VoteMessage::<Block::Hash, Id, Signature>::decode(&mut &notification.message[..])
+					.ok()
+			},
+		));
 
 		loop {
 			futures::select! {
@@ -207,9 +229,6 @@ pub async fn start_beefy_gadget<Block, Backend, Client, Network, SyncOracle>(
 	Network: GossipNetwork<Block> + Clone + Send + 'static,
 	SyncOracle: SyncOracleT + Send + 'static,
 {
-	type Id = u64;
-	type Signature = ();
-
 	let gossip_engine = GossipEngine::new(
 		network,
 		BEEFY_ENGINE_ID,
@@ -219,8 +238,10 @@ pub async fn start_beefy_gadget<Block, Backend, Client, Network, SyncOracle>(
 		}),
 	);
 
-	let worker = BeefyWorker::<_, Id, Signature, _>::new(
-		vec![],
+	let voters = vec![];
+
+	let worker = BeefyWorker::<_, AuthorityId, AuthoritySignature, _>::new(
+		voters,
 		client.finality_notification_stream(),
 		gossip_engine,
 	);

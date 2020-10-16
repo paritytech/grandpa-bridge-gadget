@@ -2633,6 +2633,7 @@ dependencies = [
  "sc-client-api",
  "sc-network",
  "sc-network-gossip",
+ "sp-application-crypto",
  "sp-consensus",
  "sp-runtime",
 ]
