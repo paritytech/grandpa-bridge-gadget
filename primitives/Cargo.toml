@@ -1,0 +1,9 @@
+[package]
+name = "grandpa-bridge-gadget"
+version = "0.1.0"
+authors = ["Tomasz Drwięga <tomasz@parity.io>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]

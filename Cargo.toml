@@ -7,5 +7,5 @@ members = [
 	"node-example/node",
 	"node-example/pallets/template",
 	"node-example/runtime",
+	"primitives",
 ]
-
