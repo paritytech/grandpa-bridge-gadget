@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use futures::{future, FutureExt, Stream, StreamExt};
-use log::{debug, error, info, warn};
+use log::{debug, error, info, trace, warn};
 use parity_scale_codec::{Codec, Decode, Encode};
 use parking_lot::Mutex;
 
@@ -195,7 +195,24 @@ where
 	FinalityNotifications: Stream<Item = FinalityNotification<Block>> + Unpin,
 {
 	fn should_vote_on(&self, number: NumberFor<Block>) -> bool {
-		true
+		use sp_runtime::traits::Saturating;
+		use sp_runtime::SaturatedConversion;
+
+		let diff = self.best_finalized_block.saturating_sub(self.best_block_voted_on);
+		let diff = diff.saturated_into::<u32>();
+		let next_power_of_two = 2u32.pow((diff as f64 / 2.0).log2().ceil() as u32);
+		let next_block_to_vote_on = self.best_block_voted_on + 2.max(next_power_of_two).into();
+
+		trace!(
+			target: "beefy",
+			"should_vote_on: #{:?}, diff: {:?}, next_power_of_two: {:?}, next_block_to_vote_on: #{:?}",
+			number,
+			diff,
+			next_power_of_two,
+			next_block_to_vote_on,
+		);
+
+		number == next_block_to_vote_on
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<Block>) {
@@ -220,6 +237,8 @@ where
 				}
 			};
 
+			self.best_block_voted_on = *notification.header.number();
+
 			let message = VoteMessage {
 				block: notification.header.hash(),
 				id: self.local_id.clone(),
@@ -231,6 +250,8 @@ where
 
 			self.handle_vote(message.block, (message.id, message.signature));
 		}
+
+		self.best_finalized_block = *notification.header.number();
 	}
 
 	fn handle_vote(&mut self, round: Block::Hash, vote: (Id, Signature)) {
