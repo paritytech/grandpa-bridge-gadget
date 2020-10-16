@@ -133,6 +133,17 @@ where
 	}
 }
 
+fn topic<Block: BlockT>() -> Block::Hash {
+	<<Block::Header as HeaderT>::Hashing as HashT>::hash("beefy".as_bytes())
+}
+
+#[derive(Decode, Encode)]
+struct VoteMessage<Hash, Id, Signature> {
+	block: Hash,
+	id: Id,
+	signature: Signature,
+}
+
 struct BeefyWorker<Block: BlockT, Id, Signature, FinalityNotifications> {
 	rounds: Rounds<Block::Hash, Id, Signature>,
 	finality_notifications: FinalityNotifications,
@@ -155,17 +166,6 @@ where
 			gossip_engine,
 		}
 	}
-}
-
-fn topic<Block: BlockT>() -> Block::Hash {
-	<<Block::Header as HeaderT>::Hashing as HashT>::hash("beefy".as_bytes())
-}
-
-#[derive(Decode, Encode)]
-struct VoteMessage<Hash, Id, Signature> {
-	block: Hash,
-	id: Id,
-	signature: Signature,
 }
 
 impl<Block, Id, Signature, FinalityNotifications>
