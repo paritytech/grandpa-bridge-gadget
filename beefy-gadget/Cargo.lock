@@ -2630,11 +2630,15 @@ dependencies = [
  "futures",
  "log",
  "parity-scale-codec",
+ "parking_lot 0.11.0",
  "sc-client-api",
+ "sc-keystore",
  "sc-network",
  "sc-network-gossip",
  "sp-application-crypto",
+ "sp-blockchain",
  "sp-consensus",
+ "sp-core",
  "sp-runtime",
 ]
 
@@ -2753,6 +2757,23 @@ dependencies = [
  "sp-runtime-interface",
  "sp-wasm-interface",
  "wasmi",
+]
+
+[[package]]
+name = "sc-keystore"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21bbf8b58ed80e1d375aaa8ee5dedf17f68fea30c900440a695fb630a1757283"
+dependencies = [
+ "derive_more",
+ "hex",
+ "merlin",
+ "parking_lot 0.10.2",
+ "rand",
+ "serde_json",
+ "sp-application-crypto",
+ "sp-core",
+ "subtle 2.3.0",
 ]
 
 [[package]]
