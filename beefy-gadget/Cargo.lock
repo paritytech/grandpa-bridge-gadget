@@ -2629,6 +2629,7 @@ version = "0.1.0"
 dependencies = [
  "futures",
  "log",
+ "parity-scale-codec",
  "sc-client-api",
  "sc-network",
  "sc-network-gossip",
