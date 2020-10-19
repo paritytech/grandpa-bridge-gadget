@@ -1,0 +1,76 @@
+name:                              Compilation and Testing Suite
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    tags:
+      - v*
+    paths-ignore:
+      - 'README.md'
+jobs:
+
+## Check Stage
+  check-test-build:
+    name:                          Check, test and build
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          #- beta
+          - nightly-2020-10-04
+    runs-on:                       ubuntu-latest
+    env:
+      RUST_BACKTRACE:   full
+    steps:
+      - name:                      Cancel Previous Runs
+        uses:                      styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token:            ${{ github.token }}
+      - name:                      Checkout sources & submodules
+        uses:                      actions/checkout@master
+        with:
+          fetch-depth:             5
+          submodules:              recursive
+      - name:                      Install Toolchain
+        if:                        matrix.toolchain == 'nightly-2020-10-04'
+        run:                       rustup toolchain add ${{ matrix.toolchain }}
+      - name:                      Add WASM Utilities
+        if:                        matrix.toolchain == 'nightly-2020-10-04'
+        run:                       rustup target add wasm32-unknown-unknown --toolchain ${{ matrix.toolchain }}
+      - name:                      Checking rust-${{ matrix.toolchain }}
+        uses:                      actions-rs/cargo@master
+        with:
+          command:                 check
+          toolchain:               ${{ matrix.toolchain }}
+          args:                    --all  --verbose
+
+## Test Stage
+      - name:                      Testing rust-${{ matrix.toolchain }}
+        uses:                      actions-rs/cargo@master
+        with:
+          command:                 test
+          toolchain:               ${{ matrix.toolchain }}
+          args:                    --all  --verbose
+
+## Linting Stage
+      - name:                      Add clippy
+        if:                        matrix.toolchain == 'nightly-2020-10-04'
+        run:                       rustup component add clippy --toolchain ${{ matrix.toolchain }}
+      - name:                      Clippy
+        uses:                      actions-rs/cargo@master
+        if:                        matrix.toolchain == 'nightly-2020-10-04'
+        with:
+          command:                 clippy
+          toolchain:               ${{ matrix.toolchain }}
+          args:                    --all-targets -- -D warnings
+
+## Build Stage
+      - name:                      Building rust-${{ matrix.toolchain }}
+        uses:                      actions-rs/cargo@master
+        if:                        github.ref == 'refs/heads/master'
+        with:
+          command:                 build
+          toolchain:               ${{ matrix.toolchain }}
+          args:                    --all --release --verbose
