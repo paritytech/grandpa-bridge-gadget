@@ -1,3 +1,4 @@
 edition = "2018"
 hard_tabs = true
-width_heuristics = "Off"
+max_width = 120
+#width_heuristics = "Off"

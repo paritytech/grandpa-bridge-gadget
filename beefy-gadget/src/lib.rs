@@ -26,8 +26,8 @@ use parking_lot::Mutex;
 
 use sc_client_api::{Backend as BackendT, BlockchainEvents, FinalityNotification, Finalizer};
 use sc_network_gossip::{
-	GossipEngine, Network as GossipNetwork, ValidationResult as GossipValidationResult,
-	Validator as GossipValidator, ValidatorContext as GossipValidatorContext,
+	GossipEngine, Network as GossipNetwork, ValidationResult as GossipValidationResult, Validator as GossipValidator,
+	ValidatorContext as GossipValidatorContext,
 };
 use sp_application_crypto::Ss58Codec;
 use sp_blockchain::HeaderBackend;
@@ -85,9 +85,7 @@ struct RoundTracker<Id, Signature> {
 
 impl<Id, Signature> Default for RoundTracker<Id, Signature> {
 	fn default() -> Self {
-		RoundTracker {
-			votes: Vec::new(),
-		}
+		RoundTracker { votes: Vec::new() }
 	}
 }
 
@@ -177,8 +175,7 @@ struct BeefyWorker<Block: BlockT, Id, Signature, FinalityNotifications> {
 	best_block_voted_on: NumberFor<Block>,
 }
 
-impl<Block, Id, Signature, FinalityNotifications>
-	BeefyWorker<Block, Id, Signature, FinalityNotifications>
+impl<Block, Id, Signature, FinalityNotifications> BeefyWorker<Block, Id, Signature, FinalityNotifications>
 where
 	Block: BlockT,
 {
@@ -204,8 +201,7 @@ where
 	}
 }
 
-impl<Block, Id, Signature, FinalityNotifications>
-	BeefyWorker<Block, Id, Signature, FinalityNotifications>
+impl<Block, Id, Signature, FinalityNotifications> BeefyWorker<Block, Id, Signature, FinalityNotifications>
 where
 	Block: BlockT,
 	Id: Codec + Debug + PartialEq + Public,
@@ -263,7 +259,9 @@ where
 				signature,
 			};
 
-			self.gossip_engine.lock().gossip_message(topic::<Block>(), message.encode(), false);
+			self.gossip_engine
+				.lock()
+				.gossip_message(topic::<Block>(), message.encode(), false);
 			debug!(target: "beefy", "Sent vote message: {:?}", message);
 
 			self.handle_vote(message.block, (message.id, message.signature));
@@ -284,17 +282,13 @@ where
 	}
 
 	async fn run(mut self) {
-		let mut votes =
-			Box::pin(self.gossip_engine.lock().messages_for(topic::<Block>()).filter_map(
-				|notification| async move {
-					debug!(target: "beefy", "Got vote message: {:?}", notification);
+		let mut votes = Box::pin(self.gossip_engine.lock().messages_for(topic::<Block>()).filter_map(
+			|notification| async move {
+				debug!(target: "beefy", "Got vote message: {:?}", notification);
 
-					VoteMessage::<Block::Hash, Id, Signature>::decode(
-						&mut &notification.message[..],
-					)
-					.ok()
-				},
-			));
+				VoteMessage::<Block::Hash, Id, Signature>::decode(&mut &notification.message[..]).ok()
+			},
+		));
 
 		loop {
 			let engine = self.gossip_engine.clone();
@@ -332,8 +326,7 @@ pub async fn start_beefy_gadget<Block, Backend, Client, Network, SyncOracle>(
 ) where
 	Block: BlockT,
 	Backend: BackendT<Block>,
-	Client:
-		BlockchainEvents<Block> + HeaderBackend<Block> + Finalizer<Block, Backend> + Send + Sync,
+	Client: BlockchainEvents<Block> + HeaderBackend<Block> + Finalizer<Block, Backend> + Send + Sync,
 	Network: GossipNetwork<Block> + Clone + Send + 'static,
 	SyncOracle: SyncOracleT + Send + 'static,
 {
@@ -373,17 +366,19 @@ pub async fn start_beefy_gadget<Block, Backend, Client, Network, SyncOracle>(
 		.map(|address| AuthorityId::from_string(address).unwrap())
 		.collect::<Vec<_>>();
 
-	let local_id =
-		match voters.iter().find(|id| key_store.read().has_keys(&[(id.to_raw_vec(), KEY_TYPE)])) {
-			Some(id) => {
-				info!(target: "beefy", "Starting BEEFY worker with local id: {:?}", id);
-				id.clone()
-			}
-			None => {
-				info!(target: "beefy", "No local id found, not starting BEEFY worker.");
-				return futures::future::pending().await;
-			}
-		};
+	let local_id = match voters
+		.iter()
+		.find(|id| key_store.read().has_keys(&[(id.to_raw_vec(), KEY_TYPE)]))
+	{
+		Some(id) => {
+			info!(target: "beefy", "Starting BEEFY worker with local id: {:?}", id);
+			id.clone()
+		}
+		None => {
+			info!(target: "beefy", "No local id found, not starting BEEFY worker.");
+			return futures::future::pending().await;
+		}
+	};
 
 	let best_finalized_block = client.info().finalized_number;
 	let best_block_voted_on = Zero::zero();
