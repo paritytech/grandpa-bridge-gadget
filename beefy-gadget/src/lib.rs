@@ -200,7 +200,7 @@ where
 
 		let diff = self.best_finalized_block.saturating_sub(self.best_block_voted_on);
 		let diff = diff.saturated_into::<u32>();
-		let next_power_of_two = 2u32.pow((diff as f64 / 2.0).log2().ceil() as u32);
+		let next_power_of_two = (diff / 2).next_power_of_two();
 		let next_block_to_vote_on = self.best_block_voted_on + 2.max(next_power_of_two).into();
 
 		trace!(
