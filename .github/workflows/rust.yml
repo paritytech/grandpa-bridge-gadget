@@ -14,15 +14,10 @@ jobs:
 ## Check Stage
   check-test-build:
     name:                          Check, test and build
-    strategy:
-      matrix:
-        toolchain:
-          - stable
-          #- beta
-          - nightly-2020-10-04
     runs-on:                       ubuntu-latest
     env:
       RUST_BACKTRACE:   full
+      NIGHTLY: nightly-2020-10-04
     steps:
       - name:                      Cancel Previous Runs
         uses:                      styfle/cancel-workflow-action@0.4.1
@@ -34,43 +29,39 @@ jobs:
           fetch-depth:             5
           submodules:              recursive
       - name:                      Install Toolchain
-        if:                        matrix.toolchain == 'nightly-2020-10-04'
-        run:                       rustup toolchain add ${{ matrix.toolchain }}
+        run:                       rustup toolchain add $NIGHTLY
       - name:                      Add WASM Utilities
-        if:                        matrix.toolchain == 'nightly-2020-10-04'
-        run:                       rustup target add wasm32-unknown-unknown --toolchain ${{ matrix.toolchain }}
-      - name:                      Checking rust-${{ matrix.toolchain }}
+        run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
+      - name:                      Checking rust-stable
         uses:                      actions-rs/cargo@master
         with:
           command:                 check
-          toolchain:               ${{ matrix.toolchain }}
+          toolchain:               stable
           args:                    --all  --verbose
 
 ## Test Stage
-      - name:                      Testing rust-${{ matrix.toolchain }}
+      - name:                      Testing rust-stable
         uses:                      actions-rs/cargo@master
         with:
           command:                 test
-          toolchain:               ${{ matrix.toolchain }}
+          toolchain:               stable
           args:                    --all  --verbose
 
 ## Linting Stage
       - name:                      Add clippy
-        if:                        matrix.toolchain == 'nightly-2020-10-04'
-        run:                       rustup component add clippy --toolchain ${{ matrix.toolchain }}
+        run:                       rustup component add clippy --toolchain $NIGHTLY
       - name:                      Clippy
         uses:                      actions-rs/cargo@master
-        if:                        matrix.toolchain == 'nightly-2020-10-04'
         with:
           command:                 clippy
-          toolchain:               ${{ matrix.toolchain }}
+          toolchain:               $NIGHTLY
           args:                    --all-targets -- -D warnings
 
 ## Build Stage
-      - name:                      Building rust-${{ matrix.toolchain }}
+      - name:                      Building rust-stable
         uses:                      actions-rs/cargo@master
         if:                        github.ref == 'refs/heads/master'
         with:
           command:                 build
-          toolchain:               ${{ matrix.toolchain }}
+          toolchain:               stable
           args:                    --all --release --verbose
