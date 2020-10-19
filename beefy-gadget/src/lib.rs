@@ -153,6 +153,7 @@ struct VoteMessage<Hash, Id, Signature> {
 struct BeefyWorker<Block: BlockT, Id, Signature, FinalityNotifications> {
 	local_id: Id,
 	key_store: BareCryptoStorePtr,
+	max_periodicity: u32,
 	rounds: Rounds<Block::Hash, Id, Signature>,
 	finality_notifications: FinalityNotifications,
 	gossip_engine: Arc<Mutex<GossipEngine<Block>>>,
@@ -177,6 +178,7 @@ where
 		BeefyWorker {
 			local_id,
 			key_store,
+			max_periodicity: 2,
 			rounds: Rounds::new(voters),
 			finality_notifications,
 			gossip_engine: Arc::new(Mutex::new(gossip_engine)),
@@ -201,7 +203,7 @@ where
 		let diff = self.best_finalized_block.saturating_sub(self.best_block_voted_on);
 		let diff = diff.saturated_into::<u32>();
 		let next_power_of_two = (diff / 2).next_power_of_two();
-		let next_block_to_vote_on = self.best_block_voted_on + 2.max(next_power_of_two).into();
+		let next_block_to_vote_on = self.best_block_voted_on + self.max_periodicity.max(next_power_of_two).into();
 
 		trace!(
 			target: "beefy",
