@@ -273,7 +273,7 @@ where
 	fn handle_vote(&mut self, round: Block::Hash, vote: (Id, Signature)) {
 		// TODO: validate signature
 		let vote_added = self.rounds.add_vote(round, vote);
-		if  vote_added && self.rounds.is_done(&round) {
+		if vote_added && self.rounds.is_done(&round) {
 			info!(target: "beefy", "Round {:?} concluded.", round);
 			self.rounds.drop(&round);
 		}

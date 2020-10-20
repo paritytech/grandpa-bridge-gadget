@@ -41,9 +41,7 @@ type ServiceComponents = sc_service::PartialComponents<
 	OtherComponents,
 >;
 
-pub fn new_partial(
-	config: &Configuration,
-) -> Result<ServiceComponents, ServiceError> {
+pub fn new_partial(config: &Configuration) -> Result<ServiceComponents, ServiceError> {
 	let inherent_data_providers = sp_inherents::InherentDataProviders::new();
 
 	let (client, backend, keystore, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, Executor>(&config)?;
