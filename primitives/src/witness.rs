@@ -80,10 +80,11 @@ impl<TBlockNumber, TPayload, TMerkleRoot>
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use codec::Decode;
 
 	type TestCommitment = Commitment<u128, String>;
 	type TestSignedCommitment = SignedCommitment<u128, String, Vec<u8>>;
-	type TestSignedCommitmentWitness = SignedCommitmentWitness<u128, String, Vec<Vec<u8>>>;
+	type TestSignedCommitmentWitness = SignedCommitmentWitness<u128, String, Vec<Option<Vec<u8>>>>;
 
 	fn signed_commitment() -> TestSignedCommitment {
 		let commitment: TestCommitment = Commitment {
@@ -127,9 +128,14 @@ mod tests {
 		);
 
 		// when
-		let encoded = codec::Encode::encode(&signed);
+		let encoded = codec::Encode::encode(&witness);
 		let decoded = TestSignedCommitmentWitness::decode(&mut &*encoded);
 
 		// then
+		assert_eq!(decoded, Ok(witness));
+		assert_eq!(
+			encoded,
+			hex_literal::hex!("3048656c6c6f20576f726c6421050000000000000000000000000000000000000000000000001000000101100000011001020304011005060708")
+		);
 	}
 }

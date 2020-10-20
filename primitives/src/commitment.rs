@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use core::cmp;
+
 /// A commitment signed by Grandpa validators as part of BEEFY protocol.
 ///
 /// The commitment contins a [payload] extracted from the finalized block at height [block_number].
@@ -54,7 +56,24 @@ pub struct Commitment<TBlockNumber, TPayload> {
     pub is_set_transition_block: bool,
 }
 
-// impl<TBlockNumber, TPayload> core::cmp::Ord for Commitment<
+impl<TBlockNumber, TPayload> cmp::PartialOrd for Commitment<TBlockNumber, TPayload> where
+	TBlockNumber: cmp::Ord,
+	TPayload: cmp::Eq,
+{
+	fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+		Some(self.cmp(other))
+	}
+}
+
+impl<TBlockNumber, TPayload> cmp::Ord for Commitment<TBlockNumber, TPayload> where
+	TBlockNumber: cmp::Ord,
+	TPayload: cmp::Eq,
+{
+	fn cmp(&self, other: &Self) -> cmp::Ordering {
+		self.validator_set_id.cmp(&other.validator_set_id)
+			.then_with(|| self.block_number.cmp(&other.block_number))
+	}
+}
 
 /// A commitment with matching Grandpa validators' signatures.
 #[derive(Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
@@ -78,6 +97,7 @@ impl<TBlockNumber, TPayload, TSignature> SignedCommitment<TBlockNumber, TPayload
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use codec::Decode;
 
 	type TestCommitment = Commitment<u128, String>;
 	type TestSignedCommitment = SignedCommitment<u128, String, Vec<u8>>;
@@ -97,8 +117,11 @@ mod tests {
 		let decoded = TestCommitment::decode(&mut &*encoded);
 
 		// then
-		assert_eq!(decoded, commitment);
-		assert_eq!(encoded, hex_literal::hex!("ff"));
+		assert_eq!(decoded, Ok(commitment));
+		assert_eq!(
+			encoded,
+			hex_literal::hex!("3048656c6c6f20576f726c642105000000000000000000000000000000000000000000000000")
+		);
 	}
 
 	#[test]
@@ -125,8 +148,11 @@ mod tests {
 		let decoded = TestSignedCommitment::decode(&mut &*encoded);
 
 		// then
-		assert_eq!(decoded, signed);
-		assert_eq!(encoded, hex_literal::hex!("ff"));
+		assert_eq!(decoded, Ok(signed));
+		assert_eq!(
+			encoded,
+			hex_literal::hex!("3048656c6c6f20576f726c642105000000000000000000000000000000000000000000000000100000011001020304011005060708")
+		);
 	}
 
 	#[test]
@@ -158,6 +184,26 @@ mod tests {
 
 	#[test]
 	fn commitment_ordering() {
-		assert_eq!(true, false);
+		fn commitment(block_number: u128, validator_set_id: u64) -> TestCommitment {
+			Commitment {
+				payload: "Hello World!".into(),
+				block_number,
+				validator_set_id,
+				is_set_transition_block: false,
+			}
+		}
+
+		// given
+		let a = commitment(1, 0);
+		let b = commitment(2, 1);
+		let c = commitment(10, 0);
+		let d = commitment(10, 1);
+
+		// then
+		assert!(a < b);
+		assert!(a < c);
+		assert!(c < b);
+		assert!(c < d);
+		assert!(b < d);
 	}
 }
