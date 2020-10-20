@@ -1,0 +1,11 @@
+[profile.release]
+panic = 'unwind'
+
+[workspace]
+members = [
+	"beefy-gadget",
+	"node-example/node",
+	"node-example/pallets/template",
+	"node-example/runtime",
+]
+

@@ -1,0 +1,67 @@
+name:                              Compilation and Testing Suite
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    tags:
+      - v*
+    paths-ignore:
+      - 'README.md'
+jobs:
+
+## Check Stage
+  check-test-build:
+    name:                          Check, test and build
+    runs-on:                       ubuntu-latest
+    env:
+      RUST_BACKTRACE:   full
+      NIGHTLY: nightly-2020-10-04
+    steps:
+      - name:                      Cancel Previous Runs
+        uses:                      styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token:            ${{ github.token }}
+      - name:                      Checkout sources & submodules
+        uses:                      actions/checkout@master
+        with:
+          fetch-depth:             5
+          submodules:              recursive
+      - name:                      Install Toolchain
+        run:                       rustup toolchain add $NIGHTLY
+      - name:                      Add WASM Utilities
+        run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
+      - name:                      Checking rust-stable
+        uses:                      actions-rs/cargo@master
+        with:
+          command:                 check
+          toolchain:               stable
+          args:                    --all  --verbose
+
+## Test Stage
+      - name:                      Testing rust-stable
+        uses:                      actions-rs/cargo@master
+        with:
+          command:                 test
+          toolchain:               stable
+          args:                    --all  --verbose
+
+## Linting Stage
+      - name:                      Add clippy
+        run:                       rustup component add clippy --toolchain $NIGHTLY
+      - name:                      Clippy
+        uses:                      actions-rs/cargo@master
+        with:
+          command:                 clippy
+          toolchain:               nightly-2020-10-04
+          args:                    --all-targets -- -D warnings
+
+## Build Stage
+      - name:                      Building rust-stable
+        uses:                      actions-rs/cargo@master
+        if:                        github.ref == 'refs/heads/master'
+        with:
+          command:                 build
+          toolchain:               stable
+          args:                    --all --release --verbose
