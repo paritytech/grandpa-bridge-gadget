@@ -15,6 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use core::cmp;
+use crate::ValidatorSetId;
 
 /// A commitment signed by Grandpa validators as part of BEEFY protocol.
 ///
@@ -46,7 +47,7 @@ pub struct Commitment<TBlockNumber, TPayload> {
 	/// set to `true`. Such "epoch commitments" MUST provide the light client with details of the
 	/// new validator set as part of the payload. The protocol itself doesn't enforce how these
 	/// details are provided though.
-    pub validator_set_id: u64,
+    pub validator_set_id: ValidatorSetId,
 
     /// Indicator of the last block of the epoch.
     ///
@@ -184,7 +185,7 @@ mod tests {
 
 	#[test]
 	fn commitment_ordering() {
-		fn commitment(block_number: u128, validator_set_id: u64) -> TestCommitment {
+		fn commitment(block_number: u128, validator_set_id: crate::ValidatorSetId) -> TestCommitment {
 			Commitment {
 				payload: "Hello World!".into(),
 				block_number,

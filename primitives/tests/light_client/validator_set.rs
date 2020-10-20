@@ -14,14 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-#![warn(missing_docs)]
+#[derive(Debug)]
+pub struct Public(pub u8);
 
-// TODO [ToDr] top-level docs
+impl From<u8> for Public {
+	fn from(public: u8) -> Self {
+		Self(public)
+	}
+}
 
-mod commitment;
-pub mod witness;
-
-/// A typedef for validator set id.
-pub type ValidatorSetId = u64;
-
-pub use commitment::{Commitment, SignedCommitment};
+#[derive(Debug)]
+pub enum Signature {
+	ValidFor(Public),
+	Invalid,
+}
