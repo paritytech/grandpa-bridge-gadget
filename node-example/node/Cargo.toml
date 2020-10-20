@@ -23,6 +23,7 @@ jsonrpc-core = '15.0.0'
 structopt = '0.3.8'
 
 # local dependencies
+beefy-gadget = { version = '0.1.0', path = '../../beefy-gadget' }
 node-template-runtime = { path = '../runtime', version = '2.0.0' }
 
 # Substrate dependencies
@@ -30,7 +31,6 @@ frame-benchmarking = '2.0.0'
 frame-benchmarking-cli = '2.0.0'
 pallet-transaction-payment-rpc = '2.0.0'
 sc-basic-authorship = '0.8.0'
-sc-beefy-gadget = { version = '0.1.0', path = '../../beefy-gadget' }
 sc-cli = { features = ['wasmtime'], version = '0.8.0' }
 sc-client-api = '2.0.0'
 sc-consensus = '0.8.0'
