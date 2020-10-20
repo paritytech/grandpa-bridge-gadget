@@ -382,33 +382,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 
 [[package]]
-name = "beefy-gadget"
-version = "0.1.0"
-dependencies = [
- "futures 0.3.6",
- "log",
- "parity-scale-codec",
- "parking_lot 0.11.0",
- "sc-client-api",
- "sc-keystore",
- "sc-network",
- "sc-network-gossip",
- "sp-application-crypto",
- "sp-blockchain",
- "sp-consensus",
- "sp-core",
- "sp-runtime",
-]
-
-[[package]]
-name = "beefy-primitives"
-version = "0.1.0"
-dependencies = [
- "hex-literal",
- "parity-scale-codec",
-]
-
-[[package]]
 name = "bincode"
 version = "1.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3381,13 +3354,13 @@ dependencies = [
 name = "node-template"
 version = "2.0.0"
 dependencies = [
- "beefy-gadget",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
  "node-template-runtime",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
+ "sc-beefy-gadget",
  "sc-cli",
  "sc-client-api",
  "sc-consensus",
@@ -4886,6 +4859,25 @@ dependencies = [
  "sp-transaction-pool",
  "substrate-prometheus-endpoint",
  "tokio-executor 0.2.0-alpha.6",
+]
+
+[[package]]
+name = "sc-beefy-gadget"
+version = "0.1.0"
+dependencies = [
+ "futures 0.3.6",
+ "log",
+ "parity-scale-codec",
+ "parking_lot 0.11.0",
+ "sc-client-api",
+ "sc-keystore",
+ "sc-network",
+ "sc-network-gossip",
+ "sp-application-crypto",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -6688,9 +6680,9 @@ checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
 
 [[package]]
 name = "structopt"
-version = "0.3.19"
+version = "0.3.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7a7159e7d0dbcab6f9c980d7971ef50f3ff5753081461eeda120d5974a4ee95"
+checksum = "126d630294ec449fae0b16f964e35bf3c74f940da9dca17ee9b905f7b3112eb8"
 dependencies = [
  "clap",
  "lazy_static",
@@ -6699,9 +6691,9 @@ dependencies = [
 
 [[package]]
 name = "structopt-derive"
-version = "0.4.12"
+version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fc47de4dfba76248d1e9169ccff240eea2a4dc1e34e309b95b2393109b4b383"
+checksum = "65e51c492f9e23a220534971ff5afc14037289de430e3c83f9daf6a1b6ae91e8"
 dependencies = [
  "heck",
  "proc-macro-error",

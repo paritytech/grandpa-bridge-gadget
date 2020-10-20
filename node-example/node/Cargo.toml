@@ -20,7 +20,7 @@ substrate-build-script-utils = '2.0.0'
 
 [dependencies]
 jsonrpc-core = '15.0.0'
-structopt = '0.3.8'
+structopt = '0.3.20'
 
 # local dependencies
 beefy-gadget = { version = '0.1.0', path = '../../beefy-gadget' }
