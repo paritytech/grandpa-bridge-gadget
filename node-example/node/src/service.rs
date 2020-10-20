@@ -23,27 +23,27 @@ type FullClient = sc_service::TFullClient<Block, RuntimeApi, Executor>;
 type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
+type OtherComponents = (
+	sc_consensus_aura::AuraBlockImport<
+		Block,
+		FullClient,
+		sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
+		AuraPair,
+	>,
+	sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
+);
+type ServiceComponents = sc_service::PartialComponents<
+	FullClient,
+	FullBackend,
+	FullSelectChain,
+	sp_consensus::DefaultImportQueue<Block, FullClient>,
+	sc_transaction_pool::FullPool<Block, FullClient>,
+	OtherComponents,
+>;
+
 pub fn new_partial(
 	config: &Configuration,
-) -> Result<
-	sc_service::PartialComponents<
-		FullClient,
-		FullBackend,
-		FullSelectChain,
-		sp_consensus::DefaultImportQueue<Block, FullClient>,
-		sc_transaction_pool::FullPool<Block, FullClient>,
-		(
-			sc_consensus_aura::AuraBlockImport<
-				Block,
-				FullClient,
-				sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
-				AuraPair,
-			>,
-			sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
-		),
-	>,
-	ServiceError,
-> {
+) -> Result<ServiceComponents, ServiceError> {
 	let inherent_data_providers = sp_inherents::InherentDataProviders::new();
 
 	let (client, backend, keystore, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, Executor>(&config)?;
@@ -67,7 +67,7 @@ pub fn new_partial(
 	let import_queue = sc_consensus_aura::import_queue::<_, _, _, AuraPair, _, _>(
 		sc_consensus_aura::slot_duration(&*client)?,
 		aura_block_import.clone(),
-		Some(Box::new(grandpa_block_import.clone())),
+		Some(Box::new(grandpa_block_import)),
 		None,
 		client.clone(),
 		inherent_data_providers.clone(),
@@ -115,7 +115,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 			on_demand: None,
 			block_announce_validator_builder: None,
 			finality_proof_request_builder: None,
-			finality_proof_provider: Some(finality_proof_provider.clone()),
+			finality_proof_provider: Some(finality_proof_provider),
 		})?;
 
 	if config.offchain_worker.enabled {
@@ -157,7 +157,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		task_manager: &mut task_manager,
 		transaction_pool: transaction_pool.clone(),
 		telemetry_connection_sinks: telemetry_connection_sinks.clone(),
-		rpc_extensions_builder: rpc_extensions_builder,
+		rpc_extensions_builder,
 		on_demand: None,
 		remote_blockchain: None,
 		backend,

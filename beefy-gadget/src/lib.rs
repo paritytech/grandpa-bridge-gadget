@@ -39,7 +39,7 @@ use sp_runtime::{
 };
 
 pub const BEEFY_ENGINE_ID: ConsensusEngineId = *b"BEEF";
-pub const BEEFY_PROTOCOL_NAME: &'static str = "/paritytech/beefy/1";
+pub const BEEFY_PROTOCOL_NAME: &str = "/paritytech/beefy/1";
 
 /// Key type for BEEFY module.
 pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"beef");
@@ -154,7 +154,7 @@ where
 }
 
 fn topic<Block: BlockT>() -> Block::Hash {
-	<<Block::Header as HeaderT>::Hashing as HashT>::hash("beefy".as_bytes())
+	<<Block::Header as HeaderT>::Hashing as HashT>::hash(b"beefy")
 }
 
 #[derive(Debug, Decode, Encode)]
@@ -272,12 +272,10 @@ where
 
 	fn handle_vote(&mut self, round: Block::Hash, vote: (Id, Signature)) {
 		// TODO: validate signature
-
-		if self.rounds.add_vote(round.clone(), vote) {
-			if self.rounds.is_done(&round) {
-				info!(target: "beefy", "Round {:?} concluded.", round);
-				self.rounds.drop(&round);
-			}
+		let vote_added = self.rounds.add_vote(round, vote);
+		if  vote_added && self.rounds.is_done(&round) {
+			info!(target: "beefy", "Round {:?} concluded.", round);
+			self.rounds.drop(&round);
 		}
 	}
 
