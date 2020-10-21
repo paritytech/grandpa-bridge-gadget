@@ -52,10 +52,7 @@ pub enum Proof<T, X> {
 
 impl<T, X> Proof<T, X> {
 	pub fn is_valid(&self, root: &Root<T>) -> bool {
-		match self {
-			Self::ValidFor(ref expected, _) if expected == root => true,
-			_ => false,
-		}
+		matches!(self, Self::ValidFor(ref expected, _) if expected == root)
 	}
 
 	pub fn into_data(self) -> X {

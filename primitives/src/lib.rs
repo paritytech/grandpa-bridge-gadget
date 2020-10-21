@@ -16,7 +16,10 @@
 
 #![warn(missing_docs)]
 
-// TODO [ToDr] top-level docs
+//! Primitives for BEEFY protocol.
+//!
+//! The crate contains shared data types used by BEEFY protocol and documentation (in a form of
+//! code) for building a BEEFY light client.
 
 mod commitment;
 pub mod witness;

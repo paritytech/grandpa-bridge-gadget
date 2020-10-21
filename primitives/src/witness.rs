@@ -105,7 +105,7 @@ mod tests {
 		let signed = signed_commitment();
 
 		// when
-		let (witness, signatures) = TestSignedCommitmentWitness::from_signed(signed, |sigs| sigs.clone().to_vec());
+		let (witness, signatures) = TestSignedCommitmentWitness::from_signed(signed, |sigs| sigs.to_vec());
 
 		// then
 		assert_eq!(witness.signatures_merkle_root, signatures);
@@ -115,7 +115,7 @@ mod tests {
 	fn should_encode_and_decode_witness() {
 		// given
 		let signed = signed_commitment();
-		let (witness, _) = TestSignedCommitmentWitness::from_signed(signed, |sigs| sigs.clone().to_vec());
+		let (witness, _) = TestSignedCommitmentWitness::from_signed(signed, |sigs| sigs.to_vec());
 
 		// when
 		let encoded = codec::Encode::encode(&witness);

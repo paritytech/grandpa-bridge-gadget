@@ -35,8 +35,50 @@ fn light_client_should_make_progress() {
 	});
 
 	// then
-	assert!(result.is_ok());
+	assert_eq!(result, Ok(()));
 	assert_eq!(lc.last_payload(), &Payload::new(1));
+}
+
+#[test]
+fn should_verify_mmr_proof() {
+	// given
+	let mut lc = light_client::new();
+	lc.import(SignedCommitment {
+		commitment: Commitment {
+			payload: Payload::new(1),
+			block_number: 2,
+			validator_set_id: 0,
+			is_set_transition_block: false,
+		},
+		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
+	}).unwrap();
+
+	// when
+	let result = lc.verify_proof(light_client::merkle_tree::Proof::ValidFor(1.into(), ()));
+
+	// then
+	assert_eq!(result, Ok(()));
+}
+
+#[test]
+fn should_reject_invalid_mmr_proof() {
+	// given
+	let mut lc = light_client::new();
+	lc.import(SignedCommitment {
+		commitment: Commitment {
+			payload: Payload::new(1),
+			block_number: 2,
+			validator_set_id: 0,
+			is_set_transition_block: false,
+		},
+		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
+	}).unwrap();
+
+	// when
+	let result = lc.verify_proof(light_client::merkle_tree::Proof::Invalid(()));
+
+	// then
+	assert_eq!(result, Err(Error::InvalidMmrProof));
 }
 
 #[test]
@@ -194,6 +236,24 @@ fn light_client_should_reject_if_not_enough_valid_signatures() {
 			valid: Some(0),
 		})
 	);
+
+	// when
+	let result = lc.import(SignedCommitment {
+		commitment: Commitment {
+			payload: Payload::new(1),
+			block_number: 5,
+			validator_set_id: 0,
+			is_set_transition_block: false,
+		},
+		signatures: vec![Some(validator_set::Signature::Invalid)],
+	});
+
+	// then
+	assert_eq!(result, Err(Error::NotEnoughValidSignatures {
+		expected: 1,
+		got: 1,
+		valid: Some(0),
+	}));
 }
 
 #[test]
@@ -220,7 +280,7 @@ fn light_client_should_perform_set_transition() {
 	);
 
 	// then
-	assert!(result.is_ok());
+	assert_eq!(result, Ok(()));
 	assert_eq!(lc.validator_set(), &(1, vec![0.into(), 1.into(), 2.into()],));
 }
 
@@ -278,3 +338,4 @@ fn light_client_reject_set_transition_with_invalid_proof() {
 	// then
 	assert_eq!(result, Err(Error::InvalidValidatorSetProof));
 }
+

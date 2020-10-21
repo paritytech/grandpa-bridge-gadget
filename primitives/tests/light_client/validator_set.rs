@@ -31,9 +31,6 @@ pub enum Signature {
 
 impl Signature {
 	pub fn is_valid_for(&self, public: &Public) -> bool {
-		match self {
-			Self::ValidFor(ref p) if p == public => true,
-			_ => false,
-		}
+		matches!(self, Self::ValidFor(ref p) if p == public)
 	}
 }
