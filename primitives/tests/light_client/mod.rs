@@ -81,6 +81,10 @@ pub enum Error {
 		got: usize,
 		valid: Option<usize>,
 	},
+	/// Validator set is missing in the payload for set transition block.
+	NoValidatorSetInPayload,
+	/// Couldn't verify the proof against MMR root of the latest commitment.
+	InvalidMmrProof,
 }
 
 pub struct LightClient {
@@ -96,8 +100,8 @@ impl LightClient {
 		}
 
 		let commitment = self.validate_commitment(signed)?;
-
 		self.last_commitment = Some(commitment);
+
 		Ok(())
 	}
 
@@ -113,11 +117,34 @@ impl LightClient {
 
 		let commitment = self.validate_commitment(signed)?;
 
-		todo!()
+		// verify validator set proof
+		let validator_set_root = commitment
+			.payload
+			.next_validator_set
+			.as_ref()
+			.ok_or(Error::NoValidatorSetInPayload)?;
+		if !validator_set_proof.is_valid(validator_set_root) {
+			return Err(Error::InvalidValidatorSetProof);
+		}
+		let set = validator_set_proof.into_data();
+
+		let new_id = self.validator_set.0 + 1;
+		self.validator_set = (new_id, set);
+		self.last_commitment = Some(commitment);
+
+		Ok(())
 	}
 
 	pub fn verify_proof<R>(&self, proof: merkle_tree::Proof<Mmr, R>) -> Result<R, Error> {
-		todo!()
+		if proof.is_valid(&self.last_payload().mmr) {
+			Ok(proof.into_data())
+		} else {
+			Err(Error::InvalidMmrProof)
+		}
+	}
+
+	pub fn validator_set(&self) -> &(ValidatorSetId, Vec<validator_set::Public>) {
+		&self.validator_set
 	}
 
 	pub fn last_commitment(&self) -> Option<&Commitment> {
@@ -125,7 +152,7 @@ impl LightClient {
 	}
 
 	pub fn last_payload(&self) -> &Payload {
-		&self.last_commitment().unwrap().payload
+		&self.last_commitment().expect("Genesis doesn't contain commitment.").payload
 	}
 
 	fn validate_commitment(&self, commitment: SignedCommitment) -> Result<Commitment, Error> {

@@ -194,3 +194,89 @@ fn light_client_should_reject_if_not_enough_valid_signatures() {
 		valid: Some(0),
 	}));
 }
+
+#[test]
+fn light_client_should_perform_set_transition() {
+	// given
+	let mut lc = light_client::new();
+	let commitment = SignedCommitment {
+		commitment: Commitment {
+			payload: Payload {
+				next_validator_set: Some(2.into()),
+				mmr: 1.into(),
+			},
+			block_number: 5,
+			validator_set_id: 0,
+			is_set_transition_block: true,
+		},
+		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
+	};
+
+	// when
+	let result = lc.import_set_transition(
+		commitment,
+		light_client::merkle_tree::Proof::ValidFor(2.into(), vec![0.into(), 1.into(), 2.into()]),
+	);
+
+	// then
+	assert!(result.is_ok());
+	assert_eq!(lc.validator_set(), &(
+		1,
+		vec![0.into(), 1.into(), 2.into()],
+	));
+}
+
+#[test]
+fn light_client_reject_set_transition_with_invalid_payload() {
+	// given
+	let mut lc = light_client::new();
+	let commitment = SignedCommitment {
+		commitment: Commitment {
+			payload: Payload {
+				// missing validator set in the payload
+				next_validator_set: None,
+				mmr: 1.into(),
+			},
+			block_number: 5,
+			validator_set_id: 0,
+			is_set_transition_block: true,
+		},
+		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
+	};
+
+	// when
+	let result = lc.import_set_transition(
+		commitment,
+		light_client::merkle_tree::Proof::ValidFor(2.into(), vec![0.into(), 1.into(), 2.into()]),
+	);
+
+	// then
+	assert_eq!(result, Err(Error::NoValidatorSetInPayload));
+}
+
+#[test]
+fn light_client_reject_set_transition_with_invalid_proof() {
+	// given
+	let mut lc = light_client::new();
+	let commitment = SignedCommitment {
+		commitment: Commitment {
+			payload: Payload {
+				next_validator_set: Some(1.into()),
+				mmr: 1.into(),
+			},
+			block_number: 5,
+			validator_set_id: 0,
+			is_set_transition_block: true,
+		},
+		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
+	};
+
+	// when
+	let result = lc.import_set_transition(
+		commitment,
+		light_client::merkle_tree::Proof::ValidFor(2.into(), vec![0.into(), 1.into(), 2.into()]),
+	);
+
+	// then
+	assert_eq!(result, Err(Error::InvalidValidatorSetProof));
+}

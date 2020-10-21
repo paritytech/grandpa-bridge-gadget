@@ -58,10 +58,10 @@ impl<T, X> Proof<T, X> {
 		}
 	}
 
-	pub fn data(&self) -> &X {
+	pub fn into_data(self) -> X {
 		match self {
-			Self::ValidFor(_, ref d) => d,
-			Self::Invalid(ref d) => d,
+			Self::ValidFor(_, d) => d,
+			Self::Invalid(d) => d,
 		}
 	}
 }
