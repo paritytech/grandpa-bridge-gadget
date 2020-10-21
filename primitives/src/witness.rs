@@ -36,18 +36,16 @@ use crate::commitment::{Commitment, SignedCommitment};
 #[derive(Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub struct SignedCommitmentWitness<TBlockNumber, TPayload, TMerkleRoot> {
 	/// The full content of the commitment.
-    pub commitment: Commitment<TBlockNumber, TPayload>,
+	pub commitment: Commitment<TBlockNumber, TPayload>,
 
 	/// The bit vector of validators who signed the commitment.
-    pub signed_by: Vec<bool>, // TODO [ToDr] Consider replacing with bitvec crate
+	pub signed_by: Vec<bool>, // TODO [ToDr] Consider replacing with bitvec crate
 
 	/// A merkle root of signatures in the original signed commitment.
-    pub signatures_merkle_root: TMerkleRoot,
+	pub signatures_merkle_root: TMerkleRoot,
 }
 
-impl<TBlockNumber, TPayload, TMerkleRoot>
-	SignedCommitmentWitness<TBlockNumber, TPayload, TMerkleRoot> {
-
+impl<TBlockNumber, TPayload, TMerkleRoot> SignedCommitmentWitness<TBlockNumber, TPayload, TMerkleRoot> {
 	/// Convert [SignedCommitment] into [SignedCommitmentWitness].
 	///
 	/// This takes a [SignedCommitment], which contains full signatures
@@ -59,21 +57,22 @@ impl<TBlockNumber, TPayload, TMerkleRoot>
 	pub fn from_signed<TSignature, TMerkelize>(
 		signed: SignedCommitment<TBlockNumber, TPayload, TSignature>,
 		merkelize: TMerkelize,
-	) -> (Self, Vec<Option<TSignature>>) where
+	) -> (Self, Vec<Option<TSignature>>)
+	where
 		TMerkelize: FnOnce(&[Option<TSignature>]) -> TMerkleRoot,
 	{
-		let SignedCommitment {
-			commitment,
-			signatures,
-		} = signed;
+		let SignedCommitment { commitment, signatures } = signed;
 		let signed_by = signatures.iter().map(|s| s.is_some()).collect();
 		let signatures_merkle_root = merkelize(&signatures);
 
-		(Self {
-			commitment,
-			signed_by,
-			signatures_merkle_root,
-		}, signatures)
+		(
+			Self {
+				commitment,
+				signed_by,
+				signatures_merkle_root,
+			},
+			signatures,
+		)
 	}
 }
 
@@ -96,12 +95,7 @@ mod tests {
 
 		SignedCommitment {
 			commitment,
-			signatures: vec![
-				None,
-				None,
-				Some(vec![1, 2, 3, 4]),
-				Some(vec![5, 6, 7, 8]),
-			],
+			signatures: vec![None, None, Some(vec![1, 2, 3, 4]), Some(vec![5, 6, 7, 8])],
 		}
 	}
 
@@ -111,9 +105,7 @@ mod tests {
 		let signed = signed_commitment();
 
 		// when
-		let (witness, signatures) = TestSignedCommitmentWitness::from_signed(
-			signed, |sigs| sigs.clone().to_vec()
-		);
+		let (witness, signatures) = TestSignedCommitmentWitness::from_signed(signed, |sigs| sigs.clone().to_vec());
 
 		// then
 		assert_eq!(witness.signatures_merkle_root, signatures);
@@ -123,9 +115,7 @@ mod tests {
 	fn should_encode_and_decode_witness() {
 		// given
 		let signed = signed_commitment();
-		let (witness, _) = TestSignedCommitmentWitness::from_signed(
-			signed, |sigs| sigs.clone().to_vec()
-		);
+		let (witness, _) = TestSignedCommitmentWitness::from_signed(signed, |sigs| sigs.clone().to_vec());
 
 		// when
 		let encoded = codec::Encode::encode(&witness);

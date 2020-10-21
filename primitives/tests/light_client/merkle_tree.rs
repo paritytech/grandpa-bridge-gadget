@@ -24,7 +24,10 @@ pub struct Root<T> {
 
 impl<T> Root<T> {
 	pub fn new(root: u32) -> Self {
-		Self { root, _data: Default::default() }
+		Self {
+			root,
+			_data: Default::default(),
+		}
 	}
 }
 

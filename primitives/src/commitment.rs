@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use core::cmp;
 use crate::ValidatorSetId;
+use core::cmp;
 
 /// A commitment signed by Grandpa validators as part of BEEFY protocol.
 ///
@@ -24,40 +24,41 @@ use crate::ValidatorSetId;
 /// (see [SignedCommitment]) forms the BEEFY protocol.
 #[derive(Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub struct Commitment<TBlockNumber, TPayload> {
-    /// The payload being signed.
-    ///
-    /// This should be some form of cummulative representation of the chain (think MMR root hash).
-    /// For transition blocks it also MUST contain details of the next validator set.
-    pub payload: TPayload,
+	/// The payload being signed.
+	///
+	/// This should be some form of cummulative representation of the chain (think MMR root hash).
+	/// For transition blocks it also MUST contain details of the next validator set.
+	pub payload: TPayload,
 
-    /// Finalized block number this commitment is for.
-    ///
-    /// Grandpa validators agree on a block they create a commitment for and start collecting
+	/// Finalized block number this commitment is for.
+	///
+	/// Grandpa validators agree on a block they create a commitment for and start collecting
 	/// signature. This process is called a round.
 	/// There might be multiple rounds in progress (depending on the block choice rule), however
 	/// since the payload is supposed to be cummulative, it is not required to import all
 	/// commitments.
 	/// BEEFY light client is expected to import at least one commitment per epoch (the one with
 	/// [is_set_transition_block] set), but is free to import as many as it requires.
-    pub block_number: TBlockNumber,
+	pub block_number: TBlockNumber,
 
-    /// BEEFY valitor set supposed to sign this comitment.
+	/// BEEFY valitor set supposed to sign this comitment.
 	///
 	/// Validator set is changing once per epoch in the commitment with [is_set_transition_block]
 	/// set to `true`. Such "epoch commitments" MUST provide the light client with details of the
 	/// new validator set as part of the payload. The protocol itself doesn't enforce how these
 	/// details are provided though.
-    pub validator_set_id: ValidatorSetId,
+	pub validator_set_id: ValidatorSetId,
 
-    /// Indicator of the last block of the epoch.
-    ///
-    /// The payload will contain some form of the NEW validator set public keys information,
+	/// Indicator of the last block of the epoch.
+	///
+	/// The payload will contain some form of the NEW validator set public keys information,
 	/// yet the block is signed by the current validator set.
-    /// When this commitment is imported, the client MUST increment the `validator_set_id`.
-    pub is_set_transition_block: bool,
+	/// When this commitment is imported, the client MUST increment the `validator_set_id`.
+	pub is_set_transition_block: bool,
 }
 
-impl<TBlockNumber, TPayload> cmp::PartialOrd for Commitment<TBlockNumber, TPayload> where
+impl<TBlockNumber, TPayload> cmp::PartialOrd for Commitment<TBlockNumber, TPayload>
+where
 	TBlockNumber: cmp::Ord,
 	TPayload: cmp::Eq,
 {
@@ -66,12 +67,14 @@ impl<TBlockNumber, TPayload> cmp::PartialOrd for Commitment<TBlockNumber, TPaylo
 	}
 }
 
-impl<TBlockNumber, TPayload> cmp::Ord for Commitment<TBlockNumber, TPayload> where
+impl<TBlockNumber, TPayload> cmp::Ord for Commitment<TBlockNumber, TPayload>
+where
 	TBlockNumber: cmp::Ord,
 	TPayload: cmp::Eq,
 {
 	fn cmp(&self, other: &Self) -> cmp::Ordering {
-		self.validator_set_id.cmp(&other.validator_set_id)
+		self.validator_set_id
+			.cmp(&other.validator_set_id)
 			.then_with(|| self.block_number.cmp(&other.block_number))
 	}
 }
@@ -79,13 +82,13 @@ impl<TBlockNumber, TPayload> cmp::Ord for Commitment<TBlockNumber, TPayload> whe
 /// A commitment with matching Grandpa validators' signatures.
 #[derive(Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub struct SignedCommitment<TBlockNumber, TPayload, TSignature> {
-    /// The commitment signatures are collected for.
-    pub commitment: Commitment<TBlockNumber, TPayload>,
-    /// Grandpa validators' signatures for the commitment.
+	/// The commitment signatures are collected for.
+	pub commitment: Commitment<TBlockNumber, TPayload>,
+	/// Grandpa validators' signatures for the commitment.
 	///
 	/// The length of this `Vec` must match number of validators in the current set (see
 	/// [Commitment::validator_set_id]).
-    pub signatures: Vec<Option<TSignature>>,
+	pub signatures: Vec<Option<TSignature>>,
 }
 
 impl<TBlockNumber, TPayload, TSignature> SignedCommitment<TBlockNumber, TPayload, TSignature> {
@@ -136,12 +139,7 @@ mod tests {
 		};
 		let signed = SignedCommitment {
 			commitment,
-			signatures: vec![
-				None,
-				None,
-				Some(vec![1, 2, 3, 4]),
-				Some(vec![5, 6, 7, 8]),
-			],
+			signatures: vec![None, None, Some(vec![1, 2, 3, 4]), Some(vec![5, 6, 7, 8])],
 		};
 
 		// when
@@ -167,12 +165,7 @@ mod tests {
 		};
 		let mut signed = SignedCommitment {
 			commitment,
-			signatures: vec![
-				None,
-				None,
-				Some(vec![1, 2, 3, 4]),
-				Some(vec![5, 6, 7, 8]),
-			],
+			signatures: vec![None, None, Some(vec![1, 2, 3, 4]), Some(vec![5, 6, 7, 8])],
 		};
 		assert_eq!(signed.no_of_signatures(), 2);
 

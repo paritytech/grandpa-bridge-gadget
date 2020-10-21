@@ -16,7 +16,7 @@
 
 mod light_client;
 
-use self::light_client::{SignedCommitment, Commitment, Payload, validator_set, Error};
+use self::light_client::{validator_set, Commitment, Error, Payload, SignedCommitment};
 
 #[test]
 fn light_client_should_make_progress() {

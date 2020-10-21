@@ -51,7 +51,7 @@ pub enum Error {
 	InvalidValidatorSetId {
 		expected: ValidatorSetId,
 		got: ValidatorSetId,
-	}
+	},
 }
 
 pub struct LightClient {
@@ -60,10 +60,7 @@ pub struct LightClient {
 }
 
 impl LightClient {
-	pub fn import(
-		&mut self,
-		commitment: SignedCommitment,
-	) -> Result<(), Error> {
+	pub fn import(&mut self, commitment: SignedCommitment) -> Result<(), Error> {
 		// TODO proper verification
 		// 1. validator_set
 		// 2. block numbers
