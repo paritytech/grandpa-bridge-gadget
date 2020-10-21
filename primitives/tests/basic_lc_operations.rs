@@ -51,7 +51,8 @@ fn should_verify_mmr_proof() {
 			is_set_transition_block: false,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
-	}).unwrap();
+	})
+	.unwrap();
 
 	// when
 	let result = lc.verify_proof(light_client::merkle_tree::Proof::ValidFor(1.into(), ()));
@@ -72,7 +73,8 @@ fn should_reject_invalid_mmr_proof() {
 			is_set_transition_block: false,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
-	}).unwrap();
+	})
+	.unwrap();
 
 	// when
 	let result = lc.verify_proof(light_client::merkle_tree::Proof::Invalid(()));
@@ -249,11 +251,14 @@ fn light_client_should_reject_if_not_enough_valid_signatures() {
 	});
 
 	// then
-	assert_eq!(result, Err(Error::NotEnoughValidSignatures {
-		expected: 1,
-		got: 1,
-		valid: Some(0),
-	}));
+	assert_eq!(
+		result,
+		Err(Error::NotEnoughValidSignatures {
+			expected: 1,
+			got: 1,
+			valid: Some(0),
+		})
+	);
 }
 
 #[test]
@@ -338,4 +343,3 @@ fn light_client_reject_set_transition_with_invalid_proof() {
 	// then
 	assert_eq!(result, Err(Error::InvalidValidatorSetProof));
 }
-
