@@ -152,7 +152,10 @@ impl LightClient {
 	}
 
 	pub fn last_payload(&self) -> &Payload {
-		&self.last_commitment().expect("Genesis doesn't contain commitment.").payload
+		&self
+			.last_commitment()
+			.expect("Genesis doesn't contain commitment.")
+			.payload
 	}
 
 	fn validate_commitment(&self, commitment: SignedCommitment) -> Result<Commitment, Error> {
@@ -199,8 +202,8 @@ impl LightClient {
 			match signature {
 				Some(signature) if signature.is_valid_for(&public) => {
 					valid += 1;
-				},
-				_ => {},
+				}
+				_ => {}
 			}
 		}
 

@@ -94,7 +94,8 @@ fn light_client_should_reject_older_block() {
 			is_set_transition_block: false,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
-	}).unwrap();
+	})
+	.unwrap();
 
 	// when
 	let result = lc.import(SignedCommitment {
@@ -128,11 +129,14 @@ fn light_client_should_reject_if_not_enough_signatures() {
 	});
 
 	// then
-	assert_eq!(result, Err(Error::NotEnoughValidSignatures {
-		expected: 1,
-		got: 0,
-		valid: None,
-	}));
+	assert_eq!(
+		result,
+		Err(Error::NotEnoughValidSignatures {
+			expected: 1,
+			got: 0,
+			valid: None,
+		})
+	);
 }
 
 #[test]
@@ -161,14 +165,8 @@ fn light_client_should_reject_if_too_many_or_too_little_signatures() {
 	});
 
 	// then
-	assert_eq!(result, Err(Error::InvalidNumberOfSignatures {
-		expected: 1,
-		got: 2,
-	}));
-	assert_eq!(result2, Err(Error::InvalidNumberOfSignatures {
-		expected: 1,
-		got: 0,
-	}));
+	assert_eq!(result, Err(Error::InvalidNumberOfSignatures { expected: 1, got: 2 }));
+	assert_eq!(result2, Err(Error::InvalidNumberOfSignatures { expected: 1, got: 0 }));
 }
 
 #[test]
@@ -188,11 +186,14 @@ fn light_client_should_reject_if_not_enough_valid_signatures() {
 	});
 
 	// then
-	assert_eq!(result, Err(Error::NotEnoughValidSignatures {
-		expected: 1,
-		got: 1,
-		valid: Some(0),
-	}));
+	assert_eq!(
+		result,
+		Err(Error::NotEnoughValidSignatures {
+			expected: 1,
+			got: 1,
+			valid: Some(0),
+		})
+	);
 }
 
 #[test]
@@ -220,10 +221,7 @@ fn light_client_should_perform_set_transition() {
 
 	// then
 	assert!(result.is_ok());
-	assert_eq!(lc.validator_set(), &(
-		1,
-		vec![0.into(), 1.into(), 2.into()],
-	));
+	assert_eq!(lc.validator_set(), &(1, vec![0.into(), 1.into(), 2.into()],));
 }
 
 #[test]
