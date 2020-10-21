@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Public(pub u8);
 
 impl From<u8> for Public {
@@ -27,4 +27,13 @@ impl From<u8> for Public {
 pub enum Signature {
 	ValidFor(Public),
 	Invalid,
+}
+
+impl Signature {
+	pub fn is_valid_for(&self, public: &Public) -> bool {
+		match self {
+			Self::ValidFor(ref p) if p == public => true,
+			_ => false,
+		}
+	}
 }

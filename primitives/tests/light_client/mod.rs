@@ -48,9 +48,38 @@ pub type SignedCommitment = bp::SignedCommitment<BlockNumber, Payload, validator
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
+	/// [Commitment] can't be imported, cause it's signed by either past or future validator set.
 	InvalidValidatorSetId {
 		expected: ValidatorSetId,
 		got: ValidatorSetId,
+	},
+	/// [Commitment] can't be imported, cause it's a set transition block and the proof is missing.
+	InvalidValidatorSetProof,
+	/// [Commitment] is not useful, cause it's made for an older block than we know of.
+	///
+	/// In practice it's okay for the light client to import such commitments (if the validator set
+	/// matches), but it doesn't provide any more value, since the payload is meant to be
+	/// cummulative.
+	/// It might be useful however, if we want to verify proofs that were generated against this
+	/// specific block number.
+	OldBlock {
+		/// Best block currently known by the light client.
+		best_known: BlockNumber,
+		/// Block in the commitment.
+		got: BlockNumber,
+	},
+	/// There is too many signatures in the commitment - more than validators.
+	InvalidNumberOfSignatures {
+		/// Number of validators in the set.
+		expected: usize,
+		/// Numbers of signatures in the commitment.
+		got: usize,
+	},
+	/// [SignedCommitment] doesn't have enough valid signatures.
+	NotEnoughValidSignatures {
+		expected: usize,
+		got: usize,
+		valid: Option<usize>,
 	},
 }
 
@@ -60,22 +89,34 @@ pub struct LightClient {
 }
 
 impl LightClient {
-	pub fn import(&mut self, commitment: SignedCommitment) -> Result<(), Error> {
-		// TODO proper verification
-		// 1. validator_set
-		// 2. block numbers
-		// 3. Is epoch change
-		// 4. number of signatures
-		// 5. signatures validity
-		self.last_commitment = Some(commitment.commitment);
+	pub fn import(&mut self, signed: SignedCommitment) -> Result<(), Error> {
+		// Make sure it's not a set transition block (see [import_set_transition]).
+		if signed.commitment.is_set_transition_block {
+			return Err(Error::InvalidValidatorSetProof);
+		}
+
+		let commitment = self.validate_commitment(signed)?;
+
+		self.last_commitment = Some(commitment);
 		Ok(())
 	}
 
-	pub fn import_epoch(
+	pub fn import_set_transition(
 		&mut self,
-		commitment: SignedCommitment,
+		signed: SignedCommitment,
 		validator_set_proof: merkle_tree::Proof<ValidatorSetTree, Vec<validator_set::Public>>,
 	) -> Result<(), Error> {
+		// Make sure it is a set transition block (see [import]).
+		if !signed.commitment.is_set_transition_block {
+			return Err(Error::InvalidValidatorSetProof);
+		}
+
+		let commitment = self.validate_commitment(signed)?;
+
+		todo!()
+	}
+
+	pub fn verify_proof<R>(&self, proof: merkle_tree::Proof<Mmr, R>) -> Result<R, Error> {
 		todo!()
 	}
 
@@ -85,6 +126,70 @@ impl LightClient {
 
 	pub fn last_payload(&self) -> &Payload {
 		&self.last_commitment().unwrap().payload
+	}
+
+	fn validate_commitment(&self, commitment: SignedCommitment) -> Result<Commitment, Error> {
+		let no_of_non_empty_signatures = commitment.no_of_signatures();
+		let SignedCommitment { commitment, signatures } = commitment;
+		// Make sure it's signed by the current validator set we know of.
+		if self.validator_set.0 != commitment.validator_set_id {
+			return Err(Error::InvalidValidatorSetId {
+				expected: self.validator_set.0,
+				got: commitment.validator_set_id,
+			});
+		}
+
+		// Make sure it's not worse than what we already have.
+		let best_block = self.last_commitment().map(|c| c.block_number).unwrap_or(0);
+		if commitment.block_number <= best_block {
+			return Err(Error::OldBlock {
+				best_known: best_block,
+				got: commitment.block_number,
+			});
+		}
+
+		// check number of signatures
+		let validator_set_count = self.validator_set.1.len();
+		if signatures.len() != validator_set_count {
+			return Err(Error::InvalidNumberOfSignatures {
+				expected: validator_set_count,
+				got: signatures.len(),
+			});
+		}
+
+		// check the validity of signatures
+		let minimal_number_of_signatures = self.minimal_number_of_signatures();
+		if no_of_non_empty_signatures < minimal_number_of_signatures {
+			return Err(Error::NotEnoughValidSignatures {
+				expected: minimal_number_of_signatures,
+				got: no_of_non_empty_signatures,
+				valid: None,
+			});
+		}
+
+		let mut valid = 0;
+		for (signature, public) in signatures.into_iter().zip(self.validator_set.1.iter()) {
+			match signature {
+				Some(signature) if signature.is_valid_for(&public) => {
+					valid += 1;
+				},
+				_ => {},
+			}
+		}
+
+		if valid < minimal_number_of_signatures {
+			return Err(Error::NotEnoughValidSignatures {
+				expected: minimal_number_of_signatures,
+				got: no_of_non_empty_signatures,
+				valid: Some(valid),
+			});
+		}
+
+		Ok(commitment)
+	}
+
+	fn minimal_number_of_signatures(&self) -> usize {
+		(2 * self.validator_set.1.len() + 2) / 3
 	}
 }
 
