@@ -382,6 +382,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 
 [[package]]
+name = "beefy-gadget"
+version = "0.1.0"
+dependencies = [
+ "futures 0.3.6",
+ "log",
+ "parity-scale-codec",
+ "parking_lot 0.11.0",
+ "sc-client-api",
+ "sc-keystore",
+ "sc-network",
+ "sc-network-gossip",
+ "sp-application-crypto",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
+name = "beefy-primitives"
+version = "0.1.0"
+dependencies = [
+ "hex-literal",
+ "parity-scale-codec",
+]
+
+[[package]]
 name = "bincode"
 version = "1.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3354,13 +3381,13 @@ dependencies = [
 name = "node-template"
 version = "2.0.0"
 dependencies = [
+ "beefy-gadget",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
  "node-template-runtime",
  "pallet-transaction-payment-rpc",
  "sc-basic-authorship",
- "sc-beefy-gadget",
  "sc-cli",
  "sc-client-api",
  "sc-consensus",
@@ -4859,25 +4886,6 @@ dependencies = [
  "sp-transaction-pool",
  "substrate-prometheus-endpoint",
  "tokio-executor 0.2.0-alpha.6",
-]
-
-[[package]]
-name = "sc-beefy-gadget"
-version = "0.1.0"
-dependencies = [
- "futures 0.3.6",
- "log",
- "parity-scale-codec",
- "parking_lot 0.11.0",
- "sc-client-api",
- "sc-keystore",
- "sc-network",
- "sc-network-gossip",
- "sp-application-crypto",
- "sp-blockchain",
- "sp-consensus",
- "sp-core",
- "sp-runtime",
 ]
 
 [[package]]

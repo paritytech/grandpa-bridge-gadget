@@ -190,7 +190,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		// Start the BEEFY bridge gadget.
 		task_manager.spawn_essential_handle().spawn_blocking(
 			"beefy-gadget",
-			sc_beefy_gadget::start_beefy_gadget(client.clone(), keystore.clone(), network.clone(), network.clone()),
+			beefy_gadget::start_beefy_gadget(client.clone(), keystore.clone(), network.clone(), network.clone()),
 		);
 	}
 
