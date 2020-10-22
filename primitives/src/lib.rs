@@ -20,6 +20,14 @@
 //!
 //! The crate contains shared data types used by BEEFY protocol and documentation (in a form of
 //! code) for building a BEEFY light client.
+//!
+//! BEEFY is a gadget that runs alongside another finality gadget (for instance GRANDPA).
+//! For simplicity (and the initially intended use case) the documentation says GRANDPA in places
+//! where a more abstract "Finality Gadget" term could be used, but there is no reason why BEEFY
+//! wouldn't run with some other finality scheme.
+//! BEEFY validator set is supposed to be tracking the Finality Gadget validator set, but note that
+//! it will use a different set of keys. For Polkadot use case we plan to use `secp256k1` for BEEFY,
+//! while GRANDPA uses `ed25519`.
 
 mod commitment;
 pub mod witness;
