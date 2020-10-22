@@ -219,7 +219,7 @@ impl LightClient {
 	}
 
 	fn minimal_number_of_signatures(&self) -> usize {
-		(2 * self.validator_set.1.len() + 2) / 3
+		2 * self.validator_set.1.len() / 3 + 1
 	}
 }
 
