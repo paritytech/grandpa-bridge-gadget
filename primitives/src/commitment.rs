@@ -17,31 +17,31 @@
 use crate::ValidatorSetId;
 use core::cmp;
 
-/// A commitment signed by Grandpa validators as part of BEEFY protocol.
+/// A commitment signed by GRANDPA validators as part of BEEFY protocol.
 ///
-/// The commitment contins a [payload] extracted from the finalized block at height [block_number].
-/// Grandpa validators collect signatures on commitments and a stream of such signed commitments
+/// The commitment contains a [payload] extracted from the finalized block at height [block_number].
+/// GRANDPA validators collect signatures on commitments and a stream of such signed commitments
 /// (see [SignedCommitment]) forms the BEEFY protocol.
 #[derive(Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub struct Commitment<TBlockNumber, TPayload> {
 	/// The payload being signed.
 	///
-	/// This should be some form of cummulative representation of the chain (think MMR root hash).
+	/// This should be some form of cumulative representation of the chain (think MMR root hash).
 	/// For transition blocks it also MUST contain details of the next validator set.
 	pub payload: TPayload,
 
 	/// Finalized block number this commitment is for.
 	///
-	/// Grandpa validators agree on a block they create a commitment for and start collecting
-	/// signature. This process is called a round.
+	/// GRANDPA validators agree on a block they create a commitment for and start collecting
+	/// signatures. This process is called a round.
 	/// There might be multiple rounds in progress (depending on the block choice rule), however
-	/// since the payload is supposed to be cummulative, it is not required to import all
+	/// since the payload is supposed to be cumulative, it is not required to import all
 	/// commitments.
 	/// BEEFY light client is expected to import at least one commitment per epoch (the one with
 	/// [is_set_transition_block] set), but is free to import as many as it requires.
 	pub block_number: TBlockNumber,
 
-	/// BEEFY valitor set supposed to sign this comitment.
+	/// BEEFY validator set supposed to sign this commitment.
 	///
 	/// Validator set is changing once per epoch in the commitment with [is_set_transition_block]
 	/// set to `true`. Such "epoch commitments" MUST provide the light client with details of the
@@ -79,12 +79,12 @@ where
 	}
 }
 
-/// A commitment with matching Grandpa validators' signatures.
+/// A commitment with matching GRANDPA validators' signatures.
 #[derive(Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub struct SignedCommitment<TBlockNumber, TPayload, TSignature> {
 	/// The commitment signatures are collected for.
 	pub commitment: Commitment<TBlockNumber, TPayload>,
-	/// Grandpa validators' signatures for the commitment.
+	/// GRANDPA validators' signatures for the commitment.
 	///
 	/// The length of this `Vec` must match number of validators in the current set (see
 	/// [Commitment::validator_set_id]).

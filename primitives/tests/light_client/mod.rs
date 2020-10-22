@@ -59,7 +59,7 @@ pub enum Error {
 	///
 	/// In practice it's okay for the light client to import such commitments (if the validator set
 	/// matches), but it doesn't provide any more value, since the payload is meant to be
-	/// cummulative.
+	/// cumulative.
 	/// It might be useful however, if we want to verify proofs that were generated against this
 	/// specific block number.
 	OldBlock {
@@ -68,7 +68,7 @@ pub enum Error {
 		/// Block in the commitment.
 		got: BlockNumber,
 	},
-	/// There is too many signatures in the commitment - more than validators.
+	/// There are too many signatures in the commitment - more than validators.
 	InvalidNumberOfSignatures {
 		/// Number of validators in the set.
 		expected: usize,
