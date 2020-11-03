@@ -49,12 +49,11 @@ pub struct Commitment<TBlockNumber, TPayload> {
 	/// details are provided though.
 	pub validator_set_id: ValidatorSetId,
 
-	/// Indicator of the last block of the epoch.
+	/// Indicator of this commitment special purpose.
 	///
-	/// The payload will contain some form of the NEW validator set public keys information,
-	/// yet the block is signed by the current validator set.
-	/// When this commitment is imported, the client MUST increment the `validator_set_id`.
-	pub is_set_transition_block: bool,
+	/// Some commitments will require additional actions to be taken by the client. This field
+	/// indicates what kind of commitment we are dealing with.
+	pub kind: CommitmentKind,
 }
 
 impl<TBlockNumber, TPayload> cmp::PartialOrd for Commitment<TBlockNumber, TPayload>
@@ -77,6 +76,35 @@ where
 			.cmp(&other.validator_set_id)
 			.then_with(|| self.block_number.cmp(&other.block_number))
 	}
+}
+
+/// A kind of [Commitment] to import.
+///
+/// Importing [Commitment]s of particular kind may require additional actions to be taken by the
+/// client.
+#[derive(Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
+pub enum CommitmentKind {
+	/// Regular commitment.
+	///
+	/// There is nothing extraordinary about this commitment, the client doesn't
+	/// need to perform any additional actions.
+	Regular,
+	/// Last block of the epoch.
+	///
+	/// The payload will contain some form of the NEW validator set public keys information,
+	/// yet the block is signed by the current validator set.
+	/// When this commitment is imported, the client MUST increment the `validator_set_id`.
+	ValidatorSetTransition,
+	/// Last block of current session.
+	///
+	/// The payload MAY contain some form of the NEW validator set public keys information,
+	/// yet the block is signed by the current validator set.
+	/// When this commitment is imported, the client MUST update it's internal validator set
+	/// public keys if there are new ones present.
+	/// Note that this variant is different from [ValidatorSetTransition] - the set of validators
+	/// does not change, they only indicate that they are going to use different public keys from
+	/// now on.
+	SessionTransition,
 }
 
 /// A commitment with matching GRANDPA validators' signatures.
@@ -113,7 +141,7 @@ mod tests {
 			payload: "Hello World!".into(),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
+			kind: CommitmentKind::SessionTransition,
 		};
 
 		// when
@@ -135,7 +163,7 @@ mod tests {
 			payload: "Hello World!".into(),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
+			kind: CommitmentKind::Regular,
 		};
 		let signed = SignedCommitment {
 			commitment,
@@ -161,7 +189,7 @@ mod tests {
 			payload: "Hello World!".into(),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
+			kind: CommitmentKind::Regular,
 		};
 		let mut signed = SignedCommitment {
 			commitment,
@@ -183,7 +211,7 @@ mod tests {
 				payload: "Hello World!".into(),
 				block_number,
 				validator_set_id,
-				is_set_transition_block: false,
+				kind: CommitmentKind::Regular,
 			}
 		}
 

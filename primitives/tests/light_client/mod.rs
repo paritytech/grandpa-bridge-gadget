@@ -45,6 +45,7 @@ impl Payload {
 pub type BlockNumber = u64;
 pub type Commitment = bp::Commitment<BlockNumber, Payload>;
 pub type SignedCommitment = bp::SignedCommitment<BlockNumber, Payload, validator_set::Signature>;
+pub type CommitmentKind = bp::CommitmentKind;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
@@ -95,7 +96,7 @@ pub struct LightClient {
 impl LightClient {
 	pub fn import(&mut self, signed: SignedCommitment) -> Result<(), Error> {
 		// Make sure it's not a set transition block (see [import_set_transition]).
-		if signed.commitment.is_set_transition_block {
+		if signed.commitment.kind != CommitmentKind::Regular {
 			return Err(Error::InvalidValidatorSetProof);
 		}
 
@@ -105,13 +106,13 @@ impl LightClient {
 		Ok(())
 	}
 
-	pub fn import_set_transition(
+	pub fn import_transition(
 		&mut self,
 		signed: SignedCommitment,
 		validator_set_proof: merkle_tree::Proof<ValidatorSetTree, Vec<validator_set::Public>>,
 	) -> Result<(), Error> {
 		// Make sure it is a set transition block (see [import]).
-		if !signed.commitment.is_set_transition_block {
+		if let CommitmentKind::Regular = signed.commitment.kind {
 			return Err(Error::InvalidValidatorSetProof);
 		}
 
@@ -126,9 +127,13 @@ impl LightClient {
 		if !validator_set_proof.is_valid(validator_set_root) {
 			return Err(Error::InvalidValidatorSetProof);
 		}
-		let set = validator_set_proof.into_data();
 
-		let new_id = self.validator_set.0 + 1;
+		let set = validator_set_proof.into_data();
+		let new_id = match signed.commitment.kind {
+			CommitmentKind::ValidatorSetTransition => self.validator_set.0 + 1,
+			CommitmentKind::SessionTransition | bp::CommitmentKind::Regular => self.validator_set.0,
+		};
+
 		self.validator_set = (new_id, set);
 		self.last_commitment = Some(commitment);
 

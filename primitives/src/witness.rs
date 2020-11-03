@@ -90,7 +90,7 @@ mod tests {
 			payload: "Hello World!".into(),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
+			kind: CommitmentKind::Regular,
 		};
 
 		SignedCommitment {
