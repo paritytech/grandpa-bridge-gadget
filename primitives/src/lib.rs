@@ -35,4 +35,4 @@ pub mod witness;
 /// A typedef for validator set id.
 pub type ValidatorSetId = u64;
 
-pub use commitment::{Commitment, SignedCommitment, CommitmentKind};
+pub use commitment::{Commitment, CommitmentKind, SignedCommitment};

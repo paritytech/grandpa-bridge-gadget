@@ -16,9 +16,7 @@
 
 mod light_client;
 
-use self::light_client::{
-	validator_set, Commitment, Error, Payload, SignedCommitment, CommitmentKind,
-};
+use self::light_client::{validator_set, Commitment, CommitmentKind, Error, Payload, SignedCommitment};
 
 #[test]
 fn light_client_should_make_progress() {
@@ -373,4 +371,3 @@ fn light_client_should_perform_session_change() {
 	assert_eq!(result, Ok(()));
 	assert_eq!(lc.validator_set(), &(0, vec![0.into(), 1.into(), 2.into()],));
 }
-
