@@ -115,7 +115,28 @@ fn light_client_should_reject_set_transitions_without_validator_proof() {
 			payload: Payload::new(1),
 			block_number: 1,
 			validator_set_id: 0,
-			kind: CommitmentKind::Regular,
+			kind: CommitmentKind::ValidatorSetTransition,
+		},
+		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
+	});
+
+	// then
+	assert_eq!(result, Err(Error::InvalidValidatorSetProof));
+	assert_eq!(lc.last_commitment(), None);
+}
+
+#[test]
+fn light_client_should_reject_session_transitions_without_validator_proof() {
+	// given
+	let mut lc = light_client::new();
+
+	// when
+	let result = lc.import(SignedCommitment {
+		commitment: Commitment {
+			payload: Payload::new(1),
+			block_number: 1,
+			validator_set_id: 0,
+			kind: CommitmentKind::SessionTransition,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
 	});
@@ -279,7 +300,7 @@ fn light_client_should_perform_set_transition() {
 	};
 
 	// when
-	let result = lc.import_set_transition(
+	let result = lc.import_transition(
 		commitment,
 		light_client::merkle_tree::Proof::ValidFor(2.into(), vec![0.into(), 1.into(), 2.into()]),
 	);
@@ -308,7 +329,7 @@ fn light_client_reject_set_transition_with_invalid_payload() {
 	};
 
 	// when
-	let result = lc.import_set_transition(
+	let result = lc.import_transition(
 		commitment,
 		light_client::merkle_tree::Proof::ValidFor(2.into(), vec![0.into(), 1.into(), 2.into()]),
 	);
@@ -335,7 +356,7 @@ fn light_client_reject_set_transition_with_invalid_proof() {
 	};
 
 	// when
-	let result = lc.import_set_transition(
+	let result = lc.import_transition(
 		commitment,
 		light_client::merkle_tree::Proof::ValidFor(2.into(), vec![0.into(), 1.into(), 2.into()]),
 	);
@@ -362,7 +383,7 @@ fn light_client_should_perform_session_change() {
 	};
 
 	// when
-	let result = lc.import_set_transition(
+	let result = lc.import_transition(
 		commitment,
 		light_client::merkle_tree::Proof::ValidFor(2.into(), vec![0.into(), 1.into(), 2.into()]),
 	);

@@ -22,7 +22,7 @@ use core::cmp;
 /// The commitment contains a [payload] extracted from the finalized block at height [block_number].
 /// GRANDPA validators collect signatures on commitments and a stream of such signed commitments
 /// (see [SignedCommitment]) forms the BEEFY protocol.
-#[derive(Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub struct Commitment<TBlockNumber, TPayload> {
 	/// The payload being signed.
 	///
@@ -82,7 +82,7 @@ where
 ///
 /// Importing [Commitment]s of particular kind may require additional actions to be taken by the
 /// client.
-#[derive(Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub enum CommitmentKind {
 	/// Regular commitment.
 	///
@@ -108,7 +108,7 @@ pub enum CommitmentKind {
 }
 
 /// A commitment with matching GRANDPA validators' signatures.
-#[derive(Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub struct SignedCommitment<TBlockNumber, TPayload, TSignature> {
 	/// The commitment signatures are collected for.
 	pub commitment: Commitment<TBlockNumber, TPayload>,
@@ -152,7 +152,7 @@ mod tests {
 		assert_eq!(decoded, Ok(commitment));
 		assert_eq!(
 			encoded,
-			hex_literal::hex!("3048656c6c6f20576f726c642105000000000000000000000000000000000000000000000000")
+			hex_literal::hex!("3048656c6c6f20576f726c642105000000000000000000000000000000000000000000000002")
 		);
 	}
 

@@ -95,7 +95,7 @@ pub struct LightClient {
 
 impl LightClient {
 	pub fn import(&mut self, signed: SignedCommitment) -> Result<(), Error> {
-		// Make sure it's not a set transition block (see [import_set_transition]).
+		// Make sure it's not a set transition block (see [import_transition]).
 		if signed.commitment.kind != CommitmentKind::Regular {
 			return Err(Error::InvalidValidatorSetProof);
 		}
@@ -112,7 +112,8 @@ impl LightClient {
 		validator_set_proof: merkle_tree::Proof<ValidatorSetTree, Vec<validator_set::Public>>,
 	) -> Result<(), Error> {
 		// Make sure it is a set transition block (see [import]).
-		if let CommitmentKind::Regular = signed.commitment.kind {
+		let kind = signed.commitment.kind;
+		if let CommitmentKind::Regular = kind {
 			return Err(Error::InvalidValidatorSetProof);
 		}
 
@@ -129,7 +130,7 @@ impl LightClient {
 		}
 
 		let set = validator_set_proof.into_data();
-		let new_id = match signed.commitment.kind {
+		let new_id = match kind {
 			CommitmentKind::ValidatorSetTransition => self.validator_set.0 + 1,
 			CommitmentKind::SessionTransition | bp::CommitmentKind::Regular => self.validator_set.0,
 		};
