@@ -79,8 +79,8 @@ impl<TBlockNumber, TPayload, TMerkleRoot> SignedCommitmentWitness<TBlockNumber, 
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use codec::Decode;
 	use crate::commitment::CommitmentKind;
+	use codec::Decode;
 
 	type TestCommitment = Commitment<u128, String>;
 	type TestSignedCommitment = SignedCommitment<u128, String, Vec<u8>>;
