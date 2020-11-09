@@ -182,7 +182,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 			block_import,
 			proposer,
 			network.clone(),
-			inherent_data_providers.clone(),
+			inherent_data_providers,
 			force_authoring,
 			keystore_container.sync_keystore(),
 			can_author_with,
@@ -196,7 +196,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		task_manager.spawn_essential_handle().spawn_blocking(
 			"beefy-gadget",
 			beefy_gadget::start_beefy_gadget(
-				client.clone(),
+				client,
 				keystore_container.sync_keystore(),
 				network.clone(),
 				network.clone(),
