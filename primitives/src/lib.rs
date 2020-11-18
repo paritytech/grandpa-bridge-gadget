@@ -65,3 +65,17 @@ pub const BEEFY_ENGINE_ID: sp_runtime::ConsensusEngineId = *b"BEEF";
 
 /// A typedef for validator set id.
 pub type ValidatorSetId = u64;
+
+/// The index of an authority.
+pub type AuthorityIndex = u32;
+
+/// A consensus log item for BEEFY.
+#[derive(Decode, Encode)]
+pub enum ConsensusLog<AuthorityId: Codec> {
+	/// The authorities have changed.
+	#[codec(index = "1")]
+	AuthoritiesChange(Vec<AuthorityId>),
+	/// Disable the authority with given index.
+	#[codec(index = "2")]
+	OnDisabled(AuthorityIndex),
+}

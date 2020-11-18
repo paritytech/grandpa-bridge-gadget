@@ -415,13 +415,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "beefy-pallet"
+version = "0.1.0"
+dependencies = [
+ "beefy-primitives",
+ "frame-support",
+ "frame-system",
+ "pallet-session",
+ "parity-scale-codec",
+ "serde",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "beefy-primitives"
 version = "0.1.0"
 dependencies = [
- "hex-literal",
  "parity-scale-codec",
  "sp-application-crypto",
  "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -3460,6 +3474,7 @@ name = "node-template"
 version = "2.0.0"
 dependencies = [
  "beefy-gadget",
+ "beefy-primitives",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
@@ -3495,6 +3510,8 @@ dependencies = [
 name = "node-template-runtime"
 version = "2.0.0"
 dependencies = [
+ "beefy-pallet",
+ "beefy-primitives",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
