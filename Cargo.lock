@@ -417,6 +417,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "beefy-gadget-rpc"
+version = "0.1.0"
+dependencies = [
+ "beefy-gadget",
+ "beefy-primitives",
+ "futures 0.3.8",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "jsonrpc-pubsub",
+ "log",
+ "parity-scale-codec",
+ "sc-rpc",
+ "serde",
+ "serde_json",
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
 name = "beefy-pallet"
 version = "0.1.0"
 dependencies = [
@@ -3478,6 +3498,7 @@ name = "node-template"
 version = "2.0.0"
 dependencies = [
  "beefy-gadget",
+ "beefy-gadget-rpc",
  "beefy-primitives",
  "frame-benchmarking",
  "frame-benchmarking-cli",

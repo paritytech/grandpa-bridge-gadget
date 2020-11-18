@@ -4,6 +4,7 @@ panic = "unwind"
 [workspace]
 members = [
 	"beefy-gadget",
+	"beefy-gadget/rpc",
 	"node-example/node",
 	"node-example/pallets/template",
 	"node-example/runtime",
