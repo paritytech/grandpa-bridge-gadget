@@ -177,6 +177,7 @@ impl<Block, Id, Signature, FinalityNotifications> BeefyWorker<Block, Id, Signatu
 where
 	Block: BlockT,
 {
+	#[allow(clippy::too_many_arguments)]
 	fn new(
 		local_id: Id,
 		key_store: SyncCryptoStorePtr,

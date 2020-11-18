@@ -85,7 +85,7 @@ where
 	pub fn channel() -> (BeefySignedCommitmentSender<Block, Signature>, Self) {
 		let subscribers = Arc::new(Mutex::new(vec![]));
 		let receiver = BeefySignedCommitmentStream::new(subscribers.clone());
-		let sender = BeefySignedCommitmentSender::new(subscribers.clone());
+		let sender = BeefySignedCommitmentSender::new(subscribers);
 		(sender, receiver)
 	}
 

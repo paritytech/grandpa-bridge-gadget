@@ -35,6 +35,7 @@ use sp_runtime::traits::Block as BlockT;
 use beefy_gadget::notification::BeefySignedCommitmentStream;
 
 /// Provides RPC methods for interacting with BEEFY.
+#[allow(clippy::needless_return)]
 #[rpc]
 pub trait BeefyApi<Notification, Hash> {
 	/// RPC Metadata
@@ -101,6 +102,7 @@ where
 			.compat();
 
 		self.manager.add(subscriber, |sink| {
+			#[allow(clippy::redundant_closure)]
 			let stream = stream.map(|res| Ok(res));
 			sink.sink_map_err(|e| warn!("Error sending notifications: {:?}", e))
 				.send_all(stream)
