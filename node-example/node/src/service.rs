@@ -129,6 +129,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 
 	let role = config.role.clone();
 	let force_authoring = config.force_authoring;
+	let backoff_authoring_blocks: Option<()> = None;
 	let name = config.network.node_name.clone();
 	let enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
@@ -175,7 +176,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 
 		let can_author_with = sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
 
-		let aura = sc_consensus_aura::start_aura::<_, _, _, _, _, AuraPair, _, _, _>(
+		let aura = sc_consensus_aura::start_aura::<_, _, _, _, _, AuraPair, _, _, _, _>(
 			sc_consensus_aura::slot_duration(&*client)?,
 			client.clone(),
 			select_chain,
@@ -184,6 +185,7 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 			network.clone(),
 			inherent_data_providers,
 			force_authoring,
+			backoff_authoring_blocks,
 			keystore_container.sync_keystore(),
 			can_author_with,
 		)?;
