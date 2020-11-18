@@ -272,13 +272,31 @@ parameter_types! {
 	pub const HashWeight: Weight = 1;
 }
 
+pub const BEEFY_CONSENSUS_ID: sp_runtime::ConsensusEngineId = *b"beef";
+
+type MmrHash = <Keccak256 as sp_runtime::traits::Hash>::Output;
+/// A BEEFY consensus digest item with MMR root hash.
+pub struct DepositLog;
+impl pallet_mmr::primitives::OnNewRoot<MmrHash> for DepositLog {
+	fn on_new_root(root: &Hash) -> Weight {
+		let digest = DigestItem::Consensus(
+			BEEFY_CONSENSUS_ID,
+			codec::Encode::encode(root),
+		);
+		<frame_system::Module<Runtime>>::deposit_log(digest);
+
+		<Runtime as frame_system::Trait>::DbWeight::get().writes(1)
+	}
+}
+
 /// Configure Merkle Mountain Range pallet.
 impl pallet_mmr::Trait for Runtime {
 	const INDEXING_PREFIX: &'static [u8] = b"mmr";
 	type Hashing = Keccak256;
-	type Hash = <Keccak256 as sp_runtime::traits::Hash>::Output;
+	type Hash = MmrHash;
 	type HashWeight = HashWeight;
 	type LeafData = frame_system::Module<Self>;
+	type OnNewRoot = DepositLog;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
