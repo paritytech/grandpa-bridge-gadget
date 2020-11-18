@@ -25,6 +25,8 @@ hex-literal = { optional = true, version = '0.3.1' }
 serde = { features = ['derive'], optional = true, version = '1.0.117' }
 
 # local dependencies
+beefy-pallet = { path = '../../pallet', default-features = false }
+beefy-primitives = { path = '../../primitives', default-features = false }
 pallet-template = { path = '../pallets/template', default-features = false, version = '2.0.0' }
 
 # Substrate dependencies
@@ -69,6 +71,8 @@ runtime-benchmarks = [
 std = [
     'codec/std',
     'serde',
+	'beefy-pallet/std',
+	'beefy-primitives/std',
     'frame-executive/std',
     'frame-support/std',
     'frame-system/std',

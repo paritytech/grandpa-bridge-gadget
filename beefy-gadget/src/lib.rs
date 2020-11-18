@@ -213,7 +213,7 @@ where
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<Block>) {
-		info!(target: "beefy", "Finality notification: {:?}", notification);
+		info!(target: "beefy", "🥩 Finality notification: {:?}", notification);
 
 		if self.should_vote_on(*notification.header.number()) {
 			let signature = match SyncCryptoStore::sign_with(
@@ -243,6 +243,7 @@ where
 			self.gossip_engine
 				.lock()
 				.gossip_message(topic::<Block>(), message.encode(), false);
+
 			debug!(target: "beefy", "Sent vote message: {:?}", message);
 
 			self.handle_vote(message.block, (message.id, message.signature));
@@ -255,7 +256,7 @@ where
 		// TODO: validate signature
 		let vote_added = self.rounds.add_vote(round, vote);
 		if vote_added && self.rounds.is_done(&round) {
-			info!(target: "beefy", "Round {:?} concluded.", round);
+			info!(target: "beefy", "🥩 Round {:?} concluded.", round);
 			self.rounds.drop(&round);
 		}
 	}
@@ -350,11 +351,11 @@ pub async fn start_beefy_gadget<Block, Backend, Client, Network, SyncOracle>(
 		.find(|id| SyncCryptoStore::has_keys(&*key_store, &[(id.to_raw_vec(), KEY_TYPE)]))
 	{
 		Some(id) => {
-			info!(target: "beefy", "Starting BEEFY worker with local id: {:?}", id);
+			info!(target: "beefy", "🥩 Starting BEEFY worker with local id: {:?}", id);
 			id.clone()
 		}
 		None => {
-			info!(target: "beefy", "No local id found, not starting BEEFY worker.");
+			info!(target: "beefy", "🥩 No local id found, not starting BEEFY worker.");
 			return futures::future::pending().await;
 		}
 	};
