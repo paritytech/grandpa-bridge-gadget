@@ -54,7 +54,7 @@ impl<T: Trait> Module<T> {
 		let log: DigestItem<T::Hash> =
 			DigestItem::Consensus(BEEFY_ENGINE_ID, ConsensusLog::AuthoritiesChange(new).encode());
 
-		<frame_system::Module<T>>::deposit_log(log.into());
+		<frame_system::Module<T>>::deposit_log(log);
 	}
 
 	fn initialize_authorities(authorities: &[T::AuthorityId]) {
@@ -102,7 +102,7 @@ impl<T: Trait> pallet_session::OneSessionHandler<T::AccountId> for Module<T> {
 			ConsensusLog::<T::AuthorityId>::OnDisabled(i as AuthorityIndex).encode(),
 		);
 
-		<frame_system::Module<T>>::deposit_log(log.into());
+		<frame_system::Module<T>>::deposit_log(log);
 	}
 }
 
