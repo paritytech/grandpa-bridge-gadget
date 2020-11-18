@@ -11,6 +11,9 @@ sp-application-crypto = { git = "https://github.com/paritytech/substrate", branc
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
 
+[dev-dependencies]
+hex-literal = "0.3"
+
 [features]
 default = ["std"]
 std = [
