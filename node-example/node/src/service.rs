@@ -142,11 +142,17 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		let client = client.clone();
 		let pool = transaction_pool.clone();
 
-		Box::new(move |deny_unsafe, _| {
+		Box::new(move |deny_unsafe, subscription_executor| {
+			let beefy = crate::rpc::BeefyDeps {
+				signed_commitment_stream: signed_commitment_stream.clone(),
+				subscription_executor,
+			};
+
 			let deps = crate::rpc::FullDeps {
 				client: client.clone(),
 				pool: pool.clone(),
 				deny_unsafe,
+				beefy,
 			};
 
 			crate::rpc::create_full(deps)

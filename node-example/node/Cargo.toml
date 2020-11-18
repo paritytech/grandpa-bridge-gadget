@@ -25,6 +25,7 @@ structopt = "0.3.20"
 # local dependencies
 beefy-primitives = { version = "0.1.0", path = "../../primitives" }
 beefy-gadget = { version = "0.1.0", path = "../../beefy-gadget" }
+beefy-gadget-rpc = { version = "0.1.0", path = "../../beefy-gadget/rpc" }
 node-template-runtime = { path = "../runtime", version = "2.0.0" }
 
 # Substrate dependencies
