@@ -16,7 +16,7 @@ use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
 use sp_runtime::traits::{
-	BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, NumberFor, Saturating, Verify, Keccak256
+	BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, Keccak256, NumberFor, Saturating, Verify,
 };
 use sp_runtime::{
 	create_runtime_str, generic, impl_opaque_keys,
@@ -279,10 +279,7 @@ type MmrHash = <Keccak256 as sp_runtime::traits::Hash>::Output;
 pub struct DepositLog;
 impl pallet_mmr::primitives::OnNewRoot<MmrHash> for DepositLog {
 	fn on_new_root(root: &Hash) -> Weight {
-		let digest = DigestItem::Consensus(
-			BEEFY_CONSENSUS_ID,
-			codec::Encode::encode(root),
-		);
+		let digest = DigestItem::Consensus(BEEFY_CONSENSUS_ID, codec::Encode::encode(root));
 		<frame_system::Module<Runtime>>::deposit_log(digest);
 
 		<Runtime as frame_system::Trait>::DbWeight::get().writes(1)
