@@ -26,7 +26,7 @@ use parking_lot::Mutex;
 
 use beefy_primitives::{
 	ecdsa::{AuthorityId, AuthoritySignature},
-	BEEFY_ENGINE_ID, KEY_TYPE,
+	BeefyApi, BEEFY_ENGINE_ID, KEY_TYPE,
 };
 
 use sc_client_api::{Backend as BackendT, BlockchainEvents, FinalityNotification, Finalizer};
@@ -34,7 +34,7 @@ use sc_network_gossip::{
 	GossipEngine, Network as GossipNetwork, ValidationResult as GossipValidationResult, Validator as GossipValidator,
 	ValidatorContext as GossipValidatorContext,
 };
-use sp_application_crypto::Ss58Codec;
+use sp_api::{BlockId, ProvideRuntimeApi};
 use sp_blockchain::HeaderBackend;
 use sp_consensus::SyncOracle as SyncOracleT;
 use sp_core::Public;
@@ -306,7 +306,13 @@ pub async fn start_beefy_gadget<Block, Backend, Client, Network, SyncOracle>(
 ) where
 	Block: BlockT,
 	Backend: BackendT<Block>,
-	Client: BlockchainEvents<Block> + HeaderBackend<Block> + Finalizer<Block, Backend> + Send + Sync,
+	Client: BlockchainEvents<Block>
+		+ HeaderBackend<Block>
+		+ Finalizer<Block, Backend>
+		+ ProvideRuntimeApi<Block>
+		+ Send
+		+ Sync,
+	Client::Api: BeefyApi<Block, AuthorityId>,
 	Network: GossipNetwork<Block> + Clone + Send + 'static,
 	SyncOracle: SyncOracleT + Send + 'static,
 {
@@ -319,32 +325,11 @@ pub async fn start_beefy_gadget<Block, Backend, Client, Network, SyncOracle>(
 		}),
 	);
 
-	// ECDSA KEYS
-	// Secret phrase `history unique love spell mixed scrub expose retreat lawn jungle envelope spoon` is account:
-	// Secret seed:      0x996ed8439b50c50a94e5ca2254cde3d6d310f2babe39697fa51eb1bc65649fdb
-	// Public key (hex): 0x026a47a82cd7f0655a3bc9108fcf87c7ec444c5e2e7d44b826d9467635fe9b147e
-	// Account ID:       0xcba579b19a7e89087144c98b259d74465016f064ec2be5f45f2a632c2ffc1b14
-	// SS58 Address:     5GfijY8EJs724J7uujqqpNtJ4R4sUZxHTSGn4zMczaLt95eY
-	//
-	// curl -H 'Content-Type: application/json' --data '{"id":1,"jsonrpc":"2.0","method":"author_insertKey","params":["beef","0x996ed8439b50c50a94e5ca2254cde3d6d310f2babe39697fa51eb1bc65649fdb","0x026a47a82cd7f0655a3bc9108fcf87c7ec444c5e2e7d44b826d9467635fe9b147e"]}' http://localhost:9933
-	//
-	// Secret phrase `cage olympic bone detect control alert side off proud lucky rotate turkey` is account:
-	// Secret seed:      0x99eac69a6545d4c454c54232d8afe47dc16a8483b9d155663f52b7ccabe0d284
-	// Public key (hex): 0x03df6630e91b0309fa0986fcf52f83fcf437091c58534bd2f398d6e9aeb475de82
-	// Account ID:       0xa9b4c177c0d11d97a7123553d90f4ba265461c1217f544c2e787400c4a7478d6
-	// SS58 Address:     5FuDePC3XmirUqSvjxziwZzop4vVN8pBkzszdabQ8Pj7oRCW
-	//
-	// curl -H 'Content-Type: application/json' --data '{"id":1,"jsonrpc":"2.0","method":"author_insertKey","params":["beef","0x99eac69a6545d4c454c54232d8afe47dc16a8483b9d155663f52b7ccabe0d284","0x03df6630e91b0309fa0986fcf52f83fcf437091c58534bd2f398d6e9aeb475de82"]}' http://localhost:9933
-
-	let voters = vec![
-		"0x026a47a82cd7f0655a3bc9108fcf87c7ec444c5e2e7d44b826d9467635fe9b147e",
-		"0x03df6630e91b0309fa0986fcf52f83fcf437091c58534bd2f398d6e9aeb475de82",
-	];
-
-	let voters = voters
-		.into_iter()
-		.map(|address| AuthorityId::from_string(address).unwrap())
-		.collect::<Vec<_>>();
+	let at = BlockId::hash(client.info().best_hash);
+	let voters = client
+		.runtime_api()
+		.authorities(&at)
+		.expect("Failed to get BEEFY authorities");
 
 	let local_id = match voters
 		.iter()

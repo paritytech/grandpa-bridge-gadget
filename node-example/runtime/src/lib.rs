@@ -432,6 +432,12 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl beefy_primitives::BeefyApi<Block, BeefyId> for Runtime {
+		fn authorities() -> Vec<BeefyId> {
+			Beefy::authorities()
+		}
+	}
+
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
 			System::account_nonce(account)

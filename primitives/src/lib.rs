@@ -79,3 +79,11 @@ pub enum ConsensusLog<AuthorityId: Codec> {
 	#[codec(index = "2")]
 	OnDisabled(AuthorityIndex),
 }
+
+sp_api::decl_runtime_apis! {
+	/// API necessary for BEEFY voters.
+	pub trait BeefyApi<AuthorityId: Codec> {
+		/// Return the current set of authorities.
+		fn authorities() -> Vec<AuthorityId>;
+	}
+}

@@ -406,6 +406,7 @@ dependencies = [
  "sc-keystore",
  "sc-network",
  "sc-network-gossip",
+ "sp-api",
  "sp-application-crypto",
  "sp-blockchain",
  "sp-consensus",
@@ -434,6 +435,7 @@ version = "0.1.0"
 dependencies = [
  "hex-literal",
  "parity-scale-codec",
+ "sp-api",
  "sp-application-crypto",
  "sp-runtime",
  "sp-std",
