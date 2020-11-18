@@ -15,7 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use std::collections::BTreeMap;
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use std::fmt::Debug;
 use std::sync::Arc;
 
@@ -24,10 +24,7 @@ use futures::{future, FutureExt, Stream, StreamExt};
 use log::{debug, error, info, trace, warn};
 use parking_lot::Mutex;
 
-use beefy_primitives::{
-	ecdsa::{AuthorityId, AuthoritySignature},
-	BeefyApi, Commitment, SignedCommitment, BEEFY_ENGINE_ID, KEY_TYPE,
-};
+use beefy_primitives::{BeefyApi, Commitment, SignedCommitment, BEEFY_ENGINE_ID, KEY_TYPE};
 
 use sc_client_api::{Backend as BackendT, BlockchainEvents, FinalityNotification, Finalizer};
 use sc_network_gossip::{
@@ -35,11 +32,15 @@ use sc_network_gossip::{
 	ValidatorContext as GossipValidatorContext,
 };
 use sp_api::{BlockId, ProvideRuntimeApi};
+use sp_application_crypto::{AppPublic, Public};
 use sp_blockchain::HeaderBackend;
 use sp_consensus::SyncOracle as SyncOracleT;
-use sp_core::Public;
 use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
 use sp_runtime::traits::{Block as BlockT, Hash as HashT, Header as HeaderT, NumberFor, Zero};
+
+pub mod notification;
+
+use notification::BeefySignedCommitmentSender;
 
 pub const BEEFY_PROTOCOL_NAME: &str = "/paritytech/beefy/1";
 
@@ -167,6 +168,7 @@ struct BeefyWorker<Block: BlockT, Id, Signature, FinalityNotifications> {
 	rounds: Rounds<Block::Hash, NumberFor<Block>, Id, Signature>,
 	finality_notifications: FinalityNotifications,
 	gossip_engine: Arc<Mutex<GossipEngine<Block>>>,
+	signed_commitment_sender: BeefySignedCommitmentSender<Block, Signature>,
 	best_finalized_block: NumberFor<Block>,
 	best_block_voted_on: NumberFor<Block>,
 }
@@ -181,6 +183,7 @@ where
 		authorities: Vec<Id>,
 		finality_notifications: FinalityNotifications,
 		gossip_engine: GossipEngine<Block>,
+		signed_commitment_sender: BeefySignedCommitmentSender<Block, Signature>,
 		best_finalized_block: NumberFor<Block>,
 		best_block_voted_on: NumberFor<Block>,
 	) -> Self {
@@ -191,6 +194,7 @@ where
 			rounds: Rounds::new(authorities),
 			finality_notifications,
 			gossip_engine: Arc::new(Mutex::new(gossip_engine)),
+			signed_commitment_sender,
 			best_finalized_block,
 			best_block_voted_on,
 		}
@@ -291,6 +295,8 @@ where
 				let signed_commitment = SignedCommitment { commitment, signatures };
 
 				info!(target: "beefy", "🥩 Round #{} concluded, committed: {:?}.", round.1, signed_commitment);
+
+				self.signed_commitment_sender.notify(signed_commitment);
 			}
 		}
 	}
@@ -335,13 +341,17 @@ where
 	}
 }
 
-pub async fn start_beefy_gadget<Block, Backend, Client, Network, SyncOracle>(
+pub async fn start_beefy_gadget<Block, Pair, Backend, Client, Network, SyncOracle>(
 	client: Arc<Client>,
 	key_store: SyncCryptoStorePtr,
 	network: Network,
+	signed_commitment_sender: BeefySignedCommitmentSender<Block, Pair::Signature>,
 	_sync_oracle: SyncOracle,
 ) where
 	Block: BlockT,
+	Pair: sp_core::Pair,
+	Pair::Public: AppPublic + Codec,
+	Pair::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
 	Backend: BackendT<Block>,
 	Client: BlockchainEvents<Block>
 		+ HeaderBackend<Block>
@@ -349,7 +359,7 @@ pub async fn start_beefy_gadget<Block, Backend, Client, Network, SyncOracle>(
 		+ ProvideRuntimeApi<Block>
 		+ Send
 		+ Sync,
-	Client::Api: BeefyApi<Block, AuthorityId>,
+	Client::Api: BeefyApi<Block, Pair::Public>,
 	Network: GossipNetwork<Block> + Clone + Send + 'static,
 	SyncOracle: SyncOracleT + Send + 'static,
 {
@@ -385,12 +395,13 @@ pub async fn start_beefy_gadget<Block, Backend, Client, Network, SyncOracle>(
 	let best_finalized_block = client.info().finalized_number;
 	let best_block_voted_on = Zero::zero();
 
-	let worker = BeefyWorker::<_, AuthorityId, AuthoritySignature, _>::new(
-		local_id,
+	let worker = BeefyWorker::<_, Pair::Public, Pair::Signature, _>::new(
+		local_id.clone(),
 		key_store,
 		authorities,
 		client.finality_notification_stream(),
 		gossip_engine,
+		signed_commitment_sender,
 		best_finalized_block,
 		best_block_voted_on,
 	);

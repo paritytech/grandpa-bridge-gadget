@@ -413,6 +413,7 @@ dependencies = [
  "sp-core",
  "sp-keystore",
  "sp-runtime",
+ "sp-utils",
 ]
 
 [[package]]
