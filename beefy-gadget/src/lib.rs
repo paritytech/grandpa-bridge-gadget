@@ -24,6 +24,8 @@ use futures::{future, FutureExt, Stream, StreamExt};
 use log::{debug, error, info, trace, warn};
 use parking_lot::Mutex;
 
+use beefy_primitives::{AuthorityId, AuthoritySignature, BEEFY_ENGINE_ID, KEY_TYPE};
+
 use sc_client_api::{Backend as BackendT, BlockchainEvents, FinalityNotification, Finalizer};
 use sc_network_gossip::{
 	GossipEngine, Network as GossipNetwork, ValidationResult as GossipValidationResult, Validator as GossipValidator,
@@ -34,32 +36,9 @@ use sp_blockchain::HeaderBackend;
 use sp_consensus::SyncOracle as SyncOracleT;
 use sp_core::Public;
 use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
-use sp_runtime::{
-	traits::{Block as BlockT, Hash as HashT, Header as HeaderT, NumberFor, Zero},
-	ConsensusEngineId, KeyTypeId,
-};
+use sp_runtime::traits::{Block as BlockT, Hash as HashT, Header as HeaderT, NumberFor, Zero};
 
-pub const BEEFY_ENGINE_ID: ConsensusEngineId = *b"BEEF";
 pub const BEEFY_PROTOCOL_NAME: &str = "/paritytech/beefy/1";
-
-/// Key type for BEEFY module.
-pub const KEY_TYPE: KeyTypeId = KeyTypeId(*b"beef");
-
-mod app {
-	use sp_application_crypto::{app_crypto, ecdsa};
-	app_crypto!(ecdsa, super::KEY_TYPE);
-}
-
-sp_application_crypto::with_pair! {
-	/// The BEEFY crypto scheme defined via the keypair type.
-	pub type AuthorityPair = app::Pair;
-}
-
-/// Identity of a BEEFY authority.
-pub type AuthorityId = app::Public;
-
-/// Signature for a BEEFY authority.
-pub type AuthoritySignature = app::Signature;
 
 /// Allows all gossip messages to get through.
 struct AllowAll<Hash> {

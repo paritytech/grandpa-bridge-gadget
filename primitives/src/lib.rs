@@ -32,7 +32,29 @@
 mod commitment;
 pub mod witness;
 
+pub use commitment::{Commitment, SignedCommitment};
+
+/// Key type for BEEFY module.
+pub const KEY_TYPE: sp_application_crypto::KeyTypeId = sp_application_crypto::KeyTypeId(*b"beef");
+
+mod app {
+	use sp_application_crypto::{app_crypto, ecdsa};
+	app_crypto!(ecdsa, super::KEY_TYPE);
+}
+
+sp_application_crypto::with_pair! {
+	/// The BEEFY crypto scheme defined via the keypair type.
+	pub type AuthorityPair = app::Pair;
+}
+
+/// Identity of a BEEFY authority.
+pub type AuthorityId = app::Public;
+
+/// Signature for a BEEFY authority.
+pub type AuthoritySignature = app::Signature;
+
+/// The `ConsensusEngineId` of BEEFY.
+pub const BEEFY_ENGINE_ID: sp_runtime::ConsensusEngineId = *b"BEEF";
+
 /// A typedef for validator set id.
 pub type ValidatorSetId = u64;
-
-pub use commitment::{Commitment, SignedCommitment};
