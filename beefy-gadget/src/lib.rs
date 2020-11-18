@@ -24,7 +24,10 @@ use futures::{future, FutureExt, Stream, StreamExt};
 use log::{debug, error, info, trace, warn};
 use parking_lot::Mutex;
 
-use beefy_primitives::{AuthorityId, AuthoritySignature, BEEFY_ENGINE_ID, KEY_TYPE};
+use beefy_primitives::{
+	ecdsa::{AuthorityId, AuthoritySignature},
+	BEEFY_ENGINE_ID, KEY_TYPE,
+};
 
 use sc_client_api::{Backend as BackendT, BlockchainEvents, FinalityNotification, Finalizer};
 use sc_network_gossip::{

@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 
 //! Primitives for BEEFY protocol.
@@ -34,24 +35,30 @@ pub mod witness;
 
 pub use commitment::{Commitment, SignedCommitment};
 
+use codec::{Codec, Decode, Encode};
+use sp_std::prelude::*;
+
 /// Key type for BEEFY module.
 pub const KEY_TYPE: sp_application_crypto::KeyTypeId = sp_application_crypto::KeyTypeId(*b"beef");
 
-mod app {
-	use sp_application_crypto::{app_crypto, ecdsa};
-	app_crypto!(ecdsa, super::KEY_TYPE);
+/// BEEFY application-specific crypto types using ECDSA.
+pub mod ecdsa {
+	mod app_ecdsa {
+		use sp_application_crypto::{app_crypto, ecdsa};
+		app_crypto!(ecdsa, crate::KEY_TYPE);
+	}
+
+	sp_application_crypto::with_pair! {
+		/// A BEEFY authority keypair using ECDSA as its crypto.
+		pub type AuthorityPair = app_ecdsa::Pair;
+	}
+
+	/// Identity of a BEEFY authority using ECDSA as its crypto.
+	pub type AuthorityId = app_ecdsa::Public;
+
+	/// Signature for a BEEFY authority using ECDSA as its crypto.
+	pub type AuthoritySignature = app_ecdsa::Signature;
 }
-
-sp_application_crypto::with_pair! {
-	/// The BEEFY crypto scheme defined via the keypair type.
-	pub type AuthorityPair = app::Pair;
-}
-
-/// Identity of a BEEFY authority.
-pub type AuthorityId = app::Public;
-
-/// Signature for a BEEFY authority.
-pub type AuthoritySignature = app::Signature;
 
 /// The `ConsensusEngineId` of BEEFY.
 pub const BEEFY_ENGINE_ID: sp_runtime::ConsensusEngineId = *b"BEEF";
