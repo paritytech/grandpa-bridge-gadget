@@ -30,7 +30,7 @@ sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master
 [features]
 default = ['std']
 std = [
-    'codec/std',
-    'frame-support/std',
-    'frame-system/std',
+	'codec/std',
+	'frame-support/std',
+	'frame-system/std',
 ]
