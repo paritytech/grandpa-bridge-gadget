@@ -20,6 +20,8 @@ use serde::{Deserialize, Serialize};
 use sp_runtime::traits::Block as BlockT;
 
 /// An encoded signed commitment proving that the given header has been finalized.
+/// The given bytes should be the SCALE-encoded representation of a
+/// `beefy_primitives::SignedCommitment`.
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SignedCommitment(sp_core::Bytes);
 
