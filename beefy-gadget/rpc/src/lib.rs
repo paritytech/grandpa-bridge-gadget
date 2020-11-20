@@ -102,8 +102,7 @@ where
 			.compat();
 
 		self.manager.add(subscriber, |sink| {
-			#[allow(clippy::redundant_closure)]
-			let stream = stream.map(|res| Ok(res));
+			let stream = stream.map(Ok);
 			sink.sink_map_err(|e| warn!("Error sending notifications: {:?}", e))
 				.send_all(stream)
 				.map(|_| ())
