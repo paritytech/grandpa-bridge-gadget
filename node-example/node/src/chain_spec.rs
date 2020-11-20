@@ -151,7 +151,7 @@ fn testnet_genesis(
 		pallet_grandpa: Some(GrandpaConfig {
 			authorities: initial_authorities.iter().map(|x| (x.1.clone(), 1)).collect(),
 		}),
-		beefy_pallet: Some(BeefyConfig {
+		pallet_beefy: Some(BeefyConfig {
 			authorities: initial_authorities.iter().map(|x| (x.2.clone())).collect(),
 		}),
 		pallet_sudo: Some(SudoConfig {
