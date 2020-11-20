@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+#![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
+// NOTE: needed to silence warnings about generated code in `decl_runtime_apis`
+#![allow(clippy::too_many_arguments, clippy::unnecessary_mut_passed)]
 
 //! Primitives for BEEFY protocol.
 //!
@@ -32,7 +35,57 @@
 mod commitment;
 pub mod witness;
 
+pub use commitment::{Commitment, SignedCommitment};
+
+use codec::{Codec, Decode, Encode};
+use sp_std::prelude::*;
+
+/// Key type for BEEFY module.
+pub const KEY_TYPE: sp_application_crypto::KeyTypeId = sp_application_crypto::KeyTypeId(*b"beef");
+
+/// BEEFY application-specific crypto types using ECDSA.
+pub mod ecdsa {
+	mod app_ecdsa {
+		use sp_application_crypto::{app_crypto, ecdsa};
+		app_crypto!(ecdsa, crate::KEY_TYPE);
+	}
+
+	sp_application_crypto::with_pair! {
+		/// A BEEFY authority keypair using ECDSA as its crypto.
+		pub type AuthorityPair = app_ecdsa::Pair;
+	}
+
+	/// Identity of a BEEFY authority using ECDSA as its crypto.
+	pub type AuthorityId = app_ecdsa::Public;
+
+	/// Signature for a BEEFY authority using ECDSA as its crypto.
+	pub type AuthoritySignature = app_ecdsa::Signature;
+}
+
+/// The `ConsensusEngineId` of BEEFY.
+pub const BEEFY_ENGINE_ID: sp_runtime::ConsensusEngineId = *b"BEEF";
+
 /// A typedef for validator set id.
 pub type ValidatorSetId = u64;
 
-pub use commitment::{Commitment, SignedCommitment};
+/// The index of an authority.
+pub type AuthorityIndex = u32;
+
+/// A consensus log item for BEEFY.
+#[derive(Decode, Encode)]
+pub enum ConsensusLog<AuthorityId: Codec> {
+	/// The authorities have changed.
+	#[codec(index = "1")]
+	AuthoritiesChange(Vec<AuthorityId>),
+	/// Disable the authority with given index.
+	#[codec(index = "2")]
+	OnDisabled(AuthorityIndex),
+}
+
+sp_api::decl_runtime_apis! {
+	/// API necessary for BEEFY voters.
+	pub trait BeefyApi<AuthorityId: Codec> {
+		/// Return the current set of authorities.
+		fn authorities() -> Vec<AuthorityId>;
+	}
+}

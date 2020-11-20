@@ -14,8 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use sp_std::{cmp, prelude::*};
+
 use crate::ValidatorSetId;
-use core::cmp;
 
 /// A commitment signed by GRANDPA validators as part of BEEFY protocol.
 ///

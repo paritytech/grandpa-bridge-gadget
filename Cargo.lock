@@ -397,6 +397,7 @@ checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 name = "beefy-gadget"
 version = "0.1.0"
 dependencies = [
+ "beefy-primitives",
  "futures 0.3.8",
  "log",
  "parity-scale-codec",
@@ -405,6 +406,7 @@ dependencies = [
  "sc-keystore",
  "sc-network",
  "sc-network-gossip",
+ "sp-api",
  "sp-application-crypto",
  "sp-blockchain",
  "sp-consensus",
@@ -419,6 +421,10 @@ version = "0.1.0"
 dependencies = [
  "hex-literal",
  "parity-scale-codec",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -3457,6 +3463,7 @@ name = "node-template"
 version = "2.0.0"
 dependencies = [
  "beefy-gadget",
+ "beefy-primitives",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
@@ -3492,6 +3499,7 @@ dependencies = [
 name = "node-template-runtime"
 version = "2.0.0"
 dependencies = [
+ "beefy-primitives",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -3501,6 +3509,7 @@ dependencies = [
  "hex-literal",
  "pallet-aura",
  "pallet-balances",
+ "pallet-beefy",
  "pallet-grandpa",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
@@ -3719,6 +3728,20 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-beefy"
+version = "0.1.0"
+dependencies = [
+ "beefy-primitives",
+ "frame-support",
+ "frame-system",
+ "pallet-session",
  "parity-scale-codec",
  "serde",
  "sp-runtime",
