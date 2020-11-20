@@ -234,6 +234,8 @@ where
 		debug!(target: "beefy", "🥩 Finality notification: {:?}", notification);
 
 		if self.should_vote_on(*notification.header.number()) {
+			// TODO: this needs to be properly populated by signing an MMR root as the payload
+			// (and/or abstracting the "thing to sign") and with support for validator set changes.
 			let commitment = Commitment {
 				payload: notification.header.hash(),
 				block_number: notification.header.number(),
@@ -286,6 +288,8 @@ where
 
 		if vote_added && self.rounds.is_done(&round) {
 			if let Some(signatures) = self.rounds.drop(&round) {
+				// TODO: this needs to be properly populated by signing an MMR root as the payload
+				// (and/or abstracting the "thing to sign") and with support for validator set changes.
 				let commitment = Commitment {
 					payload: round.0,
 					block_number: round.1,
