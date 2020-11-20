@@ -437,20 +437,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "beefy-pallet"
-version = "0.1.0"
-dependencies = [
- "beefy-primitives",
- "frame-support",
- "frame-system",
- "pallet-session",
- "parity-scale-codec",
- "serde",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "beefy-primitives"
 version = "0.1.0"
 dependencies = [
@@ -3535,7 +3521,6 @@ dependencies = [
 name = "node-template-runtime"
 version = "2.0.0"
 dependencies = [
- "beefy-pallet",
  "beefy-primitives",
  "frame-benchmarking",
  "frame-executive",
@@ -3546,6 +3531,7 @@ dependencies = [
  "hex-literal",
  "pallet-aura",
  "pallet-balances",
+ "pallet-beefy",
  "pallet-grandpa",
  "pallet-randomness-collective-flip",
  "pallet-sudo",
@@ -3764,6 +3750,20 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-beefy"
+version = "0.1.0"
+dependencies = [
+ "beefy-primitives",
+ "frame-support",
+ "frame-system",
+ "pallet-session",
  "parity-scale-codec",
  "serde",
  "sp-runtime",
