@@ -22,6 +22,8 @@
 //! verification. This allows lowering the data and computation cost of verifying the
 //! signed commitment.
 
+use sp_std::prelude::*;
+
 use crate::commitment::{Commitment, SignedCommitment};
 
 /// A light form of [SignedCommitment].

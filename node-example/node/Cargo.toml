@@ -1,30 +1,31 @@
 [package]
-authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
-build = 'build.rs'
-description = 'A fresh FRAME-based Substrate node, ready for hacking.'
-edition = '2018'
-homepage = 'https://substrate.dev'
-license = 'Unlicense'
-name = 'node-template'
-repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
-version = '2.0.0'
+authors = ["Substrate DevHub <https://github.com/substrate-developer-hub>"]
+build = "build.rs"
+description = "A fresh FRAME-based Substrate node, ready for hacking."
+edition = "2018"
+homepage = "https://substrate.dev"
+license = "Unlicense"
+name = "node-template"
+repository = "https://github.com/substrate-developer-hub/substrate-node-template/"
+version = "2.0.0"
 
 [[bin]]
-name = 'node-template'
+name = "node-template"
 
 [package.metadata.docs.rs]
-targets = ['x86_64-unknown-linux-gnu']
+targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies]
 substrate-build-script-utils = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
 
 [dependencies]
-jsonrpc-core = '15.0.0'
-structopt = '0.3.20'
+jsonrpc-core = "15.0.0"
+structopt = "0.3.20"
 
 # local dependencies
-beefy-gadget = { version = '0.1.0', path = '../../beefy-gadget' }
-node-template-runtime = { path = '../runtime', version = '2.0.0' }
+beefy-primitives = { version = "0.1.0", path = "../../primitives" }
+beefy-gadget = { version = "0.1.0", path = "../../beefy-gadget" }
+node-template-runtime = { path = "../runtime", version = "2.0.0" }
 
 # Substrate dependencies
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
@@ -55,4 +56,4 @@ substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate", 
 
 [features]
 default = []
-runtime-benchmarks = ['node-template-runtime/runtime-benchmarks']
+runtime-benchmarks = ["node-template-runtime/runtime-benchmarks"]
