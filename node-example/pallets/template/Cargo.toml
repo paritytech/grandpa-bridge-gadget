@@ -19,13 +19,13 @@ package = "parity-scale-codec"
 version = "1.3.4"
 
 [dependencies]
-frame-support = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-frame-system = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+frame-support = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "td-mmr" }
+frame-system = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "td-mmr" }
 
 [dev-dependencies]
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-sp-io = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master", default-features = false }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "td-mmr" }
+sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "td-mmr" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "td-mmr" }
 
 [features]
 default = ["std"]

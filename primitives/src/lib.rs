@@ -38,6 +38,7 @@ pub mod witness;
 pub use commitment::{Commitment, SignedCommitment};
 
 use codec::{Codec, Decode, Encode};
+use sp_core::H256;
 use sp_std::prelude::*;
 
 /// Key type for BEEFY module.
@@ -80,6 +81,9 @@ pub enum ConsensusLog<AuthorityId: Codec> {
 	/// Disable the authority with given index.
 	#[codec(index = "2")]
 	OnDisabled(AuthorityIndex),
+	/// MMR root hash.
+	#[codec(index = "2")]
+	MmrRoot(H256),
 }
 
 sp_api::decl_runtime_apis! {
