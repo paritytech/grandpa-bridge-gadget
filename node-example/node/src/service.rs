@@ -135,15 +135,24 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 	let prometheus_registry = config.prometheus_registry().cloned();
 	let telemetry_connection_sinks = sc_service::TelemetryConnectionSinks::default();
 
+	let (signed_commitment_sender, signed_commitment_stream) =
+		beefy_gadget::notification::BeefySignedCommitmentStream::channel();
+
 	let rpc_extensions_builder = {
 		let client = client.clone();
 		let pool = transaction_pool.clone();
 
-		Box::new(move |deny_unsafe, _| {
+		Box::new(move |deny_unsafe, subscription_executor| {
+			let beefy = crate::rpc::BeefyDeps {
+				signed_commitment_stream: signed_commitment_stream.clone(),
+				subscription_executor,
+			};
+
 			let deps = crate::rpc::FullDeps {
 				client: client.clone(),
 				pool: pool.clone(),
 				deny_unsafe,
+				beefy,
 			};
 
 			crate::rpc::create_full(deps)
@@ -197,10 +206,11 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		// Start the BEEFY bridge gadget.
 		task_manager.spawn_essential_handle().spawn_blocking(
 			"beefy-gadget",
-			beefy_gadget::start_beefy_gadget(
+			beefy_gadget::start_beefy_gadget::<_, beefy_primitives::ecdsa::AuthorityPair, _, _, _, _>(
 				client,
 				keystore_container.sync_keystore(),
 				network.clone(),
+				signed_commitment_sender,
 				network.clone(),
 			),
 		);

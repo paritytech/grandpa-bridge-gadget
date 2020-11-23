@@ -23,7 +23,7 @@ use crate::ValidatorSetId;
 /// The commitment contains a [payload] extracted from the finalized block at height [block_number].
 /// GRANDPA validators collect signatures on commitments and a stream of such signed commitments
 /// (see [SignedCommitment]) forms the BEEFY protocol.
-#[derive(Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
+#[derive(Clone, Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub struct Commitment<TBlockNumber, TPayload> {
 	/// The payload being signed.
 	///
@@ -81,7 +81,7 @@ where
 }
 
 /// A commitment with matching GRANDPA validators' signatures.
-#[derive(Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
+#[derive(Clone, Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
 pub struct SignedCommitment<TBlockNumber, TPayload, TSignature> {
 	/// The commitment signatures are collected for.
 	pub commitment: Commitment<TBlockNumber, TPayload>,

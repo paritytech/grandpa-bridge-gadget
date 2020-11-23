@@ -20,6 +20,7 @@ sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "td-m
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
 sp-keystore = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
+sp-utils = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
 
 sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
 sc-keystore = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
