@@ -39,6 +39,7 @@ pub use commitment::{Commitment, SignedCommitment};
 
 use codec::{Codec, Decode, Encode};
 use sp_std::prelude::*;
+use sp_core::H256;
 
 /// Key type for BEEFY module.
 pub const KEY_TYPE: sp_application_crypto::KeyTypeId = sp_application_crypto::KeyTypeId(*b"beef");
@@ -80,6 +81,9 @@ pub enum ConsensusLog<AuthorityId: Codec> {
 	/// Disable the authority with given index.
 	#[codec(index = "2")]
 	OnDisabled(AuthorityIndex),
+	/// MMR root hash.
+	#[codec(index = "2")]
+	MmrRoot(H256),
 }
 
 sp_api::decl_runtime_apis! {
