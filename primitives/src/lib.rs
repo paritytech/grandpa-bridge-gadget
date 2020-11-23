@@ -38,8 +38,8 @@ pub mod witness;
 pub use commitment::{Commitment, SignedCommitment};
 
 use codec::{Codec, Decode, Encode};
-use sp_std::prelude::*;
 use sp_core::H256;
+use sp_std::prelude::*;
 
 /// Key type for BEEFY module.
 pub const KEY_TYPE: sp_application_crypto::KeyTypeId = sp_application_crypto::KeyTypeId(*b"beef");
