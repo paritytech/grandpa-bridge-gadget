@@ -8,25 +8,41 @@
 use std::sync::Arc;
 
 use node_template_runtime::{opaque::Block, AccountId, Balance, Index};
+use sc_rpc::SubscriptionTaskExecutor;
 pub use sc_rpc_api::DenyUnsafe;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
+use sp_runtime::traits::Block as BlockT;
 use sp_transaction_pool::TransactionPool;
 
+use beefy_gadget::notification::BeefySignedCommitmentStream;
+use beefy_primitives::ecdsa::AuthoritySignature as BeefySignature;
+
+/// Extra dependencies for BEEFY
+pub struct BeefyDeps<B: BlockT> {
+	/// Receives notifications about signed commitments from BEEFY.
+	pub signed_commitment_stream: BeefySignedCommitmentStream<B, BeefySignature>,
+	/// Executor to drive the subscription manager in the BEEFY RPC handler.
+	pub subscription_executor: SubscriptionTaskExecutor,
+}
+
 /// Full client dependencies.
-pub struct FullDeps<C, P> {
+pub struct FullDeps<B: BlockT, C, P> {
 	/// The client instance to use.
 	pub client: Arc<C>,
 	/// Transaction pool instance.
 	pub pool: Arc<P>,
 	/// Whether to deny unsafe calls
 	pub deny_unsafe: DenyUnsafe,
+	/// BEEFY specific dependencies.
+	pub beefy: BeefyDeps<B>,
 }
 
 /// Instantiate all full RPC extensions.
-pub fn create_full<C, P>(deps: FullDeps<C, P>) -> jsonrpc_core::IoHandler<sc_rpc::Metadata>
+pub fn create_full<B, C, P>(deps: FullDeps<B, C, P>) -> jsonrpc_core::IoHandler<sc_rpc::Metadata>
 where
+	B: BlockT,
 	C: ProvideRuntimeApi<Block>,
 	C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
 	C: Send + Sync + 'static,
@@ -43,7 +59,13 @@ where
 		client,
 		pool,
 		deny_unsafe,
+		beefy,
 	} = deps;
+
+	let BeefyDeps {
+		signed_commitment_stream,
+		subscription_executor,
+	} = beefy;
 
 	io.extend_with(SystemApi::to_delegate(FullSystem::new(
 		client.clone(),
@@ -57,6 +79,10 @@ where
 	// `YourRpcStruct` should have a reference to a client, which is needed
 	// to call into the runtime.
 	// `io.extend_with(YourRpcTrait::to_delegate(YourRpcStruct::new(ReferenceToClient, ...)));`
+
+	io.extend_with(beefy_gadget_rpc::BeefyApi::to_delegate(
+		beefy_gadget_rpc::BeefyRpcHandler::new(signed_commitment_stream, subscription_executor),
+	));
 
 	io
 }
