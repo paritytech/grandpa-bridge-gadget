@@ -82,7 +82,7 @@ pub enum ConsensusLog<AuthorityId: Codec> {
 	#[codec(index = "2")]
 	OnDisabled(AuthorityIndex),
 	/// MMR root hash.
-	#[codec(index = "2")]
+	#[codec(index = "3")]
 	MmrRoot(H256),
 }
 

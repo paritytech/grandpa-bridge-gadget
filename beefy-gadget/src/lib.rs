@@ -235,12 +235,13 @@ where
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<Block>) {
-		debug!(target: "beefy", "🥩 Finality notification: {:?}", notification);
+		debug!(target: "beefy", "Finality notification: {:?}", notification);
 
 		if self.should_vote_on(*notification.header.number()) {
 			let mmr_root = if let Some(hash) = find_mmr_root_digest::<Block, Id>(&notification.header) {
 				hash
 			} else {
+				debug!(target: "beefy", "No MMR root digest found for: {:?}", notification.header.hash());
 				return;
 			};
 
