@@ -17,12 +17,12 @@
 use parking_lot::Mutex;
 use std::sync::Arc;
 
-use sp_core::H256;
 use sp_runtime::traits::{Block as BlockT, NumberFor};
 use sp_utils::mpsc::{tracing_unbounded, TracingUnboundedReceiver, TracingUnboundedSender};
 
 /// Stream of signed commitments returned when subscribing.
-pub type SignedCommitment<Block, Signature> = beefy_primitives::SignedCommitment<NumberFor<Block>, H256, Signature>;
+pub type SignedCommitment<Block, Signature> =
+	beefy_primitives::SignedCommitment<NumberFor<Block>, beefy_primitives::MmrRootHash, Signature>;
 
 /// Stream of signed commitments returned when subscribing.
 type SignedCommitmentStream<Block, Signature> = TracingUnboundedReceiver<SignedCommitment<Block, Signature>>;

@@ -24,7 +24,7 @@ use futures::{future, FutureExt, Stream, StreamExt};
 use log::{debug, error, info, trace, warn};
 use parking_lot::Mutex;
 
-use beefy_primitives::{BeefyApi, Commitment, ConsensusLog, SignedCommitment, BEEFY_ENGINE_ID, KEY_TYPE};
+use beefy_primitives::{BeefyApi, Commitment, ConsensusLog, MmrRootHash, SignedCommitment, BEEFY_ENGINE_ID, KEY_TYPE};
 
 use sc_client_api::{Backend as BackendT, BlockchainEvents, FinalityNotification, Finalizer};
 use sc_network_gossip::{
@@ -35,7 +35,6 @@ use sp_api::{BlockId, ProvideRuntimeApi};
 use sp_application_crypto::{AppPublic, Public};
 use sp_blockchain::HeaderBackend;
 use sp_consensus::SyncOracle as SyncOracleT;
-use sp_core::H256;
 use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
 use sp_runtime::{
 	generic::OpaqueDigestItemId,
@@ -169,7 +168,7 @@ struct BeefyWorker<Block: BlockT, Id, Signature, FinalityNotifications> {
 	local_id: Id,
 	key_store: SyncCryptoStorePtr,
 	min_interval: u32,
-	rounds: Rounds<H256, NumberFor<Block>, Id, Signature>,
+	rounds: Rounds<MmrRootHash, NumberFor<Block>, Id, Signature>,
 	finality_notifications: FinalityNotifications,
 	gossip_engine: Arc<Mutex<GossipEngine<Block>>>,
 	signed_commitment_sender: BeefySignedCommitmentSender<Block, Signature>,
@@ -293,7 +292,7 @@ where
 		self.best_finalized_block = *notification.header.number();
 	}
 
-	fn handle_vote(&mut self, round: (H256, NumberFor<Block>), vote: (Id, Signature)) {
+	fn handle_vote(&mut self, round: (MmrRootHash, NumberFor<Block>), vote: (Id, Signature)) {
 		// TODO: validate signature
 		let vote_added = self.rounds.add_vote(round, vote);
 
@@ -322,7 +321,7 @@ where
 			|notification| async move {
 				debug!(target: "beefy", "Got vote message: {:?}", notification);
 
-				VoteMessage::<H256, NumberFor<Block>, Id, Signature>::decode(&mut &notification.message[..]).ok()
+				VoteMessage::<MmrRootHash, NumberFor<Block>, Id, Signature>::decode(&mut &notification.message[..]).ok()
 			},
 		));
 
@@ -425,7 +424,7 @@ pub async fn start_beefy_gadget<Block, Pair, Backend, Client, Network, SyncOracl
 }
 
 /// Extract the MMR root hash from a digest in the given header, if it exists.
-fn find_mmr_root_digest<Block: BlockT, Id>(header: &Block::Header) -> Option<H256>
+fn find_mmr_root_digest<Block: BlockT, Id>(header: &Block::Header) -> Option<MmrRootHash>
 where
 	Id: Codec,
 {
