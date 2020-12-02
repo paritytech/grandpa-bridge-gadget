@@ -72,6 +72,9 @@ pub type ValidatorSetId = u64;
 /// The index of an authority.
 pub type AuthorityIndex = u32;
 
+/// The type used to represent an MMR root hash.
+pub type MmrRootHash = H256;
+
 /// A consensus log item for BEEFY.
 #[derive(Decode, Encode)]
 pub enum ConsensusLog<AuthorityId: Codec> {
@@ -82,8 +85,8 @@ pub enum ConsensusLog<AuthorityId: Codec> {
 	#[codec(index = "2")]
 	OnDisabled(AuthorityIndex),
 	/// MMR root hash.
-	#[codec(index = "2")]
-	MmrRoot(H256),
+	#[codec(index = "3")]
+	MmrRoot(MmrRootHash),
 }
 
 sp_api::decl_runtime_apis! {
