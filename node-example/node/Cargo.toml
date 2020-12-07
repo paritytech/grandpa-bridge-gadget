@@ -20,7 +20,7 @@ substrate-build-script-utils = { git = "https://github.com/paritytech/substrate"
 
 [dependencies]
 jsonrpc-core = "15.0.0"
-structopt = "0.3.20"
+structopt = "0.3.21"
 
 # local dependencies
 beefy-primitives = { version = "0.1.0", path = "../../primitives" }
