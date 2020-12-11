@@ -29,7 +29,6 @@ fn light_client_should_make_progress() {
 			payload: Payload::new(1),
 			block_number: 2,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
 	});
@@ -48,7 +47,6 @@ fn should_verify_mmr_proof() {
 			payload: Payload::new(1),
 			block_number: 2,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
 	})
@@ -70,7 +68,6 @@ fn should_reject_invalid_mmr_proof() {
 			payload: Payload::new(1),
 			block_number: 2,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
 	})
@@ -94,7 +91,6 @@ fn light_client_should_reject_invalid_validator_set() {
 			payload: Payload::new(1),
 			block_number: 1,
 			validator_set_id: 1,
-			is_set_transition_block: false,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
 	});
@@ -115,7 +111,6 @@ fn light_client_should_reject_set_transitions_without_validator_proof() {
 			payload: Payload::new(1),
 			block_number: 1,
 			validator_set_id: 0,
-			is_set_transition_block: true,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
 	});
@@ -135,7 +130,6 @@ fn light_client_should_reject_older_block() {
 			payload: Payload::new(1),
 			block_number: 10,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
 	})
@@ -147,7 +141,6 @@ fn light_client_should_reject_older_block() {
 			payload: Payload::new(1),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
 	});
@@ -167,7 +160,6 @@ fn light_client_should_reject_if_not_enough_signatures() {
 			payload: Payload::new(1),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		},
 		signatures: vec![None],
 	});
@@ -194,7 +186,6 @@ fn light_client_should_reject_if_too_many_or_too_little_signatures() {
 			payload: Payload::new(1),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		},
 		signatures: vec![None, None],
 	});
@@ -203,7 +194,6 @@ fn light_client_should_reject_if_too_many_or_too_little_signatures() {
 			payload: Payload::new(1),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		},
 		signatures: vec![],
 	});
@@ -224,7 +214,6 @@ fn light_client_should_reject_if_not_enough_valid_signatures() {
 			payload: Payload::new(1),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(1.into()))],
 	});
@@ -245,7 +234,6 @@ fn light_client_should_reject_if_not_enough_valid_signatures() {
 			payload: Payload::new(1),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		},
 		signatures: vec![Some(validator_set::Signature::Invalid)],
 	});
@@ -273,7 +261,6 @@ fn light_client_should_perform_set_transition() {
 			},
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: true,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
 	};
@@ -302,7 +289,6 @@ fn light_client_reject_set_transition_with_invalid_payload() {
 			},
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: true,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
 	};
@@ -314,7 +300,7 @@ fn light_client_reject_set_transition_with_invalid_payload() {
 	);
 
 	// then
-	assert_eq!(result, Err(Error::NoValidatorSetInPayload));
+	assert_eq!(result, Err(Error::MissingNextValidatorSetData));
 }
 
 #[test]
@@ -329,7 +315,6 @@ fn light_client_reject_set_transition_with_invalid_proof() {
 			},
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: true,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
 	};

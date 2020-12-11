@@ -81,25 +81,29 @@ pub enum Error {
 		got: usize,
 		valid: Option<usize>,
 	},
-	/// Validator set is missing in the payload for set transition block.
-	NoValidatorSetInPayload,
+	/// Next validator set has not been provided by any of the previous commitments.
+	MissingNextValidatorSetData,
 	/// Couldn't verify the proof against MMR root of the latest commitment.
 	InvalidMmrProof,
 }
 
 pub struct LightClient {
 	validator_set: (ValidatorSetId, Vec<validator_set::Public>),
+	next_validator_set: Option<merkle_tree::Root<ValidatorSetTree>>,
 	last_commitment: Option<Commitment>,
 }
 
 impl LightClient {
 	pub fn import(&mut self, signed: SignedCommitment) -> Result<(), Error> {
 		// Make sure it's not a set transition block (see [import_set_transition]).
-		if signed.commitment.is_set_transition_block {
+		if signed.commitment.validator_set_id > self.validator_set.0 {
 			return Err(Error::InvalidValidatorSetProof);
 		}
 
 		let commitment = self.validate_commitment(signed)?;
+		if let Some(ref next_validator_set) = commitment.payload.next_validator_set {
+			self.next_validator_set = Some(next_validator_set.clone());
+		}
 		self.last_commitment = Some(commitment);
 
 		Ok(())
@@ -111,18 +115,17 @@ impl LightClient {
 		validator_set_proof: merkle_tree::Proof<ValidatorSetTree, Vec<validator_set::Public>>,
 	) -> Result<(), Error> {
 		// Make sure it is a set transition block (see [import]).
-		if !signed.commitment.is_set_transition_block {
+		if signed.commitment.validator_set_id != self.validator_set.0 + 1 {
 			return Err(Error::InvalidValidatorSetProof);
 		}
 
 		let commitment = self.validate_commitment(signed)?;
 
 		// verify validator set proof
-		let validator_set_root = commitment
-			.payload
+		let validator_set_root = self
 			.next_validator_set
 			.as_ref()
-			.ok_or(Error::NoValidatorSetInPayload)?;
+			.ok_or(Error::MissingNextValidatorSetData)?;
 		if !validator_set_proof.is_valid(validator_set_root) {
 			return Err(Error::InvalidValidatorSetProof);
 		}
@@ -130,6 +133,7 @@ impl LightClient {
 
 		let new_id = self.validator_set.0 + 1;
 		self.validator_set = (new_id, set);
+		self.next_validator_set = commitment.payload.next_validator_set.clone();
 		self.last_commitment = Some(commitment);
 
 		Ok(())
@@ -226,6 +230,7 @@ impl LightClient {
 pub fn new() -> LightClient {
 	LightClient {
 		validator_set: (0, vec![validator_set::Public(0)]),
+		next_validator_set: None,
 		last_commitment: None,
 	}
 }

@@ -22,6 +22,12 @@ pub struct Root<T> {
 	_data: PhantomData<T>,
 }
 
+impl<T> Clone for Root<T> {
+	fn clone(&self) -> Self {
+		Self::new(self.root)
+	}
+}
+
 impl<T> Root<T> {
 	pub fn new(root: u32) -> Self {
 		Self {
