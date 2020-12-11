@@ -27,13 +27,13 @@ use sp_runtime::{
 };
 use sp_std::prelude::*;
 
-pub trait Trait: frame_system::Trait {
+pub trait Config: frame_system::Config {
 	/// The identifier type for an authority.
 	type AuthorityId: Member + Parameter + RuntimeAppPublic + Default;
 }
 
 decl_storage! {
-	trait Store for Module<T: Trait> as Beefy {
+	trait Store for Module<T: Config> as Beefy {
 		/// The current authorities
 		pub Authorities get(fn authorities): Vec<T::AuthorityId>;
 	}
@@ -44,10 +44,10 @@ decl_storage! {
 }
 
 decl_module! {
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin { }
+	pub struct Module<T: Config> for enum Call where origin: T::Origin { }
 }
 
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
 	fn change_authorities(new: Vec<T::AuthorityId>) {
 		<Authorities<T>>::put(&new);
 
@@ -68,11 +68,11 @@ impl<T: Trait> Module<T> {
 	}
 }
 
-impl<T: Trait> sp_runtime::BoundToRuntimeAppPublic for Module<T> {
+impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Module<T> {
 	type Public = T::AuthorityId;
 }
 
-impl<T: Trait> pallet_session::OneSessionHandler<T::AccountId> for Module<T> {
+impl<T: Config> pallet_session::OneSessionHandler<T::AccountId> for Module<T> {
 	type Key = T::AuthorityId;
 
 	fn on_genesis_session<'a, I: 'a>(validators: I)
@@ -106,7 +106,7 @@ impl<T: Trait> pallet_session::OneSessionHandler<T::AccountId> for Module<T> {
 	}
 }
 
-impl<T: Trait> IsMember<T::AuthorityId> for Module<T> {
+impl<T: Config> IsMember<T::AuthorityId> for Module<T> {
 	fn is_member(authority_id: &T::AuthorityId) -> bool {
 		Self::authorities().iter().any(|id| id == authority_id)
 	}
