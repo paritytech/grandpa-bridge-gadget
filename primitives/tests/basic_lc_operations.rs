@@ -116,10 +116,7 @@ fn light_client_should_reject_set_transitions_without_validator_proof() {
 	});
 
 	// then
-	assert_eq!(result, Err(Error::InvalidValidatorSetId {
-		expected: 0,
-		got: 1,
-	}));
+	assert_eq!(result, Err(Error::InvalidValidatorSetId { expected: 0, got: 1 }));
 	assert_eq!(lc.last_commitment(), None);
 }
 
@@ -266,7 +263,8 @@ fn light_client_should_perform_set_transition() {
 			validator_set_id: 0,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
-	}).unwrap();
+	})
+	.unwrap();
 
 	let commitment = SignedCommitment {
 		commitment: Commitment {
@@ -279,7 +277,7 @@ fn light_client_should_perform_set_transition() {
 		},
 		signatures: vec![
 			Some(validator_set::Signature::ValidFor(1.into())),
-			Some(validator_set::Signature::ValidFor(2.into()))
+			Some(validator_set::Signature::ValidFor(2.into())),
 		],
 	};
 
@@ -335,7 +333,8 @@ fn light_client_reject_set_transition_with_invalid_proof() {
 			validator_set_id: 0,
 		},
 		signatures: vec![Some(validator_set::Signature::ValidFor(0.into()))],
-	}).unwrap();
+	})
+	.unwrap();
 	let commitment = SignedCommitment {
 		commitment: Commitment {
 			payload: Payload {
