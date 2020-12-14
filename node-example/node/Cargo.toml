@@ -16,7 +16,7 @@ name = "node-template"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies]
-substrate-build-script-utils = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
+substrate-build-script-utils = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 [dependencies]
 jsonrpc-core = "15.0.0"
@@ -29,31 +29,31 @@ beefy-gadget-rpc = { version = "0.1.0", path = "../../beefy-gadget/rpc" }
 node-template-runtime = { path = "../runtime", version = "2.0.0" }
 
 # Substrate dependencies
-frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-pallet-transaction-payment-rpc = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sc-basic-authorship = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sc-cli = { git = "https://github.com/paritytech/substrate", features = ["wasmtime"], branch = "td-mmr" }
-sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sc-consensus = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sc-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sc-executor = { git = "https://github.com/paritytech/substrate", features = ["wasmtime"], branch = "td-mmr" }
-sc-finality-grandpa = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sc-rpc = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sc-rpc-api = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sc-service = { git = "https://github.com/paritytech/substrate", features = ["wasmtime"], branch = "td-mmr" }
-sc-transaction-pool = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sp-api = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sp-finality-grandpa = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sp-inherents = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-sp-transaction-pool = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
-substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate", branch = "td-mmr" }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "master" }
+frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate", branch = "master" }
+pallet-transaction-payment-rpc = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sc-basic-authorship = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sc-cli = { git = "https://github.com/paritytech/substrate", features = ["wasmtime"], branch = "master" }
+sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sc-consensus = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sc-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sc-executor = { git = "https://github.com/paritytech/substrate", features = ["wasmtime"], branch = "master" }
+sc-finality-grandpa = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sc-rpc = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sc-rpc-api = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sc-service = { git = "https://github.com/paritytech/substrate", features = ["wasmtime"], branch = "master" }
+sc-transaction-pool = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-api = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-finality-grandpa = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-inherents = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-transaction-pool = { git = "https://github.com/paritytech/substrate", branch = "master" }
+substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 [features]
 default = []
