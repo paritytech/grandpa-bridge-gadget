@@ -28,7 +28,11 @@ pub struct Commitment<TBlockNumber, TPayload> {
 	/// The payload being signed.
 	///
 	/// This should be some form of cumulative representation of the chain (think MMR root hash).
-	/// For transition blocks it also MUST contain details of the next validator set.
+	/// The payload should also contain some details that allow the light client to verify next
+	/// validator set. The protocol does not enforce any particular format of this data,
+	/// nor how often it should be present in commitments, however the light client has to be
+	/// provided with full validator set whenever it performs the transition (i.e. importing first
+	/// block with [validator_set_id] incremented).
 	pub payload: TPayload,
 
 	/// Finalized block number this commitment is for.
@@ -38,24 +42,16 @@ pub struct Commitment<TBlockNumber, TPayload> {
 	/// There might be multiple rounds in progress (depending on the block choice rule), however
 	/// since the payload is supposed to be cumulative, it is not required to import all
 	/// commitments.
-	/// BEEFY light client is expected to import at least one commitment per epoch (the one with
-	/// [is_set_transition_block] set), but is free to import as many as it requires.
+	/// BEEFY light client is expected to import at least one commitment per epoch,
+	/// but is free to import as many as it requires.
 	pub block_number: TBlockNumber,
 
 	/// BEEFY validator set supposed to sign this commitment.
 	///
-	/// Validator set is changing once per epoch in the commitment with [is_set_transition_block]
-	/// set to `true`. Such "epoch commitments" MUST provide the light client with details of the
-	/// new validator set as part of the payload. The protocol itself doesn't enforce how these
-	/// details are provided though.
+	/// Validator set is changing once per epoch. The Light Client must be provided by details about
+	/// the validator set whenever it's importing first commitment with a new `validator_set_id`.
+	/// Validator set data MUST be verifiable, for instance using [payload] information.
 	pub validator_set_id: ValidatorSetId,
-
-	/// Indicator of the last block of the epoch.
-	///
-	/// The payload will contain some form of the NEW validator set public keys information,
-	/// yet the block is signed by the current validator set.
-	/// When this commitment is imported, the client MUST increment the `validator_set_id`.
-	pub is_set_transition_block: bool,
 }
 
 impl<TBlockNumber, TPayload> cmp::PartialOrd for Commitment<TBlockNumber, TPayload>
@@ -114,7 +110,6 @@ mod tests {
 			payload: "Hello World!".into(),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		};
 
 		// when
@@ -125,7 +120,7 @@ mod tests {
 		assert_eq!(decoded, Ok(commitment));
 		assert_eq!(
 			encoded,
-			hex_literal::hex!("3048656c6c6f20576f726c642105000000000000000000000000000000000000000000000000")
+			hex_literal::hex!("3048656c6c6f20576f726c6421050000000000000000000000000000000000000000000000")
 		);
 	}
 
@@ -136,7 +131,6 @@ mod tests {
 			payload: "Hello World!".into(),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		};
 		let signed = SignedCommitment {
 			commitment,
@@ -152,7 +146,7 @@ mod tests {
 		assert_eq!(
 			encoded,
 			hex_literal::hex!(
-				"3048656c6c6f20576f726c642105000000000000000000000000000000000000000000000000100000011001020304011005060708"
+				"3048656c6c6f20576f726c6421050000000000000000000000000000000000000000000000100000011001020304011005060708"
 			)
 		);
 	}
@@ -164,7 +158,6 @@ mod tests {
 			payload: "Hello World!".into(),
 			block_number: 5,
 			validator_set_id: 0,
-			is_set_transition_block: false,
 		};
 		let mut signed = SignedCommitment {
 			commitment,
@@ -186,7 +179,6 @@ mod tests {
 				payload: "Hello World!".into(),
 				block_number,
 				validator_set_id,
-				is_set_transition_block: false,
 			}
 		}
 

@@ -81,25 +81,34 @@ pub enum Error {
 		got: usize,
 		valid: Option<usize>,
 	},
-	/// Validator set is missing in the payload for set transition block.
-	NoValidatorSetInPayload,
+	/// Next validator set has not been provided by any of the previous commitments.
+	MissingNextValidatorSetData,
 	/// Couldn't verify the proof against MMR root of the latest commitment.
 	InvalidMmrProof,
 }
 
+type ValidatorSet = (ValidatorSetId, Vec<validator_set::Public>);
+
 pub struct LightClient {
-	validator_set: (ValidatorSetId, Vec<validator_set::Public>),
+	validator_set: ValidatorSet,
+	next_validator_set: Option<merkle_tree::Root<ValidatorSetTree>>,
 	last_commitment: Option<Commitment>,
 }
 
 impl LightClient {
 	pub fn import(&mut self, signed: SignedCommitment) -> Result<(), Error> {
 		// Make sure it's not a set transition block (see [import_set_transition]).
-		if signed.commitment.is_set_transition_block {
-			return Err(Error::InvalidValidatorSetProof);
+		if signed.commitment.validator_set_id != self.validator_set.0 {
+			return Err(Error::InvalidValidatorSetId {
+				expected: self.validator_set.0,
+				got: signed.commitment.validator_set_id,
+			});
 		}
 
-		let commitment = self.validate_commitment(signed)?;
+		let commitment = self.validate_commitment(signed, &self.validator_set)?;
+		if let Some(ref next_validator_set) = commitment.payload.next_validator_set {
+			self.next_validator_set = Some(next_validator_set.clone());
+		}
 		self.last_commitment = Some(commitment);
 
 		Ok(())
@@ -111,25 +120,29 @@ impl LightClient {
 		validator_set_proof: merkle_tree::Proof<ValidatorSetTree, Vec<validator_set::Public>>,
 	) -> Result<(), Error> {
 		// Make sure it is a set transition block (see [import]).
-		if !signed.commitment.is_set_transition_block {
-			return Err(Error::InvalidValidatorSetProof);
+		if signed.commitment.validator_set_id != self.validator_set.0 + 1 {
+			return Err(Error::InvalidValidatorSetId {
+				expected: self.validator_set.0 + 1,
+				got: signed.commitment.validator_set_id,
+			});
 		}
 
-		let commitment = self.validate_commitment(signed)?;
-
 		// verify validator set proof
-		let validator_set_root = commitment
-			.payload
+		let validator_set_root = self
 			.next_validator_set
 			.as_ref()
-			.ok_or(Error::NoValidatorSetInPayload)?;
+			.ok_or(Error::MissingNextValidatorSetData)?;
 		if !validator_set_proof.is_valid(validator_set_root) {
 			return Err(Error::InvalidValidatorSetProof);
 		}
 		let set = validator_set_proof.into_data();
-
 		let new_id = self.validator_set.0 + 1;
-		self.validator_set = (new_id, set);
+		let new_validator_set = (new_id, set);
+
+		let commitment = self.validate_commitment(signed, &new_validator_set)?;
+
+		self.validator_set = new_validator_set;
+		self.next_validator_set = commitment.payload.next_validator_set.clone();
 		self.last_commitment = Some(commitment);
 
 		Ok(())
@@ -143,7 +156,7 @@ impl LightClient {
 		}
 	}
 
-	pub fn validator_set(&self) -> &(ValidatorSetId, Vec<validator_set::Public>) {
+	pub fn validator_set(&self) -> &ValidatorSet {
 		&self.validator_set
 	}
 
@@ -158,13 +171,17 @@ impl LightClient {
 			.payload
 	}
 
-	fn validate_commitment(&self, commitment: SignedCommitment) -> Result<Commitment, Error> {
+	fn validate_commitment(
+		&self,
+		commitment: SignedCommitment,
+		validator_set: &ValidatorSet,
+	) -> Result<Commitment, Error> {
 		let no_of_non_empty_signatures = commitment.no_of_signatures();
 		let SignedCommitment { commitment, signatures } = commitment;
 		// Make sure it's signed by the current validator set we know of.
-		if self.validator_set.0 != commitment.validator_set_id {
+		if validator_set.0 != commitment.validator_set_id {
 			return Err(Error::InvalidValidatorSetId {
-				expected: self.validator_set.0,
+				expected: validator_set.0,
 				got: commitment.validator_set_id,
 			});
 		}
@@ -179,7 +196,7 @@ impl LightClient {
 		}
 
 		// check number of signatures
-		let validator_set_count = self.validator_set.1.len();
+		let validator_set_count = validator_set.1.len();
 		if signatures.len() != validator_set_count {
 			return Err(Error::InvalidNumberOfSignatures {
 				expected: validator_set_count,
@@ -188,7 +205,7 @@ impl LightClient {
 		}
 
 		// check the validity of signatures
-		let minimal_number_of_signatures = self.minimal_number_of_signatures();
+		let minimal_number_of_signatures = Self::minimal_number_of_signatures(validator_set);
 		if no_of_non_empty_signatures < minimal_number_of_signatures {
 			return Err(Error::NotEnoughValidSignatures {
 				expected: minimal_number_of_signatures,
@@ -198,7 +215,7 @@ impl LightClient {
 		}
 
 		let mut valid = 0;
-		for (signature, public) in signatures.into_iter().zip(self.validator_set.1.iter()) {
+		for (signature, public) in signatures.into_iter().zip(validator_set.1.iter()) {
 			match signature {
 				Some(signature) if signature.is_valid_for(&public) => {
 					valid += 1;
@@ -218,14 +235,15 @@ impl LightClient {
 		Ok(commitment)
 	}
 
-	fn minimal_number_of_signatures(&self) -> usize {
-		2 * self.validator_set.1.len() / 3 + 1
+	fn minimal_number_of_signatures(set: &ValidatorSet) -> usize {
+		2 * set.1.len() / 3 + 1
 	}
 }
 
 pub fn new() -> LightClient {
 	LightClient {
 		validator_set: (0, vec![validator_set::Public(0)]),
+		next_validator_set: None,
 		last_commitment: None,
 	}
 }
