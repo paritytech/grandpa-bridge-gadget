@@ -34,8 +34,10 @@ pub trait Config: frame_system::Config {
 
 decl_storage! {
 	trait Store for Module<T: Config> as Beefy {
-		/// The current authorities
+		/// The current list of authorities.
 		pub Authorities get(fn authorities): Vec<T::AuthorityId>;
+		/// Authorities scheduled for the next session.
+		pub NextAuthorities get(fn next_authorities): Vec<T::AuthorityId>;
 	}
 	add_extra_genesis {
 		config(authorities): Vec<T::AuthorityId>;
@@ -48,13 +50,17 @@ decl_module! {
 }
 
 impl<T: Config> Module<T> {
-	fn change_authorities(new: Vec<T::AuthorityId>) {
-		<Authorities<T>>::put(&new);
+	fn change_authorities(new: Vec<T::AuthorityId>, queued: Vec<T::AuthorityId>) {
+		// As in GRANDPA, we don't trigger validator set change if the set actually
+		// remains the same.
+		if new != Self::authorities() {
+			<Authorities<T>>::put(&new);
+			let log: DigestItem<T::Hash> =
+				DigestItem::Consensus(BEEFY_ENGINE_ID, ConsensusLog::AuthoritiesChange(new).encode());
+			<frame_system::Module<T>>::deposit_log(log);
+		}
 
-		let log: DigestItem<T::Hash> =
-			DigestItem::Consensus(BEEFY_ENGINE_ID, ConsensusLog::AuthoritiesChange(new).encode());
-
-		<frame_system::Module<T>>::deposit_log(log);
+		<NextAuthorities<T>>::put(&queued);
 	}
 
 	fn initialize_authorities(authorities: &[T::AuthorityId]) {
@@ -64,6 +70,9 @@ impl<T: Config> Module<T> {
 				"Authorities are already initialized!"
 			);
 			<Authorities<T>>::put(authorities);
+			// for consistency we initialize the next validator set as well.
+			// Note it's an assumption in the `pallet_session` as well.
+			<NextAuthorities<T>>::put(authorities);
 		}
 	}
 }
@@ -83,16 +92,15 @@ impl<T: Config> pallet_session::OneSessionHandler<T::AccountId> for Module<T> {
 		Self::initialize_authorities(&authorities);
 	}
 
-	fn on_new_session<'a, I: 'a>(changed: bool, validators: I, _queued_validators: I)
+	fn on_new_session<'a, I: 'a>(changed: bool, validators: I, queued_validators: I)
 	where
 		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
 	{
 		if changed {
 			let next_authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
-			let last_authorities = <Module<T>>::authorities();
-			if next_authorities != last_authorities {
-				Self::change_authorities(next_authorities);
-			}
+			let next_queued_authorities = queued_validators.map(|(_, k)| k).collect::<Vec<_>>();
+
+			Self::change_authorities(next_authorities, next_queued_authorities);
 		}
 	}
 
