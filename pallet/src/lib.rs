@@ -50,10 +50,7 @@ decl_module! {
 }
 
 impl<T: Config> Module<T> {
-	fn change_authorities(
-		new: Vec<T::AuthorityId>,
-		queued: Vec<T::AuthorityId>,
-	) {
+	fn change_authorities(new: Vec<T::AuthorityId>, queued: Vec<T::AuthorityId>) {
 		// As in GRANDPA, we don't trigger validator set change if the set actually
 		// remains the same.
 		if new != Self::authorities() {
