@@ -50,13 +50,18 @@ decl_module! {
 }
 
 impl<T: Config> Module<T> {
-	fn change_authorities(new: Vec<T::AuthorityId>) {
-		<Authorities<T>>::put(&new);
+	fn change_authorities(
+		new: Vec<T::AuthorityId>,
+		queued: Vec<T::AuthorityId>,
+	) {
+		if new != Self::authorities() {
+			<Authorities<T>>::put(&new);
+			let log: DigestItem<T::Hash> =
+				DigestItem::Consensus(BEEFY_ENGINE_ID, ConsensusLog::AuthoritiesChange(new).encode());
+			<frame_system::Module<T>>::deposit_log(log);
+		}
 
-		let log: DigestItem<T::Hash> =
-			DigestItem::Consensus(BEEFY_ENGINE_ID, ConsensusLog::AuthoritiesChange(new).encode());
-
-		<frame_system::Module<T>>::deposit_log(log);
+		<NextAuthorities<T>>::put(&queued);
 	}
 
 	fn initialize_authorities(authorities: &[T::AuthorityId]) {
@@ -66,6 +71,9 @@ impl<T: Config> Module<T> {
 				"Authorities are already initialized!"
 			);
 			<Authorities<T>>::put(authorities);
+			// for consistency we initialize the next validator set as well.
+			// Note it's an assumption in the `pallet_session` as well.
+			<NextAuthorities<T>>::put(authorities);
 		}
 	}
 }
@@ -91,16 +99,9 @@ impl<T: Config> pallet_session::OneSessionHandler<T::AccountId> for Module<T> {
 	{
 		if changed {
 			let next_authorities = validators.map(|(_, k)| k).collect::<Vec<_>>();
-			let last_authorities = <Module<T>>::authorities();
-			if next_authorities != last_authorities {
-				Self::change_authorities(next_authorities);
-			}
-
 			let next_queued_authorities = queued_validators.map(|(_, k)| k).collect::<Vec<_>>();
-			let last_queued_authorities = <Module<T>>::next_authorities();
-			if next_queued_authorities != last_queued_authorities {
-				NextAuthorities::<T>::put(next_queued_authorities);
-			}
+
+			Self::change_authorities(next_authorities, next_queued_authorities);
 		}
 	}
 
