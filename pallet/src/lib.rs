@@ -34,8 +34,10 @@ pub trait Config: frame_system::Config {
 
 decl_storage! {
 	trait Store for Module<T: Config> as Beefy {
-		/// The current authorities
+		/// The current list of authorities.
 		pub Authorities get(fn authorities): Vec<T::AuthorityId>;
+		/// Authorities scheduled for the next session.
+		pub NextAuthorities get(fn next_authorities): Vec<T::AuthorityId>;
 	}
 	add_extra_genesis {
 		config(authorities): Vec<T::AuthorityId>;
@@ -83,7 +85,7 @@ impl<T: Config> pallet_session::OneSessionHandler<T::AccountId> for Module<T> {
 		Self::initialize_authorities(&authorities);
 	}
 
-	fn on_new_session<'a, I: 'a>(changed: bool, validators: I, _queued_validators: I)
+	fn on_new_session<'a, I: 'a>(changed: bool, validators: I, queued_validators: I)
 	where
 		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
 	{
@@ -92,6 +94,12 @@ impl<T: Config> pallet_session::OneSessionHandler<T::AccountId> for Module<T> {
 			let last_authorities = <Module<T>>::authorities();
 			if next_authorities != last_authorities {
 				Self::change_authorities(next_authorities);
+			}
+
+			let next_queued_authorities = queued_validators.map(|(_, k)| k).collect::<Vec<_>>();
+			let last_queued_authorities = <Module<T>>::next_authorities();
+			if next_queued_authorities != last_queued_authorities {
+				NextAuthorities::<T>::put(next_queued_authorities);
 			}
 		}
 	}
