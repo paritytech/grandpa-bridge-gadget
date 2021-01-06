@@ -54,6 +54,8 @@ impl<T: Config> Module<T> {
 		new: Vec<T::AuthorityId>,
 		queued: Vec<T::AuthorityId>,
 	) {
+		// As in GRANDPA, we don't trigger validator set change if the set actually
+		// remains the same.
 		if new != Self::authorities() {
 			<Authorities<T>>::put(&new);
 			let log: DigestItem<T::Hash> =
