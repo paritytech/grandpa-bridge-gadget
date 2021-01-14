@@ -51,28 +51,28 @@ chain, which then becomes finalized.
 ### Difficulties of GRANDPA finality proofs
 
 ```rust
-    struct Justification<Block: BlockT> {
-    	round: u64,
-    	commit: Commit<Block>,
-    	votes_ancestries: Vec<Block::Header>,
-    }
+struct Justification<Block: BlockT> {
+    round: u64,
+    commit: Commit<Block>,
+    votes_ancestries: Vec<Block::Header>,
+}
     
-    struct Commit<Hash, Number, Signature, Id> {
-    	target_hash: Hash,
-    	target_number: Number,
-    	precommits: Vec<SignedPrecommit<Hash, Number, Signature, Id>>,
-    }
+struct Commit<Hash, Number, Signature, Id> {
+    target_hash: Hash,
+    target_number: Number,
+    precommits: Vec<SignedPrecommit<Hash, Number, Signature, Id>>,
+}
     
-    struct SignedPrecommit<Hash, Number, Signature, Id> {
-    	precommit: Precommit<Hash, Number>,
-    	signature: Signature,
-    	id: Id,
-    }
+struct SignedPrecommit<Hash, Number, Signature, Id> {
+    precommit: Precommit<Hash, Number>,
+    signature: Signature,
+    id: Id,
+}
     
-    struct Precommit<Hash, Number> {
-    	target_hash: Hash,
-    	target_number: Number,
-    }
+struct Precommit<Hash, Number> {
+    target_hash: Hash,
+    target_number: Number,
+}
 ```
 
 The main difficulty of verifying GRANDPA finality proofs comes from the fact that voters are voting
@@ -175,11 +175,11 @@ last_block_with_signed_mmr_root + NextPowerOfTwo((last_finalized_block - last_bl
 - We create a BEEFY commitment where the payload is the signed MMR root for the given block
 
 ```rust
-    struct Commitment<BlockNumber, Payload> {
-    	payload: Payload,
-    	block_number: BlockNumber,
-    	validator_set_id: ValidatorSetId,
-    }
+struct Commitment<BlockNumber, Payload> {
+    payload: Payload,
+    block_number: BlockNumber,
+    validator_set_id: ValidatorSetId,
+}
 ```
 
 - We gossip our vote and listen for any votes for that round, waiting until we have received > 2/3.
