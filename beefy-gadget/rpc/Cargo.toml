@@ -14,7 +14,7 @@ sc-rpc = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }
 jsonrpc-core = "15.1.0"
-jsonrpc-core-client = "15.1.0"
+jsonrpc-core-client = "16.0.0"
 jsonrpc-derive = "15.1.0"
 jsonrpc-pubsub = "15.1.0"
 futures = { version = "0.3.4", features = ["compat"] }
