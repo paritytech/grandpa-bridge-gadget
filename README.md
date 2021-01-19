@@ -43,7 +43,7 @@ The best way to get going with BEEFY is by reading the [walkthrough](./docs/walk
 This document puts BEEFY into context and provides motivation for why this project has been started.
 In addition to that the current status as well as a preliminary roadmap is presented.
 
-[BEEFY brainstorming](./docs/beefy.md) is a collection of early notes and ideas, stil worth checking out.
+[BEEFY brainstorming](./docs/beefy.md) is a collection of early notes and ideas, still worth checking out.
 
 ## Project Layout
 
