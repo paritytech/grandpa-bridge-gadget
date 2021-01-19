@@ -43,7 +43,7 @@ The best way to get going with BEEFY is by reading the [walkthrough](./docs/walk
 This document puts BEEFY into context and provides motivation for why this project has been started.
 In addition to that the current status as well as a preliminary roadmap is presented.
 
-[beefy](./docs/beefy.md) is a collection of early notes and ideas, stil worth checking out.
+[BEEFY brainstorming](./docs/beefy.md) is a collection of early notes and ideas, stil worth checking out.
 
 ## Project Layout
 
@@ -77,4 +77,4 @@ Currently the easiest way to see BEEFY in action is to run a single dev node lik
 $ RUST_LOG=beefy=trace ./target/debug/node-template --tmp --dev --alice --validator
 ```
 
-Expect additional (more usefull) deployment options to be added soon.
+Expect additional (more useful) deployment options to be added soon.
