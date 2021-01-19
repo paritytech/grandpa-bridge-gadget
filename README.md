@@ -1,10 +1,10 @@
 # BEEFY
 **BEEFY** (**B**ridge **E**fficiency **E**nabling **F**inality **Y**ielder) is a secondary
-protocol running along Grandpa Finality to support efficient bridging with non-Substrate
+protocol running along GRANDPA Finality to support efficient bridging with non-Substrate
 blockchains, currently mainly ETH mainnet.
 
-It can be thought of as an (optional) Bridge-specific Gadget to the Grandpa Finality protocol.
-The Protocol piggybacks on many assumptions provided by Grandpa, and is required to be built
+It can be thought of as an (optional) Bridge-specific Gadget to the GRANDPA Finality protocol.
+The Protocol piggybacks on many assumptions provided by GRANDPA, and is required to be built
 on top of it to work correctly.
 
 🚧 BEEFY is currently under construction - a hardhat is recommended beyond this point 🚧
@@ -48,22 +48,22 @@ In addition to that the current status as well as a preliminary roadmap is prese
 ## Project Layout
 
 What follows is an overview of how the project repository is laid out. The main components are the
-`beefy-gadget` which is a POC of the BEEFY round logic. The BEEFY `pallet` which is mainly a thin
+`beefy-gadget` which is a POC of the BEEFY round logic. `beefy-pallet` which is mainly a thin
 integration layer over the session pallet and keeps track of the current authorities.
 Finally the BEEFY `primitives` crate which contains most of the type definitions for the 
 BEEFY protocol.
 
-The `primitives` crate also contains a test [light_client](.primitives/tests/light_client/) which demonstarates how BEEFY would
+The `primitives` crate also contains a test [light_client](.primitives/tests/light_client/) which demonstrates how BEEFY would
 be utilized by a light client implementation.
 
 ```
 ├── beefy-gadget  // The BEEFY gadget
 │  └── ...
+├── beefy-pallet  // The BEEFY pallet.
+│  └──  ...
 ├── docs          // Documentation
 │  └──  ...
 ├── node-example  // A Substrate node running the BEEFY gadget
-│  └──  ...
-├── pallet        // The BEEFY pallet.
 │  └──  ...
 ├── primitives    // The BEEFY primitives crate includig a test light client
 │  └──  ...
