@@ -8,6 +8,7 @@
 
 /target
 #Cargo.lock
+/beefy-gadget/Cargo.lock
 
 #Ignore VSCode stuff
 .vscode
