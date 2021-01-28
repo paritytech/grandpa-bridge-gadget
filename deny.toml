@@ -48,8 +48,6 @@ notice = "warn"
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.
 ignore = [
-	# yaml-rust < clap. Not feasible to upgrade and also not possible to trigger in practice.
-	"RUSTSEC-2018-0006",
     # raw-cpuid is a dep of cranelift-native. Not feasible to upgrade.
     "RUSTSEC-2021-0013"
 ]
