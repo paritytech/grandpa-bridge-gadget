@@ -16,7 +16,7 @@
 
 #![cfg(test)]
 
-use crate as pallet_beefy;
+use std::vec;
 
 use frame_support::{parameter_types, sp_io::TestExternalities, BasicExternalities};
 
@@ -29,7 +29,9 @@ use sp_runtime::{
 	Perbill,
 };
 
-use beefy_primitives::ecdsa::AuthorityId as BeefyId;
+use crate as pallet_beefy;
+
+pub use beefy_primitives::{ecdsa::AuthorityId as BeefyId, ConsensusLog, BEEFY_ENGINE_ID};
 
 impl_opaque_keys! {
 	pub struct MockSessionKeys {
@@ -90,7 +92,7 @@ impl pallet_beefy::Config for Test {
 parameter_types! {
 	pub const Period: u64 = 1;
 	pub const Offset: u64 = 0;
-	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
+	pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(33);
 }
 
 impl pallet_session::Config for Test {
@@ -99,11 +101,29 @@ impl pallet_session::Config for Test {
 	type ValidatorIdOf = ConvertInto;
 	type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
 	type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-	type SessionManager = ();
+	type SessionManager = MockSessionManager;
 	type SessionHandler = <MockSessionKeys as OpaqueKeys>::KeyTypeIdProviders;
 	type Keys = MockSessionKeys;
 	type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
 	type WeightInfo = ();
+}
+
+pub struct MockSessionManager;
+
+impl pallet_session::SessionManager<u64> for MockSessionManager {
+	fn end_session(_: sp_staking::SessionIndex) {}
+	fn start_session(_: sp_staking::SessionIndex) {}
+	fn new_session(idx: sp_staking::SessionIndex) -> Option<Vec<u64>> {
+		if idx == 0 {
+			return Some(vec![1, 2]);
+		} else if idx == 1 {
+			return Some(vec![1, 2]);
+		} else if idx == 2 {
+			return Some(vec![3, 4]);
+		} else {
+			None
+		}
+	}
 }
 
 // Note, that we can't use `UintAuthorityId` here. Reason is that the implementation
