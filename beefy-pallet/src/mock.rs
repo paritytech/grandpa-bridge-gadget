@@ -114,12 +114,10 @@ impl pallet_session::SessionManager<u64> for MockSessionManager {
 	fn end_session(_: sp_staking::SessionIndex) {}
 	fn start_session(_: sp_staking::SessionIndex) {}
 	fn new_session(idx: sp_staking::SessionIndex) -> Option<Vec<u64>> {
-		if idx == 0 {
-			return Some(vec![1, 2]);
-		} else if idx == 1 {
-			return Some(vec![1, 2]);
+		if idx == 0 || idx == 1 {
+			Some(vec![1, 2])
 		} else if idx == 2 {
-			return Some(vec![3, 4]);
+			Some(vec![3, 4])
 		} else {
 			None
 		}
