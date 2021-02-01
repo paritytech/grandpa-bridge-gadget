@@ -44,14 +44,16 @@ fn genesis_session_initializes_authorities() {
 		let authorities = Beefy::authorities();
 
 		assert!(authorities.len() == 2);
-		assert_eq!(want[..2], authorities);
+		assert_eq!(want[0], authorities[0]);
+		assert_eq!(want[1], authorities[1]);
 
 		assert!(Beefy::validator_set_id() == 0);
 
 		let next_authorities = Beefy::next_authorities();
 
 		assert!(next_authorities.len() == 2);
-		assert_eq!(want[..2], next_authorities);
+		assert_eq!(want[0], authorities[0]);
+		assert_eq!(want[1], authorities[1]);
 	});
 }
 
