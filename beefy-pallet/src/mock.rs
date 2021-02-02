@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-
 use std::vec;
 
 use frame_support::{parameter_types, sp_io::TestExternalities, BasicExternalities};

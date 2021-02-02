@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-
 use std::vec;
 
 use codec::Encode;
@@ -51,8 +50,8 @@ fn genesis_session_initializes_authorities() {
 		let next_authorities = Beefy::next_authorities();
 
 		assert!(next_authorities.len() == 2);
-		assert_eq!(want[0], authorities[0]);
-		assert_eq!(want[1], authorities[1]);
+		assert_eq!(want[0], next_authorities[0]);
+		assert_eq!(want[1], next_authorities[1]);
 	});
 }
 
@@ -78,5 +77,27 @@ fn session_change_updates_authorities() {
 		let log = System::digest().logs[0].clone();
 
 		assert_eq!(want, log);
+	});
+}
+#[test]
+fn session_change_updates_next_authorities() {
+	let want = vec![mock_beefy_id(1), mock_beefy_id(2), mock_beefy_id(3), mock_beefy_id(4)];
+
+	new_test_ext(vec![1, 2, 3, 4]).execute_with(|| {
+		init_block(1);
+
+		let next_authorities = Beefy::next_authorities();
+
+		assert!(next_authorities.len() == 2);
+		assert_eq!(want[0], next_authorities[0]);
+		assert_eq!(want[1], next_authorities[1]);
+
+		init_block(2);
+
+		let next_authorities = Beefy::next_authorities();
+
+		assert!(next_authorities.len() == 2);
+		assert_eq!(want[2], next_authorities[0]);
+		assert_eq!(want[3], next_authorities[1]);
 	});
 }
