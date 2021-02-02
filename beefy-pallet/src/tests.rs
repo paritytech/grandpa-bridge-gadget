@@ -64,6 +64,9 @@ fn session_change_updates_authorities() {
 
 		assert!(0 == Beefy::validator_set_id());
 
+		// no change - no log
+		assert!(0 == System::digest().logs.len());
+
 		init_block(2);
 
 		assert!(1 == Beefy::validator_set_id());
