@@ -6,8 +6,7 @@ members = [
 	"beefy-gadget",
 	"beefy-gadget/rpc",
 	"beefy-pallet",
-	"node-example/node",
-	"node-example/pallets/template",
-	"node-example/runtime",
+	"beefy-node/node",
+	"beefy-node/runtime",
 	"primitives",
 ]

@@ -5,12 +5,12 @@ description = "A fresh FRAME-based Substrate node, ready for hacking."
 edition = "2018"
 homepage = "https://substrate.dev"
 license = "Unlicense"
-name = "node-template"
+name = "beefy-node"
 repository = "https://github.com/substrate-developer-hub/substrate-node-template/"
 version = "2.0.0"
 
 [[bin]]
-name = "node-template"
+name = "beefy-node"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -26,7 +26,7 @@ structopt = "0.3.21"
 beefy-primitives = { version = "0.1.0", path = "../../primitives" }
 beefy-gadget = { version = "0.1.0", path = "../../beefy-gadget" }
 beefy-gadget-rpc = { version = "0.1.0", path = "../../beefy-gadget/rpc" }
-node-template-runtime = { path = "../runtime", version = "2.0.0" }
+beefy-node-runtime = { path = "../runtime", version = "2.0.0" }
 
 # Substrate dependencies
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "master" }
@@ -60,4 +60,4 @@ substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate", 
 
 [features]
 default = []
-runtime-benchmarks = ["node-template-runtime/runtime-benchmarks"]
+runtime-benchmarks = []

@@ -10,15 +10,15 @@ use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 use sp_inherents::InherentDataProviders;
 
-use node_template_runtime::{self, opaque::Block, RuntimeApi};
+use beefy_node_runtime::{self, opaque::Block, RuntimeApi};
 
 pub use sc_executor::NativeExecutor;
 
 // Our native executor instance.
 native_executor_instance!(
 	pub Executor,
-	node_template_runtime::api::dispatch,
-	node_template_runtime::native_version,
+	beefy_node_runtime::api::dispatch,
+	beefy_node_runtime::native_version,
 	frame_benchmarking::benchmarking::HostFunctions,
 );
 

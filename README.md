@@ -59,11 +59,11 @@ be utilized by a light client implementation.
 ```
 ├── beefy-gadget  // The BEEFY gadget
 │  └── ...
+├── beefy-node    // A Substrate node running the BEEFY gadget
+│  └──  ...
 ├── beefy-pallet  // The BEEFY pallet.
 │  └──  ...
 ├── docs          // Documentation
-│  └──  ...
-├── node-example  // A Substrate node running the BEEFY gadget
 │  └──  ...
 ├── primitives    // The BEEFY primitives crate includig a test light client
 │  └──  ...
@@ -74,7 +74,7 @@ be utilized by a light client implementation.
 Currently the easiest way to see BEEFY in action is to run a single dev node like so:
 
 ```
-$ RUST_LOG=beefy=trace ./target/debug/node-template --tmp --dev --alice --validator
+$ RUST_LOG=beefy=trace ./target/debug/beefy-node --tmp --dev --alice --validator
 ```
 
 Expect additional (more useful) deployment options to be added soon.
