@@ -5,8 +5,8 @@ panic = "unwind"
 members = [
 	"beefy-gadget",
 	"beefy-gadget/rpc",
-	"beefy-pallet",
 	"beefy-node/node",
 	"beefy-node/runtime",
+	"beefy-pallet",
 	"beefy-primitives",
 ]
