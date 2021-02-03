@@ -17,7 +17,7 @@
 
 use crate::cli::{Cli, Subcommand};
 use crate::{chain_spec, service};
-use node_template_runtime::Block;
+use beefy_node_runtime::Block;
 use sc_cli::{ChainSpec, Role, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
 
@@ -55,7 +55,7 @@ impl SubstrateCli for Cli {
 	}
 
 	fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-		&node_template_runtime::VERSION
+		&beefy_node_runtime::VERSION
 	}
 }
 
