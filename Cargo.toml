@@ -8,5 +8,5 @@ members = [
 	"beefy-pallet",
 	"beefy-node/node",
 	"beefy-node/runtime",
-	"primitives",
+	"beefy-primitives",
 ]

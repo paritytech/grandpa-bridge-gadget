@@ -23,7 +23,7 @@ jsonrpc-core = "15.0.0"
 structopt = "0.3.21"
 
 # local dependencies
-beefy-primitives = { version = "0.1.0", path = "../../primitives" }
+beefy-primitives = { version = "0.1.0", path = "../../beefy-primitives" }
 beefy-gadget = { version = "0.1.0", path = "../../beefy-gadget" }
 beefy-gadget-rpc = { version = "0.1.0", path = "../../beefy-gadget/rpc" }
 beefy-node-runtime = { path = "../runtime", version = "2.0.0" }

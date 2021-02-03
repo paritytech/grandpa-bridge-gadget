@@ -57,15 +57,15 @@ The `primitives` crate also contains a test [light_client](.primitives/tests/lig
 be utilized by a light client implementation.
 
 ```
-├── beefy-gadget  // The BEEFY gadget
+├── beefy-gadget     // The BEEFY gadget
 │  └── ...
-├── beefy-node    // A Substrate node running the BEEFY gadget
+├── beefy-node       // A Substrate node running the BEEFY gadget
 │  └──  ...
-├── beefy-pallet  // The BEEFY pallet.
+├── beefy-pallet     // The BEEFY pallet.
 │  └──  ...
-├── docs          // Documentation
+├── beefy-primitives // The BEEFY primitives crate includig a test light client
 │  └──  ...
-├── primitives    // The BEEFY primitives crate includig a test light client
+├── docs             // Documentation
 │  └──  ...
  ```
 
