@@ -97,7 +97,7 @@ pub mod pallet {
 
 impl<T: Config> Pallet<T> {
 	fn change_authorities(new: Vec<T::AuthorityId>, queued: Vec<T::AuthorityId>) {
-		// As in GRANDPA, we trigger a validator set change only, the the validator
+		// As in GRANDPA, we trigger a validator set change only if the the validator
 		// set has actually changed.
 		if new != Self::authorities() {
 			<Authorities<T>>::put(&new);
