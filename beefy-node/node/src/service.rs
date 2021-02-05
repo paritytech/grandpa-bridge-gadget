@@ -199,19 +199,19 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		// the AURA authoring task is considered essential, i.e. if it
 		// fails we take down the service with it.
 		task_manager.spawn_essential_handle().spawn_blocking("aura", aura);
-
-		// Start the BEEFY bridge gadget.
-		task_manager.spawn_essential_handle().spawn_blocking(
-			"beefy-gadget",
-			beefy_gadget::start_beefy_gadget::<_, beefy_primitives::ecdsa::AuthorityPair, _, _, _, _>(
-				client,
-				keystore_container.sync_keystore(),
-				network.clone(),
-				signed_commitment_sender,
-				network.clone(),
-			),
-		);
 	}
+
+	// Start the BEEFY bridge gadget.
+	task_manager.spawn_essential_handle().spawn_blocking(
+		"beefy-gadget",
+		beefy_gadget::start_beefy_gadget::<_, beefy_primitives::ecdsa::AuthorityPair, _, _, _, _>(
+			client,
+			keystore_container.sync_keystore(),
+			network.clone(),
+			signed_commitment_sender,
+			network.clone(),
+		),
+	);
 
 	// if the node isn't actively participating in consensus then it doesn't
 	// need a keystore, regardless of which protocol we use below.
