@@ -164,13 +164,13 @@ struct VoteMessage<Hash, Number, Id, Signature> {
 	signature: Signature,
 }
 
-enum BeefyValidator<Id> {
+enum BeefyId<Id> {
 	Validator(Id),
-	NoValidator,
+	None,
 }
 
 struct BeefyWorker<Block: BlockT, Id, Signature, FinalityNotifications> {
-	local_id: BeefyValidator<Id>,
+	local_id: BeefyId<Id>,
 	key_store: SyncCryptoStorePtr,
 	min_interval: u32,
 	rounds: Rounds<MmrRootHash, NumberFor<Block>, Id, Signature>,
@@ -187,7 +187,7 @@ where
 {
 	#[allow(clippy::too_many_arguments)]
 	fn new(
-		local_id: BeefyValidator<Id>,
+		local_id: BeefyId<Id>,
 		key_store: SyncCryptoStorePtr,
 		authorities: Vec<Id>,
 		finality_notifications: FinalityNotifications,
@@ -221,7 +221,8 @@ where
 		use sp_runtime::traits::Saturating;
 		use sp_runtime::SaturatedConversion;
 
-		if let BeefyValidator::NoValidator = self.local_id {
+		// we only vote as a validator
+		if let BeefyId::None = self.local_id {
 			return false;
 		}
 
@@ -246,7 +247,7 @@ where
 		debug!(target: "beefy", "Finality notification: {:?}", notification);
 
 		if self.should_vote_on(*notification.header.number()) {
-			let local_id = if let BeefyValidator::Validator(id) = &self.local_id {
+			let local_id = if let BeefyId::Validator(id) = &self.local_id {
 				id
 			} else {
 				warn!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
@@ -413,11 +414,11 @@ pub async fn start_beefy_gadget<Block, Pair, Backend, Client, Network, SyncOracl
 	{
 		Some(id) => {
 			info!(target: "beefy", "🥩 Starting BEEFY worker with local id: {:?}", id);
-			BeefyValidator::Validator(id.clone())
+			BeefyId::Validator(id.clone())
 		}
 		None => {
 			info!(target: "beefy", "🥩 No local id found, BEEFY worker will be gossip only.");
-			BeefyValidator::NoValidator
+			BeefyId::None
 		}
 	};
 
