@@ -93,7 +93,7 @@ pub fn new_partial(config: &Configuration) -> Result<ServiceComponents, ServiceE
 }
 
 /// Builds a new service for a full client.
-pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
+pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> {
 	let sc_service::PartialComponents {
 		client,
 		backend,
@@ -105,6 +105,8 @@ pub fn new_full(config: Configuration) -> Result<TaskManager, ServiceError> {
 		inherent_data_providers,
 		other: (block_import, grandpa_link),
 	} = new_partial(&config)?;
+
+	config.network.extra_sets.push(beefy_gadget::beefy_peers_set_config());
 
 	let (network, network_status_sinks, system_rpc_tx, network_starter) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
