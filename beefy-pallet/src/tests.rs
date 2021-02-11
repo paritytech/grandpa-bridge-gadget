@@ -69,10 +69,10 @@ fn session_change_updates_authorities() {
 
 		assert!(1 == Beefy::validator_set_id());
 
-		let want = beefy_log(ConsensusLog::AuthoritiesChange(vec![
-			mock_beefy_id(3),
-			mock_beefy_id(4),
-		]));
+		let want = beefy_log(ConsensusLog::AuthoritiesChange((
+			vec![mock_beefy_id(3), mock_beefy_id(4)],
+			1,
+		)));
 
 		let log = System::digest().logs[0].clone();
 
