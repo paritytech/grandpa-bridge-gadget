@@ -105,8 +105,14 @@ impl<T: Config> Pallet<T> {
 			let next = Self::validator_set_id() + 1u64;
 			<ValidatorSetId<T>>::put(next);
 
-			let log: DigestItem<T::Hash> =
-				DigestItem::Consensus(BEEFY_ENGINE_ID, ConsensusLog::AuthoritiesChange((new, next)).encode());
+			let log: DigestItem<T::Hash> = DigestItem::Consensus(
+				BEEFY_ENGINE_ID,
+				ConsensusLog::AuthoritiesChange {
+					new_validator_set: new,
+					new_validator_set_id: next,
+				}
+				.encode(),
+			);
 			<frame_system::Module<T>>::deposit_log(log);
 		}
 
