@@ -3,6 +3,7 @@ panic = "unwind"
 
 [workspace]
 members = [
+	"beefy-cli",
 	"beefy-gadget",
 	"beefy-gadget/rpc",
 	"beefy-node/node",
