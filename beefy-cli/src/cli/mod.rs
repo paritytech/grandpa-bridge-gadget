@@ -14,13 +14,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! BEEFY-(loosly)-related utilities.
+mod uncompress_authorities;
 
-#![warn(missing_docs)]
+use structopt::StructOpt;
 
-mod cli;
+/// BEEFY utilities.
+#[derive(StructOpt)]
+#[structopt(about = "BEEFY utilities")]
+pub enum Command {
+	UncompressBeefyId(uncompress_authorities::UncompressAuthorities),
+}
 
-fn main() -> anyhow::Result<()> {
-	let command = cli::parse_args();
-	command.run()
+impl Command {
+	/// Execute the command.
+	pub fn run(self) -> anyhow::Result<()> {
+		match self {
+			Self::UncompressBeefyId(cmd) => cmd.run(),
+		}
+	}
+}
+
+/// Parse relay CLI args.
+pub fn parse_args() -> Command {
+	Command::from_args()
 }
