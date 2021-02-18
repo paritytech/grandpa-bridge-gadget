@@ -14,7 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+mod merkle_tree;
 mod uncompress_authorities;
+mod utils;
 
 use structopt::StructOpt;
 
@@ -23,6 +25,8 @@ use structopt::StructOpt;
 #[structopt(about = "BEEFY utilities")]
 pub enum Command {
 	UncompressBeefyId(uncompress_authorities::UncompressAuthorities),
+	BeefyIdMerkleTree(merkle_tree::BeefyMerkleTree),
+	ParaHeadMerkleTree(merkle_tree::ParaMerkleTree),
 }
 
 impl Command {
@@ -30,6 +34,8 @@ impl Command {
 	pub fn run(self) -> anyhow::Result<()> {
 		match self {
 			Self::UncompressBeefyId(cmd) => cmd.run(),
+			Self::BeefyIdMerkleTree(cmd) => cmd.run(),
+			Self::ParaHeadMerkleTree(cmd) => cmd.run(),
 		}
 	}
 }

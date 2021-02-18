@@ -414,7 +414,10 @@ dependencies = [
  "libsecp256k1",
  "log",
  "parity-scale-codec",
+ "sp-core",
+ "sp-trie",
  "structopt",
+ "trie-db",
 ]
 
 [[package]]

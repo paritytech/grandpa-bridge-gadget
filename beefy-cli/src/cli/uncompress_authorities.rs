@@ -14,10 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use structopt::StructOpt;
-use parity_scale_codec::Decode;
 use beefy_primitives::ecdsa::AuthorityId;
+use crate::cli::utils::{parse_hex, Authorities};
+use parity_scale_codec::Decode;
+use structopt::StructOpt;
 
+/// Decode and uncompress encoded BEEFY id(s).
 #[derive(StructOpt)]
 #[structopt(about = "Decode and uncompress a vector of encoded BEEFY authority ids")]
 pub struct UncompressAuthorities {
@@ -25,9 +27,10 @@ pub struct UncompressAuthorities {
 	#[structopt(
 		long,
 		conflicts_with("authorities"),
-		required_unless("authorities")
+		required_unless("authorities"),
+		parse(try_from_str = beefy_id_from_hex),
 	)]
-	pub authority: Option<String>,
+	pub authority: Option<AuthorityId>,
 
 	/// A SCALE-encoded vector of BEEFY authority ids (compressed public keys).
 	///
@@ -36,36 +39,24 @@ pub struct UncompressAuthorities {
 	#[structopt(
 		long,
 		conflicts_with("authority"),
-		required_unless("authority")
+		required_unless("authority"),
 	)]
-	pub authorities: Option<String>,
+	pub authorities: Option<Authorities>,
 }
 
 
 impl UncompressAuthorities {
 	pub fn run(self) -> anyhow::Result<()> {
-		if let Some(a) = self.authority {
-			let id = parse_id(a)?;
+		if let Some(id) = self.authority {
 			return uncompress_beefy_ids(vec![id]);
 		}
 
-		if let Some(a) = self.authorities {
-			let ids = parse_ids(a)?;
-			return uncompress_beefy_ids(ids);
+		if let Some(ids) = self.authorities {
+			return uncompress_beefy_ids(ids.0);
 		}
 
 		anyhow::bail!("Neither argument given")
 	}
-}
-
-fn parse_hex(hex: String) -> anyhow::Result<Vec<u8>> {
-	let s = if hex.starts_with("0x") {
-		&hex.as_bytes()[2..]
-	} else {
-		&hex.as_bytes()[..]
-	};
-
-	Ok(hex::decode(s)?)
 }
 
 fn uncompress_beefy_ids(ids: Vec<AuthorityId>) -> anyhow::Result<()> {
@@ -79,14 +70,8 @@ fn uncompress_beefy_ids(ids: Vec<AuthorityId>) -> anyhow::Result<()> {
 	Ok(())
 }
 
-fn parse_id(id: String) -> anyhow::Result<AuthorityId> {
+fn beefy_id_from_hex(id: &str) -> anyhow::Result<AuthorityId> {
 	let encoded = parse_hex(id)?;
 	let auth_id = AuthorityId::decode(&mut &*encoded)?;
 	Ok(auth_id)
-}
-
-fn parse_ids(id: String) -> anyhow::Result<Vec<AuthorityId>> {
-	let encoded = parse_hex(id)?;
-	let auth_ids = Vec::<AuthorityId>::decode(&mut &*encoded)?;
-	Ok(auth_ids)
 }
