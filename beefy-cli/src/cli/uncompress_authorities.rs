@@ -21,7 +21,7 @@ use beefy_primitives::ecdsa::AuthorityId;
 #[derive(StructOpt)]
 #[structopt(about = "Decode and uncompress a vector of encoded BEEFY authority ids")]
 pub struct UncompressAuthorities {
-	/// A SCALE-encoded BEEFY authority id (compressed public key).
+	/// A SCALE-encoded single BEEFY authority id (compressed public key).
 	#[structopt(
 		long,
 		conflicts_with("authorities"),
@@ -31,7 +31,8 @@ pub struct UncompressAuthorities {
 
 	/// A SCALE-encoded vector of BEEFY authority ids (compressed public keys).
 	///
-	/// This
+	/// This can be obtained by querying `beefy.authorities`/`beefy.next_authorities` storage item
+	/// of BEEFY pallet.
 	#[structopt(
 		long,
 		conflicts_with("authority"),
@@ -68,7 +69,13 @@ fn parse_hex(hex: String) -> anyhow::Result<Vec<u8>> {
 }
 
 fn uncompress_beefy_ids(ids: Vec<AuthorityId>) -> anyhow::Result<()> {
-	println!("{:?}", ids);
+	for id in ids {
+		let public = secp256k1::PublicKey::parse_slice(
+			&*id.as_ref(),
+			Some(secp256k1::PublicKeyFormat::Compressed),
+		)?;
+		println!("[{:?}] Uncompressed:\n\t {}", id, hex::encode(public.serialize()));
+	}
 	Ok(())
 }
 
