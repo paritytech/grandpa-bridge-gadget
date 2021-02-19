@@ -26,10 +26,10 @@ pub enum BeefyMerkleTree {
 	/// Construct a merkle tree of uncompressed public keys, given BEEFY authority ids (compressed
 	/// keys) and generate a merkle proof.
 	GenerateProof {
-		/// A SCALE-encoded vector of BEEFY authority ids (compressed public key).
-		authorities: Authorities,
 		/// Leaf index to generate the proof for.
 		leaf_index: usize,
+		/// A SCALE-encoded vector of BEEFY authority ids (compressed public key).
+		authorities: Authorities,
 	},
 	/// Verify a merkle proof given root hash and the proof content.
 	VerifyProof {
@@ -41,7 +41,7 @@ pub enum BeefyMerkleTree {
 		leaf_index: usize,
 		/// SCALE-encoded value of the leaf node (it's not part of the proof).
 		leaf_value: Bytes,
-	}
+	},
 }
 
 impl BeefyMerkleTree {
@@ -56,7 +56,7 @@ impl BeefyMerkleTree {
 			},
 			Self::VerifyProof { root, proof, leaf_index, leaf_value } => {
 				verify_merkle_proof(root, proof.0, leaf_index, leaf_value.0)
-			}
+			},
 		}
 	}
 }
@@ -64,11 +64,39 @@ impl BeefyMerkleTree {
 /// Parachain heads merkle tree related commands.
 #[derive(StructOpt)]
 #[structopt(about = "Construct or verify a merkle proof from parachain heads.")]
-pub enum ParaMerkleTree {}
+pub enum ParaMerkleTree {
+	/// Construct a merkle tree of given list of parachains' `HeadData`
+	/// and generate a merkle proof.
+	GenerateProof {
+		/// Leaf index to generate the proof for.
+		leaf_index: usize,
+		/// A list of raw `HeadData`.
+		heads: Vec<Bytes>,
+	},
+	/// Verify a merkle proof given root hash and the proof content.
+	VerifyProof {
+		/// Merkle Trie Root hash.
+		root: H256,
+		/// Proof content.
+		proof: Bytes,
+		/// Index of the leaf the proof is for.
+		leaf_index: usize,
+		/// SCALE-encoded value of the leaf node (it's not part of the proof).
+		leaf_value: Bytes,
+	}
+}
 
 impl ParaMerkleTree {
 	pub fn run(self) -> anyhow::Result<()> {
-		unimplemented!()
+		match self {
+			Self::GenerateProof { heads, leaf_index } => {
+				let raw_heads = heads.into_iter().map(|x| x.0);
+				generate_merkle_proof(raw_heads, leaf_index)
+			},
+			Self::VerifyProof { root, proof, leaf_index, leaf_value } => {
+				verify_merkle_proof(root, proof.0, leaf_index, leaf_value.0)
+			},
+		}
 	}
 }
 
@@ -104,10 +132,12 @@ fn generate_merkle_proof<T: Encode>(
 		vec![&leaf.0],
 	)?;
 
+	println!("");
 	println!("Root: {:?}", root);
 	println!("SCALE-encoded proof: 0x{}", hex::encode(proof.encode()));
-	println!("Leaf key: 0x{}", hex::encode(&leaf.0));
-	println!("Leaf value: 0x{}", hex::encode(&leaf.1));
+	println!("\nLeaf key: 0x{}", hex::encode(&leaf.0));
+	println!("SCALE-encoded leaf value: 0x{}", hex::encode(&leaf.1));
+	println!("");
 
 	Ok(())
 }

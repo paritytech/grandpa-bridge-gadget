@@ -26,7 +26,7 @@ use structopt::StructOpt;
 pub enum Command {
 	UncompressBeefyId(uncompress_authorities::UncompressAuthorities),
 	BeefyIdMerkleTree(merkle_tree::BeefyMerkleTree),
-	ParaHeadMerkleTree(merkle_tree::ParaMerkleTree),
+	ParaHeadsMerkleTree(merkle_tree::ParaMerkleTree),
 }
 
 impl Command {
@@ -35,7 +35,7 @@ impl Command {
 		match self {
 			Self::UncompressBeefyId(cmd) => cmd.run(),
 			Self::BeefyIdMerkleTree(cmd) => cmd.run(),
-			Self::ParaHeadMerkleTree(cmd) => cmd.run(),
+			Self::ParaHeadsMerkleTree(cmd) => cmd.run(),
 		}
 	}
 }
