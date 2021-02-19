@@ -15,7 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use sp_core::H256;
-use crate::cli::utils::{Authorities, Bytes};
+use crate::cli::{uncompress_authorities::uncompress_beefy_ids, utils::{Authorities, Bytes}};
 use structopt::StructOpt;
 use parity_scale_codec::{Encode, Decode};
 
@@ -37,6 +37,10 @@ pub enum BeefyMerkleTree {
 		root: H256,
 		/// Proof content.
 		proof: Bytes,
+		/// Index of the leaf the proof is for.
+		leaf_index: usize,
+		/// SCALE-encoded value of the leaf node (it's not part of the proof).
+		leaf_value: Bytes,
 	}
 }
 
@@ -44,10 +48,14 @@ impl BeefyMerkleTree {
 	pub fn run(self) -> anyhow::Result<()> {
 		match self {
 			Self::GenerateProof { authorities, leaf_index } => {
-				generate_merkle_proof(authorities.0, leaf_index)
+				let uncompressed = uncompress_beefy_ids(authorities.0)?;
+				let uncompressed_raw = uncompressed
+					.into_iter()
+					.map(|k| k.serialize());
+				generate_merkle_proof(uncompressed_raw, leaf_index)
 			},
-			Self::VerifyProof { root, proof } => {
-				unimplemented!()
+			Self::VerifyProof { root, proof, leaf_index, leaf_value } => {
+				verify_merkle_proof(root, proof.0, leaf_index, leaf_value.0)
 			}
 		}
 	}
@@ -64,34 +72,65 @@ impl ParaMerkleTree {
 	}
 }
 
+use sp_trie::TrieConfiguration;
+
+type Proof = Vec<Vec<u8>>;
+type Layout = sp_trie::Layout<sp_core::KeccakHasher>;
 
 fn generate_merkle_proof<T: Encode>(
-	items: Vec<T>,
+	items: impl Iterator<Item = T>,
 	leaf_index: usize,
 ) -> anyhow::Result<()> {
-	use sp_trie::TrieConfiguration;
-
-	type Layout = sp_trie::Layout<sp_core::KeccakHasher>;
-
-	let items = items.iter().map(Encode::encode).collect::<Vec<_>>();
 	let ordered_items = items
-		.iter()
+		.map(|x| Encode::encode(&x))
 		.enumerate()
-		.map(|(i, v)| (Layout::encode_index(i as u32), v.clone()))
+		.map(|(i, v)| (Layout::encode_index(i as u32), v))
 		.collect::<Vec<(Vec<u8>, Vec<u8>)>>();
+	let leaf = ordered_items
+		.get(leaf_index)
+		.cloned()
+		.ok_or_else(|| anyhow::format_err!(
+			"Leaf index out of boudns: {} vs {}",
+			leaf_index,
+			ordered_items.len(),
+		))?;
 	let mut db = sp_trie::MemoryDB::<sp_core::KeccakHasher>::default();
 	let mut cb = trie_db::TrieBuilder::new(&mut db);
 	trie_db::trie_visit::<Layout, _, _, _, _>(ordered_items.into_iter(), &mut cb);
 	let root = cb.root.unwrap_or_default();
-
-	let proof = sp_trie::generate_trie_proof::<Layout, _, _, _>(
+	let proof: Proof = sp_trie::generate_trie_proof::<Layout, _, _, _>(
 		&db,
 		root,
-		vec![&Layout::encode_index(leaf_index as u32)],
+		vec![&leaf.0],
 	)?;
 
 	println!("Root: {:?}", root);
 	println!("SCALE-encoded proof: 0x{}", hex::encode(proof.encode()));
+	println!("Leaf key: 0x{}", hex::encode(&leaf.0));
+	println!("Leaf value: 0x{}", hex::encode(&leaf.1));
+
+	Ok(())
+}
+
+fn verify_merkle_proof(
+	root: H256,
+	proof: Vec<u8>,
+	leaf_index: usize,
+	leaf_value: Vec<u8>,
+) -> anyhow::Result<()> {
+	let proof: Proof = Decode::decode(&mut &*proof)?;
+	let items = vec![(
+		Layout::encode_index(leaf_index as u32),
+		Some(leaf_value),
+	)];
+
+	sp_trie::verify_trie_proof::<Layout, _, _, _>(
+		&root,
+		&*proof,
+		items.iter(),
+	)?;
+
+	println!("\nProof is correct.\n");
 
 	Ok(())
 }

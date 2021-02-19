@@ -48,26 +48,31 @@ pub struct UncompressAuthorities {
 impl UncompressAuthorities {
 	pub fn run(self) -> anyhow::Result<()> {
 		if let Some(id) = self.authority {
-			return uncompress_beefy_ids(vec![id]);
+			uncompress_beefy_ids(vec![id])?;
+			return Ok(())
 		}
 
 		if let Some(ids) = self.authorities {
-			return uncompress_beefy_ids(ids.0);
+			uncompress_beefy_ids(ids.0)?;
+			return Ok(())
 		}
 
 		anyhow::bail!("Neither argument given")
 	}
 }
 
-fn uncompress_beefy_ids(ids: Vec<AuthorityId>) -> anyhow::Result<()> {
+/// Convert BEEFY authority ids into uncompressed secp256k1 PublicKeys
+pub fn uncompress_beefy_ids(ids: Vec<AuthorityId>) -> anyhow::Result<Vec<secp256k1::PublicKey>> {
+	let mut uncompressed = vec![];
 	for id in ids {
 		let public = secp256k1::PublicKey::parse_slice(
 			&*id.as_ref(),
 			Some(secp256k1::PublicKeyFormat::Compressed),
 		)?;
 		println!("[{:?}] Uncompressed:\n\t {}", id, hex::encode(public.serialize()));
+		uncompressed.push(public);
 	}
-	Ok(())
+	Ok(uncompressed)
 }
 
 fn beefy_id_from_hex(id: &str) -> anyhow::Result<AuthorityId> {
