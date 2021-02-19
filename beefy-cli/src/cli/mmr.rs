@@ -25,9 +25,10 @@ use structopt::StructOpt;
 pub enum Mmr {
 	/// Decode Polkadot-compatible MMR Leaf.
 	DecodeLeaf {
-		/// A SCALE-encoded MMR Leaf.
+		/// A double SCALE-encoded MMR Leaf.
 		///
 		/// Leaf can be obtained via `mmr_generateProof` custom RPC method.
+		/// Since the RPC returns a SCALE-encoding of `Vec<u8>`, this method expects the same.
 		leaf: Bytes,
 	}
 }
@@ -58,7 +59,8 @@ impl Mmr {
 	pub fn run(self) -> anyhow::Result<()> {
 		match self {
 			Self::DecodeLeaf { leaf } => {
-				let leaf: MmrLeaf = Decode::decode(&mut &*leaf.0)?;
+				let leaf: Vec<u8> = Decode::decode(&mut &*leaf.0)?;
+				let leaf: MmrLeaf = Decode::decode(&mut &*leaf)?;
 				println!("{:?}", leaf);
 			}
 		}
