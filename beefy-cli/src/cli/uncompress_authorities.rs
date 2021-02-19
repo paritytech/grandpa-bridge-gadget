@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use beefy_primitives::ecdsa::AuthorityId;
 use crate::cli::utils::{parse_hex, Authorities};
+use beefy_primitives::ecdsa::AuthorityId;
 use parity_scale_codec::Decode;
 use structopt::StructOpt;
 
@@ -36,25 +36,20 @@ pub struct UncompressAuthorities {
 	///
 	/// This can be obtained by querying `beefy.authorities`/`beefy.next_authorities` storage item
 	/// of BEEFY pallet.
-	#[structopt(
-		long,
-		conflicts_with("authority"),
-		required_unless("authority"),
-	)]
+	#[structopt(long, conflicts_with("authority"), required_unless("authority"))]
 	pub authorities: Option<Authorities>,
 }
-
 
 impl UncompressAuthorities {
 	pub fn run(self) -> anyhow::Result<()> {
 		if let Some(id) = self.authority {
 			uncompress_beefy_ids(vec![id])?;
-			return Ok(())
+			return Ok(());
 		}
 
 		if let Some(ids) = self.authorities {
 			uncompress_beefy_ids(ids.0)?;
-			return Ok(())
+			return Ok(());
 		}
 
 		anyhow::bail!("Neither argument given")
@@ -65,10 +60,7 @@ impl UncompressAuthorities {
 pub fn uncompress_beefy_ids(ids: Vec<AuthorityId>) -> anyhow::Result<Vec<secp256k1::PublicKey>> {
 	let mut uncompressed = vec![];
 	for id in ids {
-		let public = secp256k1::PublicKey::parse_slice(
-			&*id.as_ref(),
-			Some(secp256k1::PublicKeyFormat::Compressed),
-		)?;
+		let public = secp256k1::PublicKey::parse_slice(&*id.as_ref(), Some(secp256k1::PublicKeyFormat::Compressed))?;
 		println!("[{:?}] Uncompressed:\n\t {}", id, hex::encode(public.serialize()));
 		uncompressed.push(public);
 	}

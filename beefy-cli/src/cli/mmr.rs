@@ -15,7 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::cli::utils::Bytes;
-use parity_scale_codec::{Encode, Decode};
+use parity_scale_codec::{Decode, Encode};
 use sp_core::H256;
 use structopt::StructOpt;
 
@@ -30,7 +30,7 @@ pub enum Mmr {
 		/// Leaf can be obtained via `mmr_generateProof` custom RPC method.
 		/// Since the RPC returns a SCALE-encoding of `Vec<u8>`, this method expects the same.
 		leaf: Bytes,
-	}
+	},
 }
 
 /// A MMR leaf structure (should be matching one in Polkadot repo).
