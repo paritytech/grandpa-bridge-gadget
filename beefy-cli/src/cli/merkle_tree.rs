@@ -131,12 +131,12 @@ fn generate_merkle_proof<T: Encode>(items: impl Iterator<Item = T>, leaf_index: 
 	let root = cb.root.unwrap_or_default();
 	let proof: Proof = sp_trie::generate_trie_proof::<Layout, _, _, _>(&db, root, vec![&leaf.0])?;
 
-	println!("");
+	println!();
 	println!("Root: {:?}", root);
 	println!("SCALE-encoded proof: 0x{}", hex::encode(proof.encode()));
 	println!("\nLeaf key: 0x{}", hex::encode(&leaf.0));
 	println!("SCALE-encoded leaf value: 0x{}", hex::encode(&leaf.1));
-	println!("");
+	println!();
 
 	Ok(())
 }
