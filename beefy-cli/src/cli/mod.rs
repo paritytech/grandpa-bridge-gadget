@@ -15,6 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 mod merkle_tree;
+mod mmr;
 mod uncompress_authorities;
 mod utils;
 
@@ -27,6 +28,7 @@ pub enum Command {
 	UncompressBeefyId(uncompress_authorities::UncompressAuthorities),
 	BeefyIdMerkleTree(merkle_tree::BeefyMerkleTree),
 	ParaHeadsMerkleTree(merkle_tree::ParaMerkleTree),
+	Mmr(mmr::Mmr),
 }
 
 impl Command {
@@ -36,6 +38,7 @@ impl Command {
 			Self::UncompressBeefyId(cmd) => cmd.run(),
 			Self::BeefyIdMerkleTree(cmd) => cmd.run(),
 			Self::ParaHeadsMerkleTree(cmd) => cmd.run(),
+			Self::Mmr(cmd) => cmd.run(),
 		}
 	}
 }
