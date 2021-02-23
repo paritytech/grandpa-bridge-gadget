@@ -69,11 +69,11 @@ impl Mmr {
 				let leaf: Vec<u8> = Decode::decode(&mut &*leaf.0)?;
 				let leaf: MmrLeaf = Decode::decode(&mut &*leaf)?;
 				println!("{:?}", leaf);
-			},
+			}
 			Self::StorageKey { prefix, pos } => {
 				let key = (prefix.as_bytes(), pos).encode();
 				println!("0x{}", hex::encode(&key));
-			},
+			}
 		}
 		Ok(())
 	}
