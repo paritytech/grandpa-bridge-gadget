@@ -31,6 +31,13 @@ pub enum Mmr {
 		/// Since the RPC returns a SCALE-encoding of `Vec<u8>`, this method expects the same.
 		leaf: Bytes,
 	},
+	/// Construct MMR Offchain storage key.
+	StorageKey {
+		/// Indexing prefix used in pallet configuration.
+		prefix: String,
+		/// Node position.
+		pos: u64,
+	},
 }
 
 /// A MMR leaf structure (should be matching one in Polkadot repo).
@@ -62,7 +69,11 @@ impl Mmr {
 				let leaf: Vec<u8> = Decode::decode(&mut &*leaf.0)?;
 				let leaf: MmrLeaf = Decode::decode(&mut &*leaf)?;
 				println!("{:?}", leaf);
-			}
+			},
+			Self::StorageKey { prefix, pos } => {
+				let key = (prefix.as_bytes(), pos).encode();
+				println!("0x{}", hex::encode(&key));
+			},
 		}
 		Ok(())
 	}
