@@ -291,8 +291,11 @@ where
 				&commitment.encode(),
 			)
 			.map_err(|_| ())
-			.and_then(|res| res.try_into().map_err(|_| ()))
-			{
+			.and_then(|res| {
+				res.expect("closure won't be called in case of an error; qed")
+					.try_into()
+					.map_err(|_| ())
+			}) {
 				Ok(sig) => sig,
 				Err(err) => {
 					warn!(target: "beefy", "Error signing: {:?}", err);
