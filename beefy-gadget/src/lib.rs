@@ -284,21 +284,22 @@ where
 				validator_set_id: 0,
 			};
 
+			// TODO: this is really ugly due to the recent signature change of `sign_with()`.
+			// Should be improved together with the validator set changes to do.
 			let signature = match SyncCryptoStore::sign_with(
 				&*self.key_store,
 				KEY_TYPE,
 				&local_id.to_public_crypto_pair(),
 				&commitment.encode(),
 			)
-			.map_err(|_| ())
-			.and_then(|res| {
-				res.expect("closure won't be called in case of an error; qed")
-					.try_into()
-					.map_err(|_| ())
-			}) {
+			.ok()
+			.flatten()
+			.expect("either a signature or None; qed")
+			.try_into()
+			{
 				Ok(sig) => sig,
-				Err(err) => {
-					warn!(target: "beefy", "Error signing: {:?}", err);
+				Err(_) => {
+					warn!(target: "beefy", "Sign commitment error");
 					return;
 				}
 			};
