@@ -292,14 +292,15 @@ where
 				&local_id.to_public_crypto_pair(),
 				&commitment.encode(),
 			)
-			.ok()
-			.flatten()
-			.expect("either a signature or None; qed")
-			.try_into()
-			{
+			.map_err(|_| ())
+			.and_then(|res| {
+				res.expect("closure won't be called in case of an error; qed")
+					.try_into()
+					.map_err(|_| ())
+			}) {
 				Ok(sig) => sig,
-				Err(_) => {
-					warn!(target: "beefy", "Sign commitment error");
+				Err(err) => {
+					warn!(target: "beefy", "Error signing: {:?}", err);
 					return;
 				}
 			};
