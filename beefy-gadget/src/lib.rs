@@ -284,7 +284,7 @@ where
 				validator_set_id: 0,
 			};
 
-			// TODO #92 
+			// TODO #92
 			let signature = match SyncCryptoStore::sign_with(
 				&*self.key_store,
 				KEY_TYPE,
