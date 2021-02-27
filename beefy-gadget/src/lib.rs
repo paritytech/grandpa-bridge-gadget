@@ -284,8 +284,7 @@ where
 				validator_set_id: 0,
 			};
 
-			// TODO: this is really ugly due to the recent signature change of `sign_with()`.
-			// Should be improved together with the validator set changes to do.
+			// TODO #92 
 			let signature = match SyncCryptoStore::sign_with(
 				&*self.key_store,
 				KEY_TYPE,
