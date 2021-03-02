@@ -25,7 +25,8 @@ use log::{debug, error, info, trace, warn};
 use parking_lot::Mutex;
 
 use beefy_primitives::{
-	BeefyApi, Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, BEEFY_ENGINE_ID, KEY_TYPE,
+	BeefyApi, Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, ValidatorSetId, BEEFY_ENGINE_ID,
+	KEY_TYPE,
 };
 
 use sc_client_api::{Backend as BackendT, BlockchainEvents, FinalityNotification, Finalizer};
@@ -196,6 +197,7 @@ struct BeefyWorker<Block: BlockT, Id, Signature, FinalityNotifications> {
 	signed_commitment_sender: BeefySignedCommitmentSender<Block, Signature>,
 	best_finalized_block: NumberFor<Block>,
 	best_block_voted_on: NumberFor<Block>,
+	validator_set_id: ValidatorSetId,
 }
 
 impl<Block, Id, Signature, FinalityNotifications> BeefyWorker<Block, Id, Signature, FinalityNotifications>
@@ -212,6 +214,7 @@ where
 		signed_commitment_sender: BeefySignedCommitmentSender<Block, Signature>,
 		best_finalized_block: NumberFor<Block>,
 		best_block_voted_on: NumberFor<Block>,
+		validator_set_id: ValidatorSetId,
 	) -> Self {
 		BeefyWorker {
 			local_id,
@@ -223,6 +226,7 @@ where
 			signed_commitment_sender,
 			best_finalized_block,
 			best_block_voted_on,
+			validator_set_id,
 		}
 	}
 }
@@ -278,17 +282,15 @@ where
 				return;
 			};
 
-			let new_id = if let Some(validator_set) = find_authorities_change::<Block, Id>(&notification.header) {
-				debug!(target: "beefy", "🥩 New validator set: {:?}", validator_set);
-				validator_set.id
-			} else {
-				0 // genesis validator set id
+			if let Some(new) = find_authorities_change::<Block, Id>(&notification.header) {
+				debug!(target: "beefy", "🥩 New validator set: {:?}", new);
+				self.validator_set_id = new.id;
 			};
 
 			let commitment = Commitment {
 				payload: mmr_root,
 				block_number: notification.header.number(),
-				validator_set_id: new_id,
+				validator_set_id: self.validator_set_id,
 			};
 
 			// TODO #92
@@ -340,12 +342,10 @@ where
 
 		if vote_added && self.rounds.is_done(&round) {
 			if let Some(signatures) = self.rounds.drop(&round) {
-				// TODO: this needs added support for validator set changes (and abstracting the
-				// "thing to sign" would be nice).
 				let commitment = Commitment {
 					payload: round.0,
 					block_number: round.1,
-					validator_set_id: 0,
+					validator_set_id: self.validator_set_id,
 				};
 
 				let signed_commitment = SignedCommitment { commitment, signatures };
@@ -460,6 +460,8 @@ pub async fn start_beefy_gadget<Block, Pair, Backend, Client, Network, SyncOracl
 		signed_commitment_sender,
 		best_finalized_block,
 		best_block_voted_on,
+		// TODO #95
+		0,
 	);
 
 	worker.run().await
