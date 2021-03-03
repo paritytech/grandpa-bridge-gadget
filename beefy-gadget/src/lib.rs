@@ -197,7 +197,7 @@ struct BeefyWorker<Block: BlockT, Id, Signature, FinalityNotifications> {
 	signed_commitment_sender: BeefySignedCommitmentSender<Block, Signature>,
 	best_finalized_block: NumberFor<Block>,
 	best_block_voted_on: NumberFor<Block>,
-	validator_set_id: ValidatorSetId,
+	validator_set_id: Option<ValidatorSetId>,
 }
 
 impl<Block, Id, Signature, FinalityNotifications> BeefyWorker<Block, Id, Signature, FinalityNotifications>
@@ -214,7 +214,7 @@ where
 		signed_commitment_sender: BeefySignedCommitmentSender<Block, Signature>,
 		best_finalized_block: NumberFor<Block>,
 		best_block_voted_on: NumberFor<Block>,
-		validator_set_id: ValidatorSetId,
+		validator_set_id: Option<ValidatorSetId>,
 	) -> Self {
 		BeefyWorker {
 			local_id,
@@ -284,13 +284,20 @@ where
 
 			if let Some(new) = find_authorities_change::<Block, Id>(&notification.header) {
 				debug!(target: "beefy", "🥩 New validator set: {:?}", new);
-				self.validator_set_id = new.id;
+				self.validator_set_id = Some(new.id);
+			};
+
+			let current_set_id = if let Some(set_id) = self.validator_set_id {
+				set_id
+			} else {
+				warn!(target: "beefy", "🥩 Unknown validator set id - can't vote for: {:?}", notification.header.hash());
+				return;
 			};
 
 			let commitment = Commitment {
 				payload: mmr_root,
 				block_number: notification.header.number(),
-				validator_set_id: self.validator_set_id,
+				validator_set_id: current_set_id,
 			};
 
 			// TODO #92
@@ -345,7 +352,9 @@ where
 				let commitment = Commitment {
 					payload: round.0,
 					block_number: round.1,
-					validator_set_id: self.validator_set_id,
+					validator_set_id: self
+						.validator_set_id
+						.expect("We voted only in case of a valid validator_set_id; qed"),
 				};
 
 				let signed_commitment = SignedCommitment { commitment, signatures };
@@ -360,7 +369,7 @@ where
 	async fn run(mut self) {
 		let mut votes = Box::pin(self.gossip_engine.lock().messages_for(topic::<Block>()).filter_map(
 			|notification| async move {
-				debug!(target: "beefy", "Got vote message: {:?}", notification);
+				debug!(target: "beefy", "🥩 Got vote message: {:?}", notification);
 
 				VoteMessage::<MmrRootHash, NumberFor<Block>, Id, Signature>::decode(&mut &notification.message[..]).ok()
 			},
@@ -389,7 +398,7 @@ where
 					}
 				},
 				_ = gossip_engine.fuse() => {
-					error!(target: "beefy", "Gossip engine has terminated.");
+					error!(target: "beefy", "🥩 Gossip engine has terminated.");
 					return;
 				}
 			}
@@ -461,7 +470,7 @@ pub async fn start_beefy_gadget<Block, Pair, Backend, Client, Network, SyncOracl
 		best_finalized_block,
 		best_block_voted_on,
 		// TODO #95
-		0,
+		Some(0),
 	);
 
 	worker.run().await
