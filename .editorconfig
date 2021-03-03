@@ -15,3 +15,9 @@ indent_style=space
 indent_size=2
 tab_width=8
 end_of_line=lf
+
+[*.toml]
+indent_style=space
+indent_size=4
+tab_width=8
+end_of_line=lf
