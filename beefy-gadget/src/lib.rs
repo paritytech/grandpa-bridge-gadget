@@ -258,6 +258,16 @@ where
 		number == next_block_to_vote_on
 	}
 
+	fn sign_commitment(&self, id: &Id, commitment: &[u8]) -> Option<Signature> {
+		let sig = SyncCryptoStore::sign_with(&*self.key_store, KEY_TYPE, &id.to_public_crypto_pair(), &commitment)
+			.ok()
+			.flatten()?
+			.try_into()
+			.ok()?;
+
+		Some(sig)
+	}
+
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<Block>) {
 		debug!(target: "beefy", "Finality notification: {:?}", notification);
 
@@ -284,22 +294,10 @@ where
 				validator_set_id: 0,
 			};
 
-			// TODO #92
-			let signature = match SyncCryptoStore::sign_with(
-				&*self.key_store,
-				KEY_TYPE,
-				&local_id.to_public_crypto_pair(),
-				&commitment.encode(),
-			)
-			.map_err(|_| ())
-			.and_then(|res| {
-				res.expect("closure won't be called in case of an error; qed")
-					.try_into()
-					.map_err(|_| ())
-			}) {
-				Ok(sig) => sig,
-				Err(err) => {
-					warn!(target: "beefy", "Error signing: {:?}", err);
+			let signature = match self.sign_commitment(local_id, commitment.encode().as_ref()) {
+				Some(sig) => sig,
+				None => {
+					warn!(target: "beefy", "🥩 Error signing commitment: {:?}", commitment);
 					return;
 				}
 			};
