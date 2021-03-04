@@ -1,4 +1,4 @@
-// Copyright (C) 2020 Parity Technologies (UK) Ltd.
+// Copyright (C) 2020-2021 Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -19,10 +19,13 @@ use std::convert::{TryFrom, TryInto};
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use codec::{Codec, Decode, Encode};
-use futures::{future, FutureExt, Stream, StreamExt};
-use log::{debug, error, info, trace, warn};
-use parking_lot::Mutex;
+use {
+	codec::{Codec, Decode, Encode},
+	futures::{future, FutureExt, Stream, StreamExt},
+	hex::ToHex,
+	log::{debug, error, info, trace, warn},
+	parking_lot::Mutex,
+};
 
 use beefy_primitives::{
 	BeefyApi, Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, ValidatorSetId, BEEFY_ENGINE_ID,
@@ -49,8 +52,6 @@ mod error;
 pub mod notification;
 
 use notification::BeefySignedCommitmentSender;
-
-pub use error::Error;
 
 pub const BEEFY_PROTOCOL_NAME: &str = "/paritytech/beefy/1";
 
@@ -268,15 +269,15 @@ where
 		number == next_block_to_vote_on
 	}
 
-	fn sign_commitment(&self, id: &Id, commitment: &[u8]) -> Result<Signature, Error> {
+	fn sign_commitment(&self, id: &Id, commitment: &[u8]) -> Result<Signature, error::Error<Id>> {
 		let sig = SyncCryptoStore::sign_with(&*self.key_store, KEY_TYPE, &id.to_public_crypto_pair(), &commitment)
-			.map_err(|e| Error::CannotSign(id.to_raw_vec(), e.to_string()))?
-			.ok_or_else(|| Error::CannotSign(id.to_raw_vec(), "No key in KeyStore found".into()))?;
+			.map_err(|e| error::Error::CannotSign((*id).clone(), e.to_string()))?
+			.ok_or_else(|| error::Error::CannotSign((*id).clone(), "No key in KeyStore found".into()))?;
 
 		let sig = sig
 			.clone()
 			.try_into()
-			.map_err(|_| Error::InvalidSignature(sig, id.to_raw_vec()))?;
+			.map_err(|_| error::Error::InvalidSignature(sig.encode_hex(), (*id).clone()))?;
 
 		Ok(sig)
 	}
