@@ -44,9 +44,13 @@ use sp_runtime::{
 	traits::{Block as BlockT, Hash as HashT, Header as HeaderT, NumberFor, Zero},
 };
 
+mod error;
+
 pub mod notification;
 
 use notification::BeefySignedCommitmentSender;
+
+pub use error::Error;
 
 pub const BEEFY_PROTOCOL_NAME: &str = "/paritytech/beefy/1";
 
@@ -264,15 +268,17 @@ where
 		number == next_block_to_vote_on
 	}
 
-	fn sign_commitment(&self, id: &Id, commitment: &[u8]) -> Option<Signature> {
+	fn sign_commitment(&self, id: &Id, commitment: &[u8]) -> Result<Signature, Error> {
 		let sig = SyncCryptoStore::sign_with(&*self.key_store, KEY_TYPE, &id.to_public_crypto_pair(), &commitment)
-			.ok()
-			.flatten()?
-			.try_into()
-			.ok()?;
+			.map_err(|e| Error::CannotSign(id.to_raw_vec(), e.to_string()))?
+			.ok_or_else(|| Error::CannotSign(id.to_raw_vec(), "No key in KeyStore found".into()))?;
 
-		// TODO #98 - return errors as well
-		Some(sig)
+		let sig = sig
+			.clone()
+			.try_into()
+			.map_err(|_| Error::InvalidSignature(sig, id.to_raw_vec()))?;
+
+		Ok(sig)
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<Block>) {
@@ -312,9 +318,9 @@ where
 			};
 
 			let signature = match self.sign_commitment(local_id, commitment.encode().as_ref()) {
-				Some(sig) => sig,
-				None => {
-					warn!(target: "beefy", "🥩 Error signing commitment: {:?}", commitment);
+				Ok(sig) => sig,
+				Err(err) => {
+					warn!(target: "beefy", "🥩 Error signing commitment: {:?}", err);
 					return;
 				}
 			};

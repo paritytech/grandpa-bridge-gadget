@@ -9,6 +9,7 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 futures = "0.3"
 log = "0.4"
 parking_lot = "0.11"
+thiserror = "1.0"
 
 codec = { version = "2.0.0", package = "parity-scale-codec", features = ["derive"] }
 

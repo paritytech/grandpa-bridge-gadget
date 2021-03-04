@@ -441,6 +441,7 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-utils",
+ "thiserror",
 ]
 
 [[package]]
