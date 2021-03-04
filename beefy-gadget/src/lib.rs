@@ -271,6 +271,7 @@ where
 			.try_into()
 			.ok()?;
 
+		// TODO #98 - return errors as well
 		Some(sig)
 	}
 
