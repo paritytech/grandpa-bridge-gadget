@@ -426,6 +426,7 @@ version = "0.1.0"
 dependencies = [
  "beefy-primitives",
  "futures 0.3.13",
+ "hex",
  "log",
  "parity-scale-codec",
  "parking_lot 0.11.1",
@@ -441,6 +442,7 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-utils",
+ "thiserror",
 ]
 
 [[package]]
