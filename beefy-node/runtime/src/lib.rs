@@ -10,39 +10,45 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use beefy_primitives::ecdsa::AuthorityId as BeefyId;
-use frame_system::limits;
-use pallet_grandpa::fg_primitives;
-use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
-use sp_api::impl_runtime_apis;
-use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, Keccak256, NumberFor, Verify};
-use sp_runtime::{
-	create_runtime_str, generic, impl_opaque_keys,
-	transaction_validity::{TransactionSource, TransactionValidity},
-	ApplyExtrinsicResult, MultiSignature,
+use {
+	beefy_primitives::{ecdsa::AuthorityId as BeefyId, ValidatorSet},
+	frame_system::limits,
+	pallet_grandpa::fg_primitives,
+	pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList},
+	sp_api::impl_runtime_apis,
+	sp_consensus_aura::sr25519::AuthorityId as AuraId,
+	sp_core::{crypto::KeyTypeId, OpaqueMetadata},
+	sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, Keccak256, NumberFor, Verify},
+	sp_runtime::{
+		create_runtime_str, generic, impl_opaque_keys,
+		transaction_validity::{TransactionSource, TransactionValidity},
+		ApplyExtrinsicResult, MultiSignature,
+	},
+	sp_std::prelude::*,
+	sp_version::RuntimeVersion,
 };
-use sp_std::prelude::*;
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-use sp_version::RuntimeVersion;
 
 // A few exports that help ease life for downstream crates.
-pub use frame_support::{
-	construct_runtime, parameter_types,
-	traits::{KeyOwnerProofSystem, Randomness},
-	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-		DispatchClass, IdentityFee, Weight,
+pub use {
+	frame_support::{
+		construct_runtime, parameter_types,
+		traits::{KeyOwnerProofSystem, Randomness},
+		weights::{
+			constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
+			DispatchClass, IdentityFee, Weight,
+		},
+		StorageValue,
 	},
-	StorageValue,
+	pallet_balances::Call as BalancesCall,
+	pallet_timestamp::Call as TimestampCall,
+	sp_runtime::{Perbill, Permill},
 };
-pub use pallet_balances::Call as BalancesCall;
-pub use pallet_timestamp::Call as TimestampCall;
+
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-pub use sp_runtime::{Perbill, Permill};
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -453,8 +459,8 @@ impl_runtime_apis! {
 	}
 
 	impl beefy_primitives::BeefyApi<Block, BeefyId> for Runtime {
-		fn authorities() -> Vec<BeefyId> {
-			Beefy::authorities()
+		fn validator_set() -> ValidatorSet<BeefyId> {
+			Beefy::validator_set()
 		}
 	}
 
