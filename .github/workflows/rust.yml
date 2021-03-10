@@ -80,7 +80,6 @@ jobs:
     runs-on:                       ubuntu-latest
     env:
       RUST_BACKTRACE:   full
-      NIGHTLY: nightly
     steps:
       - name:                      Cancel Previous Runs
         uses:                      styfle/cancel-workflow-action@0.4.1
@@ -102,5 +101,5 @@ jobs:
         uses:                      actions-rs/cargo@master
         with:
           command:                 clippy
-          toolchain:               
+          toolchain:               stable
           args:                    --all-targets -- -D warnings
