@@ -123,12 +123,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		})?;
 
 	if config.offchain_worker.enabled {
-		sc_service::build_offchain_workers(
-			&config,
-			task_manager.spawn_handle(),
-			client.clone(),
-			network.clone(),
-		);
+		sc_service::build_offchain_workers(&config, task_manager.spawn_handle(), client.clone(), network.clone());
 	}
 
 	let role = config.role.clone();
@@ -314,12 +309,7 @@ pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
 		})?;
 
 	if config.offchain_worker.enabled {
-		sc_service::build_offchain_workers(
-			&config,
-			task_manager.spawn_handle(),
-			client.clone(),
-			network.clone(),
-		);
+		sc_service::build_offchain_workers(&config, task_manager.spawn_handle(), client.clone(), network.clone());
 	}
 
 	let telemetry_span = TelemetrySpan::new();
