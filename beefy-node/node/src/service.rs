@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use sc_client_api::{ExecutorProvider, RemoteBackend};
-use sc_consensus_aura::{ImportQueueParams, StartAuraParams};
+use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
 use sc_executor::native_executor_instance;
 use sc_finality_grandpa::SharedVoterState;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
@@ -123,13 +123,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		})?;
 
 	if config.offchain_worker.enabled {
-		sc_service::build_offchain_workers(
-			&config,
-			backend.clone(),
-			task_manager.spawn_handle(),
-			client.clone(),
-			network.clone(),
-		);
+		sc_service::build_offchain_workers(&config, task_manager.spawn_handle(), client.clone(), network.clone());
 	}
 
 	let role = config.role.clone();
@@ -204,6 +198,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 			keystore: keystore_container.sync_keystore(),
 			can_author_with,
 			sync_oracle: network.clone(),
+			block_proposal_slot_portion: SlotProportion::new(0.5),
 		})?;
 
 		// the AURA authoring task is considered essential, i.e. if it
@@ -314,13 +309,7 @@ pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
 		})?;
 
 	if config.offchain_worker.enabled {
-		sc_service::build_offchain_workers(
-			&config,
-			backend.clone(),
-			task_manager.spawn_handle(),
-			client.clone(),
-			network.clone(),
-		);
+		sc_service::build_offchain_workers(&config, task_manager.spawn_handle(), client.clone(), network.clone());
 	}
 
 	let telemetry_span = TelemetrySpan::new();
