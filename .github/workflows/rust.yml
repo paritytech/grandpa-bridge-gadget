@@ -9,13 +9,13 @@ on:
       - v*
     paths-ignore:
       - 'README.md'
-      - docs/*
 jobs:
   build:
     name:                          Build
     runs-on:                       ubuntu-latest
     env:
       RUST_BACKTRACE:   full
+      NIGHTLY: nightly
     steps:
       - name:                      Cancel Previous Runs
         uses:                      styfle/cancel-workflow-action@0.4.1
@@ -27,9 +27,9 @@ jobs:
           fetch-depth:             5
           submodules:              recursive
       - name:                      Install Toolchain
-        run:                       rustup toolchain add nightly
+        run:                       rustup toolchain add $NIGHTLY
       - name:                      Add WASM Utilities
-        run:                       rustup target add wasm32-unknown-unknown --toolchain nightly
+        run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
 ## Build Stage
       - name:                      Building rust-stable
         uses:                      actions-rs/cargo@master
@@ -44,6 +44,7 @@ jobs:
     runs-on:                       ubuntu-latest
     env:
       RUST_BACKTRACE:   full
+      NIGHTLY: nightly
     steps:
       - name:                      Cancel Previous Runs
         uses:                      styfle/cancel-workflow-action@0.4.1
@@ -55,12 +56,12 @@ jobs:
           fetch-depth:             5
           submodules:              recursive
       - name:                      Install Toolchain
-        run:                       rustup toolchain add nightly
+        run:                       rustup toolchain add $NIGHTLY
       - name:                      Add WASM Utilities
-        run:                       rustup target add wasm32-unknown-unknown --toolchain nightly
+        run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
 ## Check Stage
       - name:                      Checking rust-stable
-        uses:                      actions-r$NIGHTLY/cargo@master
+        uses:                      actions-rs/cargo@master
         with:
           command:                 check
           toolchain:               stable
@@ -79,6 +80,7 @@ jobs:
     runs-on:                       ubuntu-latest
     env:
       RUST_BACKTRACE:   full
+      NIGHTLY: nightly
     steps:
       - name:                      Cancel Previous Runs
         uses:                      styfle/cancel-workflow-action@0.4.1
@@ -90,15 +92,15 @@ jobs:
           fetch-depth:             5
           submodules:              recursive
       - name:                      Install Toolchain
-        run:                       rustup toolchain add nightly
+        run:                       rustup toolchain add $NIGHTLY
       - name:                      Add WASM Utilities
-        run:                       rustup target add wasm32-unknown-unknown --toolchain nightly
+        run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
 ## Linting Stage
       - name:                      Add clippy
-        run:                       rustup component add clippy --toolchain nightly
+        run:                       rustup component add clippy --toolchain $NIGHTLY
       - name:                      Clippy
         uses:                      actions-rs/cargo@master
         with:
           command:                 clippy
-          toolchain:               nightly
+          toolchain:               nightly-2020-10-04
           args:                    --all-targets -- -D warnings
