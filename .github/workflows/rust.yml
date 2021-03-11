@@ -9,6 +9,7 @@ on:
       - v*
     paths-ignore:
       - 'README.md'
+      - docs/*
 jobs:
   build:
     name:                          Build
@@ -56,7 +57,7 @@ jobs:
           fetch-depth:             5
           submodules:              recursive
       - name:                      Install Toolchain
-        run:                       rustup toolchain add $NIGHTLY
+        run:                       rustup toolchain add
       - name:                      Add WASM Utilities
         run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
 ## Check Stage
@@ -80,7 +81,6 @@ jobs:
     runs-on:                       ubuntu-latest
     env:
       RUST_BACKTRACE:   full
-      NIGHTLY: nightly
     steps:
       - name:                      Cancel Previous Runs
         uses:                      styfle/cancel-workflow-action@0.4.1
@@ -92,12 +92,12 @@ jobs:
           fetch-depth:             5
           submodules:              recursive
       - name:                      Install Toolchain
-        run:                       rustup toolchain add $NIGHTLY
+        run:                       rustup toolchain add
       - name:                      Add WASM Utilities
-        run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
+        run:                       rustup target add wasm32-unknown-unknown --toolchain nightly
 ## Linting Stage
       - name:                      Add clippy
-        run:                       rustup component add clippy --toolchain $NIGHTLY
+        run:                       rustup component add clippy
       - name:                      Clippy
         uses:                      actions-rs/cargo@master
         with:
