@@ -8,97 +8,130 @@ on:
     tags:
       - v*
     paths-ignore:
-      - 'README.md'
+      - '**.md'
       - docs/*
 jobs:
-  build:
-    name:                          Build
+
+## Check Stage
+  check-test:
+    name:                          Check and test
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          #- beta
+          - nightly
     runs-on:                       ubuntu-latest
     env:
-      RUST_BACKTRACE:   full
+      RUST_BACKTRACE:              full
+      NIGHTLY:                     nightly #if necessary, specify the version, nightly-2020-10-04, etc.
     steps:
+      
       - name:                      Cancel Previous Runs
         uses:                      styfle/cancel-workflow-action@0.4.1
         with:
           access_token:            ${{ github.token }}
+      
       - name:                      Checkout sources & submodules
         uses:                      actions/checkout@master
         with:
           fetch-depth:             5
           submodules:              recursive
+      
       - name:                      Install Toolchain
-        run:                       rustup toolchain add stable
+        run:                       rustup toolchain add $NIGHTLY
+      
       - name:                      Add WASM Utilities
-        run:                       rustup target add wasm32-unknown-unknown --toolchain nightly
+        run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
+      
+      - name:                      Checking rust-${{ matrix.toolchain }}
+        uses:                      actions-rs/cargo@master
+        with:
+          command:                 check
+          toolchain:               ${{ matrix.toolchain }}
+          args:                    --all  --verbose
+
+## Test Stage
+      - name:                      Testing rust-${{ matrix.toolchain }}
+        uses:                      actions-rs/cargo@master
+        if:                        matrix.toolchain == 'stable'
+        with:
+          command:                 test
+          toolchain:               ${{ matrix.toolchain }}
+          args:                    --all  --verbose
+
 ## Build Stage
-      - name:                      Building rust-stable
+  build:
+    name:                          Build
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          #- beta
+          - nightly
+    runs-on:                       ubuntu-latest
+    env:
+      RUST_BACKTRACE:              full
+      NIGHTLY:                     nightly #if necessary, specify the version, nightly-2020-10-04, etc.
+    steps:
+      
+      - name:                      Cancel Previous Runs
+        uses:                      styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token:            ${{ github.token }}
+      
+      - name:                      Checkout sources & submodules
+        uses:                      actions/checkout@master
+        with:
+          fetch-depth:             5
+          submodules:              recursive
+      
+      - name:                      Install Toolchain
+        run:                       rustup toolchain add $NIGHTLY
+      
+      - name:                      Add WASM Utilities
+        run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
+      
+      - name:                      Building rust-${{ matrix.toolchain }}
         uses:                      actions-rs/cargo@master
         if:                        github.ref == 'refs/heads/master'
         with:
           command:                 build
-          toolchain:               stable
-          args:                    --all --release --verbose
-
-  check-test:
-    name:                          Check and test
-    runs-on:                       ubuntu-latest
-    env:
-      RUST_BACKTRACE:   full
-    steps:
-      - name:                      Cancel Previous Runs
-        uses:                      styfle/cancel-workflow-action@0.4.1
-        with:
-          access_token:            ${{ github.token }}
-      - name:                      Checkout sources & submodules
-        uses:                      actions/checkout@master
-        with:
-          fetch-depth:             5
-          submodules:              recursive
-      - name:                      Install Toolchain
-        run:                       rustup toolchain add stable
-      - name:                      Add WASM Utilities
-        run:                       rustup target add wasm32-unknown-unknown --toolchain nightly
-## Check Stage
-      - name:                      Checking rust-stable
-        uses:                      actions-rs/cargo@master
-        with:
-          command:                 check
-          toolchain:               stable
-          args:                    --all  --verbose
-
-## Test Stage
-      - name:                      Testing rust-stable
-        uses:                      actions-rs/cargo@master
-        with:
-          command:                 test
-          toolchain:               stable
-          args:                    --all  --verbose
-
+          toolchain:               ${{ matrix.toolchain }}
+          args:                    --all --verbose
+      
+ ## Linting Stage
   clippy:
     name:                          Clippy
     runs-on:                       ubuntu-latest
     env:
-      RUST_BACKTRACE:   full
+      RUST_BACKTRACE:              full
+      NIGHTLY:                     nightly #if necessary, specify the version, nightly-2020-10-04, etc.
     steps:
+
       - name:                      Cancel Previous Runs
         uses:                      styfle/cancel-workflow-action@0.4.1
         with:
           access_token:            ${{ github.token }}
+      
       - name:                      Checkout sources & submodules
         uses:                      actions/checkout@master
         with:
           fetch-depth:             5
           submodules:              recursive
+      
       - name:                      Install Toolchain
-        run:                       rustup toolchain add stable
+        run:                       rustup toolchain add $NIGHTLY
+      
       - name:                      Add WASM Utilities
-        run:                       rustup target add wasm32-unknown-unknown --toolchain nightly
-## Linting Stage
+        run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
+      
       - name:                      Add clippy
-        run:                       rustup component add clippy
+        run:                       rustup component add clippy --toolchain $NIGHTLY
+            
       - name:                      Clippy
         uses:                      actions-rs/cargo@master
         with:
           command:                 clippy
-          toolchain:               stable
+          toolchain:               nightly #if necessary, specify the version, nightly-2020-10-04, etc.
           args:                    --all-targets -- -D warnings
