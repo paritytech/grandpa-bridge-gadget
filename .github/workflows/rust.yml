@@ -16,7 +16,6 @@ jobs:
     runs-on:                       ubuntu-latest
     env:
       RUST_BACKTRACE:   full
-      NIGHTLY: nightly
     steps:
       - name:                      Cancel Previous Runs
         uses:                      styfle/cancel-workflow-action@0.4.1
@@ -30,7 +29,7 @@ jobs:
       - name:                      Install Toolchain
         run:                       rustup toolchain add stable
       - name:                      Add WASM Utilities
-        run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
+        run:                       rustup target add wasm32-unknown-unknown --toolchain nightly
 ## Build Stage
       - name:                      Building rust-stable
         uses:                      actions-rs/cargo@master
@@ -45,7 +44,6 @@ jobs:
     runs-on:                       ubuntu-latest
     env:
       RUST_BACKTRACE:   full
-      NIGHTLY: nightly
     steps:
       - name:                      Cancel Previous Runs
         uses:                      styfle/cancel-workflow-action@0.4.1
@@ -59,7 +57,7 @@ jobs:
       - name:                      Install Toolchain
         run:                       rustup toolchain add stable
       - name:                      Add WASM Utilities
-        run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
+        run:                       rustup target add wasm32-unknown-unknown --toolchain nightly
 ## Check Stage
       - name:                      Checking rust-stable
         uses:                      actions-rs/cargo@master
