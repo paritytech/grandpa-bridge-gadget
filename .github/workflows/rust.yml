@@ -55,7 +55,7 @@ jobs:
           fetch-depth:             5
           submodules:              recursive
       - name:                      Install Toolchain
-        run:                       rustup toolchain add $NIGHTLY
+        run:                       rustup toolchain add nightly
       - name:                      Add WASM Utilities
         run:                       rustup target add wasm32-unknown-unknown --toolchain nightly
 ## Check Stage
@@ -90,7 +90,7 @@ jobs:
           fetch-depth:             5
           submodules:              recursive
       - name:                      Install Toolchain
-        run:                       rustup toolchain add $NIGHTLY
+        run:                       rustup toolchain add nightly
       - name:                      Add WASM Utilities
         run:                       rustup target add wasm32-unknown-unknown --toolchain nightly
 ## Linting Stage
