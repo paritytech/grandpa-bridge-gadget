@@ -28,7 +28,7 @@ jobs:
           fetch-depth:             5
           submodules:              recursive
       - name:                      Install Toolchain
-        run:                       rustup toolchain add $NIGHTLY
+        run:                       rustup toolchain add stable
       - name:                      Add WASM Utilities
         run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
 ## Build Stage
@@ -57,7 +57,7 @@ jobs:
           fetch-depth:             5
           submodules:              recursive
       - name:                      Install Toolchain
-        run:                       rustup toolchain add
+        run:                       rustup toolchain add stable
       - name:                      Add WASM Utilities
         run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
 ## Check Stage
@@ -92,7 +92,7 @@ jobs:
           fetch-depth:             5
           submodules:              recursive
       - name:                      Install Toolchain
-        run:                       rustup toolchain add
+        run:                       rustup toolchain add stable
       - name:                      Add WASM Utilities
         run:                       rustup target add wasm32-unknown-unknown --toolchain nightly
 ## Linting Stage
@@ -102,4 +102,5 @@ jobs:
         uses:                      actions-rs/cargo@master
         with:
           command:                 clippy
+          toolchain:               stable
           args:                    --all-targets -- -D warnings
