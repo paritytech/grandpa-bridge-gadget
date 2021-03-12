@@ -70,7 +70,7 @@ pub const BEEFY_ENGINE_ID: sp_runtime::ConsensusEngineId = *b"BEEF";
 pub type ValidatorSetId = u64;
 
 /// A set of BEEFY authorities, a.k.a. validators.
-#[derive(Decode, Encode, Debug, PartialEq)]
+#[derive(Default, Decode, Encode, Debug, PartialEq)]
 pub struct ValidatorSet<AuthorityId> {
 	/// Public keys of the validator set elements
 	pub validators: Vec<AuthorityId>,

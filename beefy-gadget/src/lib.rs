@@ -37,6 +37,9 @@ use {
 	sp_runtime::traits::{Block as BlockT, Zero},
 };
 
+#[cfg(test)]
+mod tests;
+
 mod error;
 mod round;
 mod worker;
