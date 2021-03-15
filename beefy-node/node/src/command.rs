@@ -15,8 +15,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::cli::{Cli, Subcommand};
-use crate::{chain_spec, service};
+use crate::{
+	chain_spec,
+	cli::{Cli, Subcommand},
+	service,
+};
 use beefy_node_runtime::Block;
 use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;

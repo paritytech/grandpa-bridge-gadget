@@ -1,16 +1,14 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
-use {std::sync::Arc, std::time::Duration};
+use std::{sync::Arc, time::Duration};
 
-use {
-	beefy_node_runtime::{self, opaque::Block, RuntimeApi},
-	sc_client_api::ExecutorProvider,
-	sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams},
-	sc_executor::native_executor_instance,
-	sc_finality_grandpa::SharedVoterState,
-	sc_service::{error::Error as ServiceError, Configuration, TaskManager},
-	sc_telemetry::{Telemetry, TelemetryWorker},
-	sp_consensus_aura::sr25519::AuthorityPair as AuraPair,
-};
+use beefy_node_runtime::{self, opaque::Block, RuntimeApi};
+use sc_client_api::ExecutorProvider;
+use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
+use sc_executor::native_executor_instance;
+use sc_finality_grandpa::SharedVoterState;
+use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
+use sc_telemetry::{Telemetry, TelemetryWorker};
+use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 
 pub use sc_executor::NativeExecutor;
 
