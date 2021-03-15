@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use {
-	beefy_primitives::{ecdsa::AuthorityId, ValidatorSet},
-	sc_network::config::ProtocolConfig,
-	sc_network_test::{PassThroughVerifier, Peer, PeersClient, TestNetFactory},
-};
+#![allow(dead_code)]
+
+use sc_network::config::ProtocolConfig;
+use sc_network_test::{PassThroughVerifier, Peer, PeersClient, TestNetFactory};
+
+use beefy_primitives::{ecdsa::AuthorityId, ValidatorSet};
 
 struct MockNetwork {
 	peers: Vec<Peer<()>>,
