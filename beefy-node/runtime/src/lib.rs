@@ -12,42 +12,37 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use {
-	beefy_primitives::{ecdsa::AuthorityId as BeefyId, ValidatorSet},
-	frame_system::limits,
-	pallet_grandpa::fg_primitives,
-	pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList},
-	sp_api::impl_runtime_apis,
-	sp_consensus_aura::sr25519::AuthorityId as AuraId,
-	sp_core::{crypto::KeyTypeId, OpaqueMetadata},
-	sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, Keccak256, NumberFor, Verify},
-	sp_runtime::{
-		create_runtime_str, generic, impl_opaque_keys,
-		transaction_validity::{TransactionSource, TransactionValidity},
-		ApplyExtrinsicResult, MultiSignature,
-	},
-	sp_std::prelude::*,
-	sp_version::RuntimeVersion,
+use beefy_primitives::{ecdsa::AuthorityId as BeefyId, ValidatorSet};
+use frame_system::limits;
+use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
+use sp_api::impl_runtime_apis;
+use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_runtime::{
+	create_runtime_str, generic, impl_opaque_keys,
+	traits::{BlakeTwo256, Block as BlockT, IdentifyAccount, IdentityLookup, Keccak256, NumberFor, Verify},
+	transaction_validity::{TransactionSource, TransactionValidity},
+	ApplyExtrinsicResult, MultiSignature,
 };
+use sp_std::prelude::*;
+use sp_version::RuntimeVersion;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
 // A few exports that help ease life for downstream crates.
-pub use {
-	frame_support::{
-		construct_runtime, parameter_types,
-		traits::{KeyOwnerProofSystem, Randomness},
-		weights::{
-			constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-			DispatchClass, IdentityFee, Weight,
-		},
-		StorageValue,
+pub use frame_support::{
+	construct_runtime, parameter_types,
+	traits::{KeyOwnerProofSystem, Randomness},
+	weights::{
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
+		DispatchClass, IdentityFee, Weight,
 	},
-	pallet_balances::Call as BalancesCall,
-	pallet_timestamp::Call as TimestampCall,
-	sp_runtime::{Perbill, Permill},
+	StorageValue,
 };
+pub use pallet_balances::Call as BalancesCall;
+pub use pallet_timestamp::Call as TimestampCall;
+pub use sp_runtime::{Perbill, Permill};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -393,7 +388,7 @@ impl_runtime_apis! {
 		}
 
 		fn random_seed() -> <Block as BlockT>::Hash {
-			RandomnessCollectiveFlip::random_seed()
+			RandomnessCollectiveFlip::random_seed().0
 		}
 	}
 
