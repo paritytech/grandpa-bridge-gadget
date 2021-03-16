@@ -10,4 +10,5 @@ members = [
 	"beefy-node/runtime",
 	"beefy-pallet",
 	"beefy-primitives",
+	"beefy-test",
 ]
