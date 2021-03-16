@@ -49,8 +49,7 @@ impl Keyring {
 
 	/// Return key pair.
 	pub fn pair(self) -> Pair {
-		Pair::from_string(&format!("//{}", <&'static str>::from(self)), None)
-			.expect("static values are known good; qed")
+		Pair::from_string(self.to_seed().as_str(), None).expect("static values are known good; qed")
 	}
 
 	/// Return public key.
@@ -66,21 +65,6 @@ impl Keyring {
 	/// Iterator over all test accounts
 	pub fn iter() -> impl (Iterator<Item = Keyring>) {
 		<Self as strum::IntoEnumIterator>::iter()
-	}
-}
-
-impl From<Keyring> for &'static str {
-	fn from(k: Keyring) -> Self {
-		match k {
-			Keyring::Alice => "Alice",
-			Keyring::Bob => "Bob",
-			Keyring::Charlie => "Charlie",
-			Keyring::Dave => "Dave",
-			Keyring::Eve => "Eve",
-			Keyring::Ferdie => "Ferdie",
-			Keyring::One => "One",
-			Keyring::Two => "Two",
-		}
 	}
 }
 
@@ -114,5 +98,40 @@ mod tests {
 			b"I am Alice!",
 			&Keyring::Bob.public(),
 		));
+	}
+
+	#[test]
+	fn pair_works() {
+		let want = Pair::from_string("//Alice", None).expect("Pair failed").to_raw_vec();
+		let got = Keyring::Alice.pair().to_raw_vec();
+		assert_eq!(want, got);
+
+		let want = Pair::from_string("//Bob", None).expect("Pair failed").to_raw_vec();
+		let got = Keyring::Bob.pair().to_raw_vec();
+		assert_eq!(want, got);
+
+		let want = Pair::from_string("//Charlie", None).expect("Pair failed").to_raw_vec();
+		let got = Keyring::Charlie.pair().to_raw_vec();
+		assert_eq!(want, got);
+
+		let want = Pair::from_string("//Dave", None).expect("Pair failed").to_raw_vec();
+		let got = Keyring::Dave.pair().to_raw_vec();
+		assert_eq!(want, got);
+
+		let want = Pair::from_string("//Eve", None).expect("Pair failed").to_raw_vec();
+		let got = Keyring::Eve.pair().to_raw_vec();
+		assert_eq!(want, got);
+
+		let want = Pair::from_string("//Ferdie", None).expect("Pair failed").to_raw_vec();
+		let got = Keyring::Ferdie.pair().to_raw_vec();
+		assert_eq!(want, got);
+
+		let want = Pair::from_string("//One", None).expect("Pair failed").to_raw_vec();
+		let got = Keyring::One.pair().to_raw_vec();
+		assert_eq!(want, got);
+
+		let want = Pair::from_string("//Two", None).expect("Pair failed").to_raw_vec();
+		let got = Keyring::Two.pair().to_raw_vec();
+		assert_eq!(want, got);
 	}
 }
