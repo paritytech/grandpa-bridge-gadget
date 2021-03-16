@@ -28,6 +28,7 @@ use sp_core::{
 /// 32 bytes long. This is not true for compressed ECDSA public keys which are 33
 /// bytes long. This causes all kinds of incompatibilities between the existing
 /// Substrate keyrings and an ECDSA based keyring.
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, strum::Display, strum::EnumIter)]
 pub enum Keyring {
 	Alice,
@@ -41,19 +42,23 @@ pub enum Keyring {
 }
 
 impl Keyring {
+	/// Sign `msg`.
 	pub fn sign(self, msg: &[u8]) -> Signature {
 		Pair::from(self).sign(msg)
 	}
 
+	/// Return key pair.
 	pub fn pair(self) -> Pair {
 		Pair::from_string(&format!("//{}", <&'static str>::from(self)), None)
 			.expect("static values are known good; qed")
 	}
 
+	/// Return public key.
 	pub fn public(self) -> Public {
 		self.pair().public()
 	}
 
+	/// Return seed string.
 	pub fn to_seed(self) -> String {
 		format!("//{}", self)
 	}
