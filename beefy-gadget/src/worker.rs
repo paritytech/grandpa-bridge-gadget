@@ -44,6 +44,13 @@ struct VoteMessage<Hash, Number, Id, Signature> {
 	id: Id,
 	signature: Signature,
 }
+/// Worker lifecycle state
+enum State {
+	/// A new worker that still needs to be initialized.
+	New,
+	/// A worker that has been initialized
+	Initialized,
+}
 
 pub(crate) struct BeefyWorker<Block: BlockT, Id, Signature, FinalityNotifications> {
 	local_id: Option<Id>,
