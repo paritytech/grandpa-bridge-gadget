@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use std::{convert::TryInto, fmt::Debug, sync::Arc};
+
 use beefy_primitives::{
 	Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, ValidatorSetId, BEEFY_ENGINE_ID, KEY_TYPE,
 };
@@ -22,20 +24,25 @@ use futures::{future, FutureExt, Stream, StreamExt};
 use hex::ToHex;
 use log::{debug, error, info, trace, warn};
 use parking_lot::Mutex;
+
 use sc_client_api::FinalityNotification;
 use sc_network_gossip::GossipEngine;
+
 use sp_application_crypto::Public;
 use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
 use sp_runtime::{
 	generic::OpaqueDigestItemId,
-	traits::{Block as BlockT, Hash as HashT, Header as HeaderT, NumberFor},
+	traits::{Block, Hash, Header, NumberFor},
 };
-use std::{convert::TryInto, fmt::Debug, sync::Arc};
 
 use crate::{error, notification, round};
 
-pub(crate) fn topic<Block: BlockT>() -> Block::Hash {
-	<<Block::Header as HeaderT>::Hashing as HashT>::hash(b"beefy")
+/// Gossip engine messages topic
+pub(crate) fn topic<B: Block>() -> B::Hash
+where
+	B: Block,
+{
+	<<B::Header as Header>::Hashing as Hash>::hash(b"beefy")
 }
 
 #[derive(Debug, Decode, Encode)]
@@ -52,32 +59,35 @@ enum State {
 	Initialized,
 }
 
-pub(crate) struct BeefyWorker<Block: BlockT, Id, Signature, FinalityNotifications> {
+pub(crate) struct BeefyWorker<B, Id, S, FN>
+where
+	B: Block,
+{
 	local_id: Option<Id>,
 	key_store: SyncCryptoStorePtr,
 	min_interval: u32,
-	rounds: round::Rounds<MmrRootHash, NumberFor<Block>, Id, Signature>,
-	finality_notifications: FinalityNotifications,
-	gossip_engine: Arc<Mutex<GossipEngine<Block>>>,
-	signed_commitment_sender: notification::BeefySignedCommitmentSender<Block, Signature>,
-	best_finalized_block: NumberFor<Block>,
-	best_block_voted_on: NumberFor<Block>,
+	rounds: round::Rounds<MmrRootHash, NumberFor<B>, Id, S>,
+	finality_notifications: FN,
+	gossip_engine: Arc<Mutex<GossipEngine<B>>>,
+	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, S>,
+	best_finalized_block: NumberFor<B>,
+	best_block_voted_on: NumberFor<B>,
 	validator_set_id: ValidatorSetId,
 }
 
-impl<Block, Id, Signature, FinalityNotifications> BeefyWorker<Block, Id, Signature, FinalityNotifications>
+impl<B, Id, S, FN> BeefyWorker<B, Id, S, FN>
 where
-	Block: BlockT,
+	B: Block,
 	Id: Public + Debug,
 {
 	pub(crate) fn new(
 		validator_set: ValidatorSet<Id>,
 		key_store: SyncCryptoStorePtr,
-		finality_notifications: FinalityNotifications,
-		gossip_engine: GossipEngine<Block>,
-		signed_commitment_sender: notification::BeefySignedCommitmentSender<Block, Signature>,
-		best_finalized_block: NumberFor<Block>,
-		best_block_voted_on: NumberFor<Block>,
+		finality_notifications: FN,
+		gossip_engine: GossipEngine<B>,
+		signed_commitment_sender: notification::BeefySignedCommitmentSender<B, S>,
+		best_finalized_block: NumberFor<B>,
+		best_block_voted_on: NumberFor<B>,
 	) -> Self {
 		let local_id = match validator_set
 			.validators
@@ -109,14 +119,14 @@ where
 	}
 }
 
-impl<Block, Id, Signature, FinalityNotifications> BeefyWorker<Block, Id, Signature, FinalityNotifications>
+impl<B, Id, S, FN> BeefyWorker<B, Id, S, FN>
 where
-	Block: BlockT,
+	B: Block,
 	Id: Codec + Debug + PartialEq + Public,
-	Signature: Clone + Codec + Debug + PartialEq + std::convert::TryFrom<Vec<u8>>,
-	FinalityNotifications: Stream<Item = FinalityNotification<Block>> + Unpin,
+	S: Clone + Codec + Debug + PartialEq + std::convert::TryFrom<Vec<u8>>,
+	FN: Stream<Item = FinalityNotification<B>> + Unpin,
 {
-	fn should_vote_on(&self, number: NumberFor<Block>) -> bool {
+	fn should_vote_on(&self, number: NumberFor<B>) -> bool {
 		use sp_runtime::{traits::Saturating, SaturatedConversion};
 
 		// we only vote as a validator
@@ -141,7 +151,7 @@ where
 		number == next_block_to_vote_on
 	}
 
-	fn sign_commitment(&self, id: &Id, commitment: &[u8]) -> Result<Signature, error::Error<Id>> {
+	fn sign_commitment(&self, id: &Id, commitment: &[u8]) -> Result<S, error::Error<Id>> {
 		let sig = SyncCryptoStore::sign_with(&*self.key_store, KEY_TYPE, &id.to_public_crypto_pair(), &commitment)
 			.map_err(|e| error::Error::CannotSign((*id).clone(), e.to_string()))?
 			.ok_or_else(|| error::Error::CannotSign((*id).clone(), "No key in KeyStore found".into()))?;
@@ -154,7 +164,7 @@ where
 		Ok(sig)
 	}
 
-	fn handle_finality_notification(&mut self, notification: FinalityNotification<Block>) {
+	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {
 		debug!(target: "beefy", "🥩 Finality notification: {:?}", notification);
 
 		if self.should_vote_on(*notification.header.number()) {
@@ -165,14 +175,14 @@ where
 				return;
 			};
 
-			let mmr_root = if let Some(hash) = find_mmr_root_digest::<Block, Id>(&notification.header) {
+			let mmr_root = if let Some(hash) = find_mmr_root_digest::<B, Id>(&notification.header) {
 				hash
 			} else {
 				warn!(target: "beefy", "🥩 No MMR root digest found for: {:?}", notification.header.hash());
 				return;
 			};
 
-			if let Some(new) = find_authorities_change::<Block, Id>(&notification.header) {
+			if let Some(new) = find_authorities_change::<B, Id>(&notification.header) {
 				debug!(target: "beefy", "🥩 New validator set: {:?}", new);
 				self.validator_set_id = new.id;
 			};
@@ -201,7 +211,7 @@ where
 
 			self.gossip_engine
 				.lock()
-				.gossip_message(topic::<Block>(), message.encode(), false);
+				.gossip_message(topic::<B>(), message.encode(), false);
 
 			debug!(target: "beefy", "🥩 Sent vote message: {:?}", message);
 
@@ -214,7 +224,7 @@ where
 		self.best_finalized_block = *notification.header.number();
 	}
 
-	fn handle_vote(&mut self, round: (MmrRootHash, NumberFor<Block>), vote: (Id, Signature)) {
+	fn handle_vote(&mut self, round: (MmrRootHash, NumberFor<B>), vote: (Id, S)) {
 		// TODO: validate signature
 		let vote_added = self.rounds.add_vote(round, vote);
 
@@ -236,11 +246,11 @@ where
 	}
 
 	pub(crate) async fn run(mut self) {
-		let mut votes = Box::pin(self.gossip_engine.lock().messages_for(topic::<Block>()).filter_map(
+		let mut votes = Box::pin(self.gossip_engine.lock().messages_for(topic::<B>()).filter_map(
 			|notification| async move {
 				debug!(target: "beefy", "🥩 Got vote message: {:?}", notification);
 
-				VoteMessage::<MmrRootHash, NumberFor<Block>, Id, Signature>::decode(&mut &notification.message[..]).ok()
+				VoteMessage::<MmrRootHash, NumberFor<B>, Id, S>::decode(&mut &notification.message[..]).ok()
 			},
 		));
 
@@ -276,8 +286,9 @@ where
 }
 
 /// Extract the MMR root hash from a digest in the given header, if it exists.
-fn find_mmr_root_digest<Block: BlockT, Id>(header: &Block::Header) -> Option<MmrRootHash>
+fn find_mmr_root_digest<B, Id>(header: &B::Header) -> Option<MmrRootHash>
 where
+	B: Block,
 	Id: Codec,
 {
 	header.digest().logs().iter().find_map(|log| {
@@ -292,7 +303,7 @@ where
 /// validator set or `None` in case no validator set change has been signaled.
 fn find_authorities_change<B, Id>(header: &B::Header) -> Option<ValidatorSet<Id>>
 where
-	B: BlockT,
+	B: Block,
 	Id: Codec,
 {
 	let id = OpaqueDigestItemId::Consensus(&BEEFY_ENGINE_ID);
