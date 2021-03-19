@@ -25,12 +25,12 @@ use sc_network_gossip::{
 	ValidatorContext as GossipValidatorContext,
 };
 
-use sp_api::{BlockId, ProvideRuntimeApi};
+use sp_api::ProvideRuntimeApi;
 use sp_application_crypto::AppPublic;
 use sp_blockchain::HeaderBackend;
 use sp_consensus::SyncOracle as SyncOracleT;
 use sp_keystore::SyncCryptoStorePtr;
-use sp_runtime::traits::{Block, Zero};
+use sp_runtime::traits::Block;
 
 mod error;
 mod round;
@@ -128,24 +128,10 @@ pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 		None,
 	);
 
-	let at = BlockId::hash(client.info().best_hash);
-
-	let validator_set = client
-		.runtime_api()
-		.validator_set(&at)
-		.expect("Failed to get BEEFY validator set");
-
-	let best_finalized_block = client.info().finalized_number;
-	let best_block_voted_on = Zero::zero();
-
-	let worker = worker::BeefyWorker::<_, P::Public, P::Signature, _, _, BE, P>::new(
-		validator_set,
+	let worker = worker::BeefyWorker::<_, P::Public, P::Signature, _, BE, P>::new(
 		key_store,
-		client.finality_notification_stream(),
 		gossip_engine,
 		signed_commitment_sender,
-		best_finalized_block,
-		best_block_voted_on,
 		client.clone(),
 	);
 
