@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use std::{convert::TryInto, fmt::Debug, sync::Arc};
+use std::{convert::{TryInto, TryFrom}, fmt::Debug, marker::PhantomData, sync::Arc};
 
 use beefy_primitives::{
 	Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, ValidatorSetId, BEEFY_ENGINE_ID, KEY_TYPE,
+	BeefyApi,
 };
 use codec::{Codec, Decode, Encode};
 use futures::{future, FutureExt, Stream, StreamExt};
@@ -25,17 +26,17 @@ use hex::ToHex;
 use log::{debug, error, info, trace, warn};
 use parking_lot::Mutex;
 
-use sc_client_api::FinalityNotification;
+use sc_client_api::{FinalityNotification, Backend};
 use sc_network_gossip::GossipEngine;
 
-use sp_application_crypto::Public;
+use sp_application_crypto::{Public, AppPublic};
 use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
 use sp_runtime::{
 	generic::OpaqueDigestItemId,
 	traits::{Block, Hash, Header, NumberFor},
 };
 
-use crate::{error, notification, round};
+use crate::{Client, error, notification, round};
 
 /// Gossip engine messages topic
 pub(crate) fn topic<B: Block>() -> B::Hash
@@ -59,9 +60,14 @@ enum State {
 	Initialized,
 }
 
-pub(crate) struct BeefyWorker<B, Id, S, FN>
+pub(crate) struct BeefyWorker<B, Id, S, FN, C, BE, P>
 where
 	B: Block,
+	BE: Backend<B>,
+	P: sp_core::Pair,
+	P::Public: AppPublic + Codec,
+	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,	
+	C: Client<B, BE, P>,
 {
 	local_id: Option<Id>,
 	key_store: SyncCryptoStorePtr,
@@ -73,12 +79,21 @@ where
 	best_finalized_block: NumberFor<B>,
 	best_block_voted_on: NumberFor<B>,
 	validator_set_id: ValidatorSetId,
+	client: Arc<C>,
+	_backend: PhantomData<BE>,
+	_pair: PhantomData<P>,
 }
 
-impl<B, Id, S, FN> BeefyWorker<B, Id, S, FN>
+impl<B, Id, S, FN, C, BE, P> BeefyWorker<B, Id, S, FN, C, BE, P>
 where
 	B: Block,
 	Id: Public + Debug,
+	BE: Backend<B>,
+	P: sp_core::Pair,
+	P::Public: AppPublic + Codec,
+	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
+	C: Client<B, BE, P>,
+	C::Api: BeefyApi<B, P::Public>,
 {
 	pub(crate) fn new(
 		validator_set: ValidatorSet<Id>,
@@ -88,6 +103,7 @@ where
 		signed_commitment_sender: notification::BeefySignedCommitmentSender<B, S>,
 		best_finalized_block: NumberFor<B>,
 		best_block_voted_on: NumberFor<B>,
+		client: Arc<C>,
 	) -> Self {
 		let local_id = match validator_set
 			.validators
@@ -115,16 +131,25 @@ where
 			best_finalized_block,
 			best_block_voted_on,
 			validator_set_id: validator_set.id,
+			client,
+			_backend: PhantomData,
+			_pair: PhantomData
 		}
 	}
 }
 
-impl<B, Id, S, FN> BeefyWorker<B, Id, S, FN>
+impl<B, Id, S, FN, C, BE, P> BeefyWorker<B, Id, S, FN, C, BE, P>
 where
 	B: Block,
 	Id: Codec + Debug + PartialEq + Public,
 	S: Clone + Codec + Debug + PartialEq + std::convert::TryFrom<Vec<u8>>,
 	FN: Stream<Item = FinalityNotification<B>> + Unpin,
+	BE: Backend<B>,
+	P: sp_core::Pair,
+	P::Public: AppPublic + Codec,
+	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
+	C: Client<B, BE, P>,
+	C::Api: BeefyApi<B, P::Public>,
 {
 	fn should_vote_on(&self, number: NumberFor<B>) -> bool {
 		use sp_runtime::{traits::Saturating, SaturatedConversion};

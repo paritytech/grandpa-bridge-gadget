@@ -71,6 +71,18 @@ where
 	// empty
 }
 
+impl<B, BE, P, T> Client<B, BE, P> for T
+where
+	B: Block,
+	BE: Backend<B>,
+	P: sp_core::Pair,
+	P::Public: AppPublic + Codec,
+	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
+	T: BlockchainEvents<B> + HeaderBackend<B> + Finalizer<B, BE> + ProvideRuntimeApi<B> + Send + Sync,
+{
+	// empty
+}
+
 /// Allows all gossip messages to get through.
 struct AllowAll<Hash> {
 	topic: Hash,
@@ -102,12 +114,7 @@ pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 	P::Public: AppPublic + Codec,
 	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
 	BE: Backend<B>,
-	C: BlockchainEvents<B>
-	+ HeaderBackend<B>
-	+ Finalizer<B, BE>
-	+ ProvideRuntimeApi<B>
-	+ Send
-	+ Sync,	
+	C: BlockchainEvents<B> + HeaderBackend<B> + Finalizer<B, BE> + ProvideRuntimeApi<B> + Send + Sync,
 	C::Api: BeefyApi<B, P::Public>,
 	N: GossipNetwork<B> + Clone + Send + 'static,
 	SO: SyncOracleT + Send + 'static,
@@ -131,7 +138,7 @@ pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 	let best_finalized_block = client.info().finalized_number;
 	let best_block_voted_on = Zero::zero();
 
-	let worker = worker::BeefyWorker::<_, P::Public, P::Signature, _>::new(
+	let worker = worker::BeefyWorker::<_, P::Public, P::Signature, _, _, BE, P>::new(
 		validator_set,
 		key_store,
 		client.finality_notification_stream(),
@@ -139,6 +146,7 @@ pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 		signed_commitment_sender,
 		best_finalized_block,
 		best_block_voted_on,
+		client.clone(),
 	);
 
 	worker.run().await
