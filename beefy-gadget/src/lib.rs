@@ -14,20 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use std::{convert::TryFrom, fmt::Debug, sync::Arc};
+
 use beefy_primitives::BeefyApi;
 use codec::Codec;
-use sc_client_api::{Backend as BackendT, BlockchainEvents, Finalizer};
+
+use sc_client_api::{Backend, BlockchainEvents, Finalizer};
 use sc_network_gossip::{
 	GossipEngine, Network as GossipNetwork, ValidationResult as GossipValidationResult, Validator as GossipValidator,
 	ValidatorContext as GossipValidatorContext,
 };
+
 use sp_api::{BlockId, ProvideRuntimeApi};
 use sp_application_crypto::AppPublic;
 use sp_blockchain::HeaderBackend;
 use sp_consensus::SyncOracle as SyncOracleT;
 use sp_keystore::SyncCryptoStorePtr;
-use sp_runtime::traits::{Block as BlockT, Zero};
-use std::{convert::TryFrom, fmt::Debug, sync::Arc};
+use sp_runtime::traits::{Block, Zero};
 
 mod error;
 mod round;
@@ -52,52 +55,68 @@ pub fn beefy_peers_set_config() -> sc_network::config::NonDefaultSetConfig {
 	}
 }
 
+/// A convenience BEEFY client trait that defines all the type bounds a BEEFY client
+/// has to satisfy. Ideally that should actually be a trait alias. Unfortunately as
+/// of today, Rust does not allow a type alias to be used as a trait bound. Tracking
+/// issue is <https://github.com/rust-lang/rust/issues/41517>.
+pub(crate) trait Client<B, BE, P>:
+	BlockchainEvents<B> + HeaderBackend<B> + Finalizer<B, BE> + ProvideRuntimeApi<B> + Send + Sync
+where
+	B: Block,
+	BE: Backend<B>,
+	P: sp_core::Pair,
+	P::Public: AppPublic + Codec,
+	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
+{
+	// empty
+}
+
 /// Allows all gossip messages to get through.
 struct AllowAll<Hash> {
 	topic: Hash,
 }
 
-impl<Block> GossipValidator<Block> for AllowAll<Block::Hash>
+impl<B> GossipValidator<B> for AllowAll<B::Hash>
 where
-	Block: BlockT,
+	B: Block,
 {
 	fn validate(
 		&self,
-		_context: &mut dyn GossipValidatorContext<Block>,
+		_context: &mut dyn GossipValidatorContext<B>,
 		_sender: &sc_network::PeerId,
 		_data: &[u8],
-	) -> GossipValidationResult<Block::Hash> {
+	) -> GossipValidationResult<B::Hash> {
 		GossipValidationResult::ProcessAndKeep(self.topic)
 	}
 }
 
-pub async fn start_beefy_gadget<Block, Pair, Backend, Client, Network, SyncOracle>(
-	client: Arc<Client>,
+pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
+	client: Arc<C>,
 	key_store: SyncCryptoStorePtr,
-	network: Network,
-	signed_commitment_sender: notification::BeefySignedCommitmentSender<Block, Pair::Signature>,
-	_sync_oracle: SyncOracle,
+	network: N,
+	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
+	_sync_oracle: SO,
 ) where
-	Block: BlockT,
-	Pair: sp_core::Pair,
-	Pair::Public: AppPublic + Codec,
-	Pair::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
-	Backend: BackendT<Block>,
-	Client: BlockchainEvents<Block>
-		+ HeaderBackend<Block>
-		+ Finalizer<Block, Backend>
-		+ ProvideRuntimeApi<Block>
-		+ Send
-		+ Sync,
-	Client::Api: BeefyApi<Block, Pair::Public>,
-	Network: GossipNetwork<Block> + Clone + Send + 'static,
-	SyncOracle: SyncOracleT + Send + 'static,
+	B: Block,
+	P: sp_core::Pair,
+	P::Public: AppPublic + Codec,
+	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
+	BE: Backend<B>,
+	C: BlockchainEvents<B>
+	+ HeaderBackend<B>
+	+ Finalizer<B, BE>
+	+ ProvideRuntimeApi<B>
+	+ Send
+	+ Sync,	
+	C::Api: BeefyApi<B, P::Public>,
+	N: GossipNetwork<B> + Clone + Send + 'static,
+	SO: SyncOracleT + Send + 'static,
 {
 	let gossip_engine = GossipEngine::new(
 		network,
 		BEEFY_PROTOCOL_NAME,
 		Arc::new(AllowAll {
-			topic: worker::topic::<Block>(),
+			topic: worker::topic::<B>(),
 		}),
 		None,
 	);
@@ -112,7 +131,7 @@ pub async fn start_beefy_gadget<Block, Pair, Backend, Client, Network, SyncOracl
 	let best_finalized_block = client.info().finalized_number;
 	let best_block_voted_on = Zero::zero();
 
-	let worker = worker::BeefyWorker::<_, Pair::Public, Pair::Signature, _>::new(
+	let worker = worker::BeefyWorker::<_, P::Public, P::Signature, _>::new(
 		validator_set,
 		key_store,
 		client.finality_notification_stream(),
