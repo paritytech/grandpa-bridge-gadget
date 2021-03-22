@@ -26,7 +26,7 @@ use beefy_primitives::{
 	KEY_TYPE,
 };
 use codec::{Codec, Decode, Encode};
-use futures::{future, FutureExt, Stream, StreamExt};
+use futures::{future, FutureExt, StreamExt};
 use hex::ToHex;
 use log::{debug, error, info, trace, warn};
 use parking_lot::Mutex;
@@ -42,7 +42,10 @@ use sp_runtime::{
 	traits::{Block, Hash, Header, NumberFor, Zero},
 };
 
-use crate::{error, notification, round, Client};
+use crate::{
+	error::{self},
+	notification, round, Client,
+};
 
 /// Gossip engine messages topic
 pub(crate) fn topic<B: Block>() -> B::Hash
@@ -58,15 +61,18 @@ struct VoteMessage<Hash, Number, Id, Signature> {
 	id: Id,
 	signature: Signature,
 }
+#[derive(PartialEq)]
 /// Worker lifecycle state
 enum State {
 	/// A new worker that still needs to be initialized.
 	New,
-	/// A worker that has been initialized
-	Initialized,
+	/// A worker that validates and votes for commitments
+	Validate,
+	/// A worker that acts as a goosip relay only
+	Gossip,
 }
 
-pub(crate) struct BeefyWorker<B, Id, S, C, BE, P>
+pub(crate) struct BeefyWorker<B, S, C, BE, P>
 where
 	B: Block,
 	BE: Backend<B>,
@@ -76,10 +82,10 @@ where
 	C: Client<B, BE, P>,
 {
 	state: State,
-	local_id: Option<Id>,
+	local_id: Option<P::Public>,
 	key_store: SyncCryptoStorePtr,
 	min_interval: u32,
-	rounds: round::Rounds<MmrRootHash, NumberFor<B>, Id, S>,
+	rounds: round::Rounds<MmrRootHash, NumberFor<B>, P::Public, S>,
 	finality_notifications: FinalityNotifications<B>,
 	gossip_engine: Arc<Mutex<GossipEngine<B>>>,
 	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, S>,
@@ -91,10 +97,9 @@ where
 	_pair: PhantomData<P>,
 }
 
-impl<B, Id, S, C, BE, P> BeefyWorker<B, Id, S, C, BE, P>
+impl<B, S, C, BE, P> BeefyWorker<B, S, C, BE, P>
 where
 	B: Block,
-	Id: Public + Debug,
 	BE: Backend<B>,
 	P: sp_core::Pair,
 	P::Public: AppPublic + Codec,
@@ -102,34 +107,21 @@ where
 	C: Client<B, BE, P>,
 	C::Api: BeefyApi<B, P::Public>,
 {
+	/// Retrun a new BEEFY worker instance.
+	///
+	/// Note that full BEEFY worker initialization can only be completed, if an
+	/// on-chain BEEFY pallet is available. Reason is that the current active
+	/// validator set has to be fetched from the on-chain BEFFY pallet.
+	///
+	/// For this reason, BEEFY worker initialization complets only after a finality
+	/// notification has been received. Such a notifcation is basically an indication
+	/// that an on-chain BEEFY pallet is available.
 	pub(crate) fn new(
-		key_store: SyncCryptoStorePtr,
-		gossip_engine: GossipEngine<B>,
-		signed_commitment_sender: notification::BeefySignedCommitmentSender<B, S>,
 		client: Arc<C>,
+		key_store: SyncCryptoStorePtr,
+		signed_commitment_sender: notification::BeefySignedCommitmentSender<B, S>,
+		gossip_engine: GossipEngine<B>,
 	) -> Self {
-		let at = BlockId::hash(client.info().best_hash);
-
-		let validator_set = client
-			.runtime_api()
-			.validator_set(&at)
-			.expect("Failed to get BEEFY validator set");
-
-		let _local_id = match validator_set
-			.validators
-			.iter()
-			.find(|id| SyncCryptoStore::has_keys(&*key_store, &[(id.to_raw_vec(), KEY_TYPE)]))
-		{
-			Some(id) => {
-				info!(target: "beefy", "🥩 Starting BEEFY worker with local id: {:?}", id);
-				Some(id.clone())
-			}
-			None => {
-				info!(target: "beefy", "🥩 No local id found, BEEFY worker will be gossip only.");
-				None
-			}
-		};
-
 		BeefyWorker {
 			state: State::New,
 			local_id: None,
@@ -141,18 +133,51 @@ where
 			signed_commitment_sender,
 			best_finalized_block: client.info().finalized_number,
 			best_block_voted_on: Zero::zero(),
-			validator_set_id: validator_set.id,
+			validator_set_id: 0,
 			client,
 			_backend: PhantomData,
 			_pair: PhantomData,
 		}
 	}
+
+	fn init_validator_set(&mut self) -> Result<(), error::Lifecycle> {
+		let at = BlockId::hash(self.client.info().best_hash);
+
+		let validator_set = self
+			.client
+			.runtime_api()
+			.validator_set(&at)
+			.map_err(|err| error::Lifecycle::MissingValidatorSet(err.to_string()))?;
+
+		let local_id = match validator_set
+			.validators
+			.iter()
+			.find(|id| SyncCryptoStore::has_keys(&*self.key_store, &[(id.to_raw_vec(), KEY_TYPE)]))
+		{
+			Some(id) => {
+				info!(target: "beefy", "🥩 Starting BEEFY worker with local id: {:?}", id);
+				self.state = State::Validate;
+				Some(id.clone())
+			}
+			None => {
+				info!(target: "beefy", "🥩 No local id found, BEEFY worker will be gossip only.");
+				self.state = State::Gossip;
+				None
+			}
+		};
+
+		self.local_id = local_id;
+		self.rounds = round::Rounds::new(validator_set.validators.clone());
+
+		debug!(target: "beefy", "🥩 Validator set with id {} initialized", validator_set.id);
+
+		Ok(())
+	}
 }
 
-impl<B, Id, S, C, BE, P> BeefyWorker<B, Id, S, C, BE, P>
+impl<B, S, C, BE, P> BeefyWorker<B, S, C, BE, P>
 where
 	B: Block,
-	Id: Codec + Debug + PartialEq + Public,
 	S: Clone + Codec + Debug + PartialEq + std::convert::TryFrom<Vec<u8>>,
 	BE: Backend<B>,
 	P: sp_core::Pair,
@@ -165,7 +190,7 @@ where
 		use sp_runtime::{traits::Saturating, SaturatedConversion};
 
 		// we only vote as a validator
-		if self.local_id.is_none() {
+		if self.state != State::Validate {
 			return false;
 		}
 
@@ -186,15 +211,15 @@ where
 		number == next_block_to_vote_on
 	}
 
-	fn sign_commitment(&self, id: &Id, commitment: &[u8]) -> Result<S, error::Error<Id>> {
+	fn sign_commitment(&self, id: &P::Public, commitment: &[u8]) -> Result<S, error::Crypto<P::Public>> {
 		let sig = SyncCryptoStore::sign_with(&*self.key_store, KEY_TYPE, &id.to_public_crypto_pair(), &commitment)
-			.map_err(|e| error::Error::CannotSign((*id).clone(), e.to_string()))?
-			.ok_or_else(|| error::Error::CannotSign((*id).clone(), "No key in KeyStore found".into()))?;
+			.map_err(|e| error::Crypto::CannotSign((*id).clone(), e.to_string()))?
+			.ok_or_else(|| error::Crypto::CannotSign((*id).clone(), "No key in KeyStore found".into()))?;
 
 		let sig = sig
 			.clone()
 			.try_into()
-			.map_err(|_| error::Error::InvalidSignature(sig.encode_hex(), (*id).clone()))?;
+			.map_err(|_| error::Crypto::InvalidSignature(sig.encode_hex(), (*id).clone()))?;
 
 		Ok(sig)
 	}
@@ -206,18 +231,18 @@ where
 			let local_id = if let Some(id) = &self.local_id {
 				id
 			} else {
-				warn!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
+				error!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
 				return;
 			};
 
-			let mmr_root = if let Some(hash) = find_mmr_root_digest::<B, Id>(&notification.header) {
+			let mmr_root = if let Some(hash) = find_mmr_root_digest::<B, P::Public>(&notification.header) {
 				hash
 			} else {
 				warn!(target: "beefy", "🥩 No MMR root digest found for: {:?}", notification.header.hash());
 				return;
 			};
 
-			if let Some(new) = find_authorities_change::<B, Id>(&notification.header) {
+			if let Some(new) = find_authorities_change::<B, P::Public>(&notification.header) {
 				debug!(target: "beefy", "🥩 New validator set: {:?}", new);
 				self.validator_set_id = new.id;
 			};
@@ -259,7 +284,7 @@ where
 		self.best_finalized_block = *notification.header.number();
 	}
 
-	fn handle_vote(&mut self, round: (MmrRootHash, NumberFor<B>), vote: (Id, S)) {
+	fn handle_vote(&mut self, round: (MmrRootHash, NumberFor<B>), vote: (P::Public, S)) {
 		// TODO: validate signature
 		let vote_added = self.rounds.add_vote(round, vote);
 
@@ -285,7 +310,7 @@ where
 			|notification| async move {
 				debug!(target: "beefy", "🥩 Got vote message: {:?}", notification);
 
-				VoteMessage::<MmrRootHash, NumberFor<B>, Id, S>::decode(&mut &notification.message[..]).ok()
+				VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, S>::decode(&mut &notification.message[..]).ok()
 			},
 		));
 
@@ -296,12 +321,21 @@ where
 			futures::select! {
 				notification = self.finality_notifications.next().fuse() => {
 					if let Some(notification) = notification {
+						if self.state == State::New {
+							match self.init_validator_set() {
+								Ok(()) => (),
+								Err(err) => {
+									error!(target: "beefy", "🥩 Init validator set failed: {:?}", err);
+									return;
+								}
+							}
+						}
 						self.handle_finality_notification(notification);
 					} else {
 						return;
 					}
 				},
-				vote = votes.next() => {
+				vote = votes.next().fuse() => {
 					if let Some(vote) = vote {
 						self.handle_vote(
 							(vote.commitment.payload, vote.commitment.block_number),

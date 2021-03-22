@@ -102,6 +102,11 @@ where
 	}
 }
 
+/// Start the BEEFY gadget.
+///
+/// This is a thin shim around running and awaiting a BEEFY worker. The [`Client`]
+/// convenience trait is not used here on purpose. We don't want to leak it into the
+/// public interface of the BEEFY gadget.
 pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 	client: Arc<C>,
 	key_store: SyncCryptoStorePtr,
@@ -128,11 +133,11 @@ pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 		None,
 	);
 
-	let worker = worker::BeefyWorker::<_, P::Public, P::Signature, _, BE, P>::new(
-		key_store,
-		gossip_engine,
-		signed_commitment_sender,
+	let worker = worker::BeefyWorker::<_, P::Signature, _, BE, P>::new(
 		client.clone(),
+		key_store,
+		signed_commitment_sender,
+		gossip_engine,
 	);
 
 	worker.run().await
