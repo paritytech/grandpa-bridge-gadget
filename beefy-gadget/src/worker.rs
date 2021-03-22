@@ -113,7 +113,7 @@ where
 	/// on-chain BEEFY pallet is available. Reason is that the current active
 	/// validator set has to be fetched from the on-chain BEFFY pallet.
 	///
-	/// For this reason, BEEFY worker initialization complets only after a finality
+	/// For this reason, BEEFY worker initialization completes only after a finality
 	/// notification has been received. Such a notifcation is basically an indication
 	/// that an on-chain BEEFY pallet is available.
 	pub(crate) fn new(
@@ -325,8 +325,9 @@ where
 							match self.init_validator_set() {
 								Ok(()) => (),
 								Err(err) => {
-									error!(target: "beefy", "🥩 Init validator set failed: {:?}", err);
-									return;
+									// we don't treat this as an error here because there really is
+									// nothing a node operator could do in order to remedy the error.
+									info!(target: "beefy", "🥩 Init validator set failed: {:?}", err);
 								}
 							}
 						}
