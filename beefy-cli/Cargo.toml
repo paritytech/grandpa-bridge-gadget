@@ -6,7 +6,7 @@ edition = "2018"
 license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 
 [dependencies]
-anyhow = "1.0.38"
+anyhow = "1.0.39"
 beefy-primitives = { version = "0.1", path = "../beefy-primitives" }
 env_logger = "0.8"
 hex = "0.4"
