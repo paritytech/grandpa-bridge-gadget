@@ -115,7 +115,7 @@ where
 	///
 	/// For this reason, BEEFY worker initialization completes only after a finality
 	/// notification has been received. Such a notifcation is basically an indication
-	/// that an on-chain BEEFY pallet is available.
+	/// that an on-chain BEEFY pallet may be available.
 	pub(crate) fn new(
 		client: Arc<C>,
 		key_store: SyncCryptoStorePtr,
@@ -325,9 +325,9 @@ where
 							match self.init_validator_set() {
 								Ok(()) => (),
 								Err(err) => {
-									// we don't treat this as an error here because there really is
-									// nothing a node operator could do in order to remedy the error.
-									info!(target: "beefy", "🥩 Init validator set failed: {:?}", err);
+									// this is not treated as an error here because there really is
+									// nothing a node operator could do in order to remedy the root cause.
+									debug!(target: "beefy", "🥩 Init validator set failed: {:?}", err);
 								}
 							}
 						}
