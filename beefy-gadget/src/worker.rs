@@ -244,13 +244,6 @@ where
 				return;
 			};
 
-			let mmr_root = if let Some(hash) = find_mmr_root_digest::<B, P::Public>(&notification.header) {
-				hash
-			} else {
-				warn!(target: "beefy", "🥩 No MMR root digest found for: {:?}", notification.header.hash());
-				return;
-			};
-
 			if let Some(new) = find_authorities_change::<B, P::Public>(&notification.header) {
 				debug!(target: "beefy", "🥩 New validator set: {:?}", new);
 
@@ -259,6 +252,13 @@ where
 				}
 
 				self.validator_set_id = new.id;
+			};
+
+			let mmr_root = if let Some(hash) = find_mmr_root_digest::<B, P::Public>(&notification.header) {
+				hash
+			} else {
+				warn!(target: "beefy", "🥩 No MMR root digest found for: {:?}", notification.header.hash());
+				return;
 			};
 
 			let commitment = Commitment {
