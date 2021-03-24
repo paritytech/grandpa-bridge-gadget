@@ -137,7 +137,8 @@ pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 		None,
 	);
 
-	let metrics = prometheus_registry.as_ref()
+	let metrics = prometheus_registry
+		.as_ref()
 		.map(metrics::Metrics::register)
 		.and_then(|result| match result {
 			Ok(metrics) => {
@@ -148,7 +149,8 @@ pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 				debug!(target: "beefy", "🥩 Failed to register metrics: {:?}", err);
 				None
 			}
-		);
+		});
+
 	let worker = worker::BeefyWorker::<_, P::Signature, _, BE, P>::new(
 		client.clone(),
 		key_store,

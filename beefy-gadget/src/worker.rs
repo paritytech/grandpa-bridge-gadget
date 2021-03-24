@@ -289,6 +289,10 @@ where
 
 			debug!(target: "beefy", "🥩 Sent vote message: {:?}", message);
 
+			if let Some(metrics) = self.metrics.as_ref() {
+				metrics.beefy_gadget_votes.inc();
+			}
+
 			self.handle_vote(
 				(message.commitment.payload, *message.commitment.block_number),
 				(message.id, message.signature),

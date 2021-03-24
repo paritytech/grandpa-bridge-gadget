@@ -16,12 +16,13 @@
 
 //! BEEFY Prometheus metrics definition
 
-use prometheus::{register, Gauge, PrometheusError, Registry, U64};
+use prometheus::{register, Counter, Gauge, PrometheusError, Registry, U64};
 
 /// BEEFY metrics exposed through Prometheus
 pub(crate) struct Metrics {
 	/// Current active validator set id
 	pub beefy_validator_set_id: Gauge<U64>,
+	pub beefy_gadget_votes: Counter<U64>,
 }
 
 impl Metrics {
@@ -29,6 +30,10 @@ impl Metrics {
 		Ok(Self {
 			beefy_validator_set_id: register(
 				Gauge::new("beefy_validator_set_id", "Current BEEFY active validator set id.")?,
+				registry,
+			)?,
+			beefy_gadget_votes: register(
+				Counter::new("beefy_gadget_votes_total", "Total number of vote messages gossiped.")?,
 				registry,
 			)?,
 		})
