@@ -44,7 +44,8 @@ use sp_runtime::{
 
 use crate::{
 	error::{self},
-	notification, round, Client, metrics::Metrics,
+	metrics::Metrics,
+	notification, round, Client,
 };
 
 /// Gossip engine messages topic
@@ -252,6 +253,11 @@ where
 
 			if let Some(new) = find_authorities_change::<B, P::Public>(&notification.header) {
 				debug!(target: "beefy", "🥩 New validator set: {:?}", new);
+
+				if let Some(metrics) = self.metrics.as_ref() {
+					metrics.beefy_validator_set_id.set(new.id);
+				}
+
 				self.validator_set_id = new.id;
 			};
 
