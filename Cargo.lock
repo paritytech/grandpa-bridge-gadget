@@ -442,6 +442,7 @@ dependencies = [
  "sp-keystore",
  "sp-runtime",
  "sp-utils",
+ "substrate-prometheus-endpoint",
  "thiserror",
 ]
 

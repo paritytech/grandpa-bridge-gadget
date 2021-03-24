@@ -44,7 +44,7 @@ use sp_runtime::{
 
 use crate::{
 	error::{self},
-	notification, round, Client,
+	notification, round, Client, metrics::Metrics,
 };
 
 /// Gossip engine messages topic
@@ -93,6 +93,7 @@ where
 	best_block_voted_on: NumberFor<B>,
 	validator_set_id: ValidatorSetId,
 	client: Arc<C>,
+	metrics: Option<Metrics>,
 	_backend: PhantomData<BE>,
 	_pair: PhantomData<P>,
 }
@@ -121,6 +122,7 @@ where
 		key_store: SyncCryptoStorePtr,
 		signed_commitment_sender: notification::BeefySignedCommitmentSender<B, S>,
 		gossip_engine: GossipEngine<B>,
+		metrics: Option<Metrics>,
 	) -> Self {
 		BeefyWorker {
 			state: State::New,
@@ -135,6 +137,7 @@ where
 			best_block_voted_on: Zero::zero(),
 			validator_set_id: 0,
 			client,
+			metrics,
 			_backend: PhantomData,
 			_pair: PhantomData,
 		}
