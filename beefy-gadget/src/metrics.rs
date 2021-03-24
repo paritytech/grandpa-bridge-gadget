@@ -20,7 +20,7 @@ use prometheus::{register, Gauge, PrometheusError, Registry, U64};
 
 /// BEEFY metrics exposed through Prometheus
 pub(crate) struct Metrics {
-    /// Current active validator set id
+	/// Current active validator set id
 	pub beefy_validator_set_id: Gauge<U64>,
 }
 
