@@ -14,29 +14,28 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-//! BEEFY gadget specific errors
-//!
-//! Used for BEEFY gadget interal error handling only
+//! BEEFY Prometheus metrics definition
 
-use std::fmt::Debug;
+use prometheus::{register, Counter, Gauge, PrometheusError, Registry, U64};
 
-use sp_core::crypto::Public;
-
-/// Crypto related errors
-#[derive(Debug, thiserror::Error)]
-pub(crate) enum Crypto<Id: Public + Debug> {
-	/// Check signature error
-	#[error("Message signature {0} by {1:?} is invalid.")]
-	InvalidSignature(String, Id),
-	/// Sign commitment error
-	#[error("Failed to sign comitment using key: {0:?}. Reason: {1}")]
-	CannotSign(Id, String),
+/// BEEFY metrics exposed through Prometheus
+pub(crate) struct Metrics {
+	/// Current active validator set id
+	pub beefy_validator_set_id: Gauge<U64>,
+	pub beefy_gadget_votes: Counter<U64>,
 }
 
-/// Lifecycle related errors
-#[derive(Debug, thiserror::Error)]
-pub(crate) enum Lifecycle {
-	/// Can't fetch validator set from BEEFY pallet
-	#[error("Failed to fetch validator set: {0}")]
-	MissingValidatorSet(String),
+impl Metrics {
+	pub(crate) fn register(registry: &Registry) -> Result<Self, PrometheusError> {
+		Ok(Self {
+			beefy_validator_set_id: register(
+				Gauge::new("beefy_validator_set_id", "Current BEEFY active validator set id.")?,
+				registry,
+			)?,
+			beefy_gadget_votes: register(
+				Counter::new("beefy_gadget_votes_total", "Total number of vote messages gossiped.")?,
+				registry,
+			)?,
+		})
+	}
 }
