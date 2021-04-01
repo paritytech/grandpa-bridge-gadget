@@ -79,7 +79,7 @@ pub struct ValidatorSet<AuthorityId> {
 }
 
 impl<AuthorityId> ValidatorSet<AuthorityId> {
-	/// Return an empty validator set.
+	/// Return an empty validator set with id of 0.
 	pub fn empty() -> Self {
 		Self {
 			validators: Default::default(),
