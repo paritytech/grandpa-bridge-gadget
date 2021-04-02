@@ -30,6 +30,8 @@ jobs:
         run:                       rustup toolchain add $NIGHTLY
       - name:                      Add WASM Utilities
         run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
+      - name:                      Setup Cargo.lock
+        run:                       mv Cargo.lock.ci Cargo.lock
 ## Build Stage
       - name:                      Building rust-stable
         uses:                      actions-rs/cargo@master
@@ -59,6 +61,8 @@ jobs:
         run:                       rustup toolchain add $NIGHTLY
       - name:                      Add WASM Utilities
         run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
+      - name:                      Setup Cargo.lock
+        run:                       mv Cargo.lock.ci Cargo.lock
 ## Check Stage
       - name:                      Checking rust-stable
         uses:                      actions-rs/cargo@master
@@ -95,6 +99,8 @@ jobs:
         run:                       rustup toolchain add $NIGHTLY
       - name:                      Add WASM Utilities
         run:                       rustup target add wasm32-unknown-unknown --toolchain $NIGHTLY
+      - name:                      Setup Cargo.lock
+        run:                       mv Cargo.lock.ci Cargo.lock
 ## Linting Stage
       - name:                      Add clippy
         run:                       rustup component add clippy --toolchain $NIGHTLY

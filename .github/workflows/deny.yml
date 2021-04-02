@@ -24,6 +24,8 @@ jobs:
         with:
           fetch-depth:  5
           submodules:   recursive
+      - name:           Setup Cargo.lock
+        run:            mv Cargo.lock.ci Cargo.lock
       - name:           Cargo deny
         uses:           EmbarkStudios/cargo-deny-action@v1
         with:
