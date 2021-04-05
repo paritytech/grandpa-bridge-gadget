@@ -116,9 +116,9 @@ where
 		&self,
 		_context: &mut dyn GossipValidatorContext<B>,
 		_sender: &sc_network::PeerId,
-		data: &[u8],
+		mut data: &[u8],
 	) -> GossipValidationResult<B::Hash> {
-		if let Ok(_) = VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut &data[..]) {
+		if VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut data).is_ok() {
 			GossipValidationResult::ProcessAndKeep(self.topic)
 		} else {
 			GossipValidationResult::Discard
@@ -127,25 +127,24 @@ where
 
 	fn message_expired<'a>(&'a self) -> Box<dyn FnMut(B::Hash, &[u8]) -> bool + 'a> {
 		let live_rounds = self.live_rounds.read();
-		Box::new(move |_topic, data| {
-			let message =
-				match VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut &data[..]) {
-					Ok(vote) => vote,
-					Err(_) => return true,
-				};
+		Box::new(move |_topic, mut data| {
+			let message = match VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut data) {
+				Ok(vote) => vote,
+				Err(_) => return true,
+			};
 
 			!BeefyGossipValidator::<B, P>::is_live(&live_rounds, message.commitment.block_number)
 		})
 	}
 
+	#[allow(clippy::type_complexity)]
 	fn message_allowed<'a>(&'a self) -> Box<dyn FnMut(&PeerId, MessageIntent, &B::Hash, &[u8]) -> bool + 'a> {
 		let live_rounds = self.live_rounds.read();
-		Box::new(move |_who, _intent, _topic, data| {
-			let message =
-				match VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut &data[..]) {
-					Ok(vote) => vote,
-					Err(_) => return true,
-				};
+		Box::new(move |_who, _intent, _topic, mut data| {
+			let message = match VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut data) {
+				Ok(vote) => vote,
+				Err(_) => return true,
+			};
 
 			BeefyGossipValidator::<B, P>::is_live(&live_rounds, message.commitment.block_number)
 		})
