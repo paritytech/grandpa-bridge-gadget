@@ -385,24 +385,28 @@ where
 				signature,
 			};
 
-			self.gossip_engine
-				.lock()
-				.gossip_message(topic::<B>(), message.encode(), false);
-
-			debug!(target: "beefy", "🥩 Sent vote message: {:?}", message);
+			let encoded_message = message.encode();
 
 			if let Some(metrics) = self.metrics.as_ref() {
 				metrics.beefy_gadget_votes.inc();
 			}
 
+			debug!(target: "beefy", "🥩 Sent vote message: {:?}", message);
+
 			self.handle_vote(
 				(message.commitment.payload, *message.commitment.block_number),
 				(message.id, message.signature),
 			);
+
+			self.gossip_engine
+				.lock()
+				.gossip_message(topic::<B>(), encoded_message, false);
 		}
 	}
 
 	fn handle_vote(&mut self, round: (MmrRootHash, NumberFor<B>), vote: (P::Public, P::Signature)) {
+		self.gossip_validator.note_round(round.1);
+
 		// TODO: validate signature
 		let vote_added = self.rounds.add_vote(round, vote);
 
@@ -422,8 +426,6 @@ where
 				self.best_finalized_block = round.1;
 			}
 		}
-
-		self.gossip_validator.note_round(round.1);
 	}
 
 	pub(crate) async fn run(mut self) {
