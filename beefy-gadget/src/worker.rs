@@ -295,8 +295,6 @@ where
 				(message.id, message.signature),
 			);
 		}
-
-		self.best_finalized_block = *notification.header.number();
 	}
 
 	fn handle_vote(&mut self, round: (MmrRootHash, NumberFor<B>), vote: (P::Public, S)) {
@@ -316,6 +314,7 @@ where
 				info!(target: "beefy", "🥩 Round #{} concluded, committed: {:?}.", round.1, signed_commitment);
 
 				self.signed_commitment_sender.notify(signed_commitment);
+				self.best_finalized_block = round.1;
 			}
 		}
 	}
