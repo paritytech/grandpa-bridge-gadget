@@ -63,7 +63,7 @@ where
 	<<B::Header as Header>::Hashing as Hash>::hash(b"beefy")
 }
 
-/// Allows messages from last `MAX_LIVE_GOSSIP_ROUNDS` to flow, everything else gets
+/// Allows messages from last [`MAX_LIVE_GOSSIP_ROUNDS`] to flow, everything else gets
 /// rejected/expired. All messaging is handled in a single global topic.
 pub struct BeefyGossipValidator<B, P>
 where
