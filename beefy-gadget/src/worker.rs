@@ -21,21 +21,22 @@ use std::{
 	sync::Arc,
 };
 
-use beefy_primitives::{
-	BeefyApi, Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, ValidatorSetId, BEEFY_ENGINE_ID,
-	KEY_TYPE,
-};
 use codec::{Codec, Decode, Encode};
 use futures::{future, FutureExt, StreamExt};
 use hex::ToHex;
 use log::{debug, error, info, trace, warn};
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 
 use sc_client_api::{Backend, FinalityNotification, FinalityNotifications};
-use sc_network_gossip::GossipEngine;
+use sc_network::PeerId;
+use sc_network_gossip::{
+	GossipEngine, MessageIntent, ValidationResult as GossipValidationResult, Validator as GossipValidator,
+	ValidatorContext as GossipValidatorContext,
+};
 
 use sp_api::BlockId;
 use sp_application_crypto::{AppPublic, Public};
+use sp_core::Pair;
 use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
 use sp_runtime::{
 	generic::OpaqueDigestItemId,
@@ -47,6 +48,12 @@ use crate::{
 	metrics::Metrics,
 	notification, round, Client,
 };
+use beefy_primitives::{
+	BeefyApi, Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, BEEFY_ENGINE_ID, KEY_TYPE,
+};
+
+/// The maximum number of live gossip rounds allowed, i.e. we will expire messages older than this.
+const MAX_LIVE_GOSSIP_ROUNDS: usize = 5;
 
 /// Gossip engine messages topic
 pub(crate) fn topic<B: Block>() -> B::Hash
@@ -56,12 +63,101 @@ where
 	<<B::Header as Header>::Hashing as Hash>::hash(b"beefy")
 }
 
+/// Allows messages from last [`MAX_LIVE_GOSSIP_ROUNDS`] to flow, everything else gets
+/// rejected/expired. All messaging is handled in a single global topic.
+pub struct BeefyGossipValidator<B, P>
+where
+	B: Block,
+{
+	topic: B::Hash,
+	live_rounds: RwLock<Vec<NumberFor<B>>>,
+	_pair: PhantomData<P>,
+}
+
+impl<B, P> BeefyGossipValidator<B, P>
+where
+	B: Block,
+{
+	pub fn new() -> BeefyGossipValidator<B, P> {
+		BeefyGossipValidator {
+			topic: topic::<B>(),
+			live_rounds: RwLock::new(Vec::new()),
+			_pair: PhantomData,
+		}
+	}
+
+	fn note_round(&self, round: NumberFor<B>) {
+		let mut live_rounds = self.live_rounds.write();
+
+		// NOTE: ideally we'd use a VecDeque here, but currently binary search is only available on
+		// nightly for `VecDeque`.
+		while live_rounds.len() > MAX_LIVE_GOSSIP_ROUNDS {
+			let _ = live_rounds.remove(0);
+		}
+
+		if let Some(idx) = live_rounds.binary_search(&round).err() {
+			live_rounds.insert(idx, round);
+		}
+	}
+
+	fn is_live(live_rounds: &[NumberFor<B>], round: NumberFor<B>) -> bool {
+		live_rounds.binary_search(&round).is_ok()
+	}
+}
+
+impl<B, P> GossipValidator<B> for BeefyGossipValidator<B, P>
+where
+	B: Block,
+	P: Pair,
+	P::Public: Decode,
+	P::Signature: Decode,
+{
+	fn validate(
+		&self,
+		_context: &mut dyn GossipValidatorContext<B>,
+		_sender: &sc_network::PeerId,
+		mut data: &[u8],
+	) -> GossipValidationResult<B::Hash> {
+		if VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut data).is_ok() {
+			GossipValidationResult::ProcessAndKeep(self.topic)
+		} else {
+			GossipValidationResult::Discard
+		}
+	}
+
+	fn message_expired<'a>(&'a self) -> Box<dyn FnMut(B::Hash, &[u8]) -> bool + 'a> {
+		let live_rounds = self.live_rounds.read();
+		Box::new(move |_topic, mut data| {
+			let message = match VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut data) {
+				Ok(vote) => vote,
+				Err(_) => return true,
+			};
+
+			!BeefyGossipValidator::<B, P>::is_live(&live_rounds, message.commitment.block_number)
+		})
+	}
+
+	#[allow(clippy::type_complexity)]
+	fn message_allowed<'a>(&'a self) -> Box<dyn FnMut(&PeerId, MessageIntent, &B::Hash, &[u8]) -> bool + 'a> {
+		let live_rounds = self.live_rounds.read();
+		Box::new(move |_who, _intent, _topic, mut data| {
+			let message = match VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut data) {
+				Ok(vote) => vote,
+				Err(_) => return true,
+			};
+
+			BeefyGossipValidator::<B, P>::is_live(&live_rounds, message.commitment.block_number)
+		})
+	}
+}
+
 #[derive(Debug, Decode, Encode)]
 struct VoteMessage<Hash, Number, Id, Signature> {
 	commitment: Commitment<Number, Hash>,
 	id: Id,
 	signature: Signature,
 }
+
 #[derive(PartialEq)]
 /// Worker lifecycle state
 enum State {
@@ -73,11 +169,11 @@ enum State {
 	Gossip,
 }
 
-pub(crate) struct BeefyWorker<B, S, C, BE, P>
+pub(crate) struct BeefyWorker<B, C, BE, P>
 where
 	B: Block,
 	BE: Backend<B>,
-	P: sp_core::Pair,
+	P: Pair,
 	P::Public: AppPublic + Codec,
 	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
 	C: Client<B, BE, P>,
@@ -86,25 +182,25 @@ where
 	local_id: Option<P::Public>,
 	key_store: SyncCryptoStorePtr,
 	min_interval: u32,
-	rounds: round::Rounds<MmrRootHash, NumberFor<B>, P::Public, S>,
+	rounds: round::Rounds<MmrRootHash, NumberFor<B>, P::Public, P::Signature>,
 	finality_notifications: FinalityNotifications<B>,
 	gossip_engine: Arc<Mutex<GossipEngine<B>>>,
-	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, S>,
+	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
 	best_finalized_block: NumberFor<B>,
 	best_block_voted_on: NumberFor<B>,
-	validator_set_id: ValidatorSetId,
 	client: Arc<C>,
 	metrics: Option<Metrics>,
+	gossip_validator: Arc<BeefyGossipValidator<B, P>>,
 	_backend: PhantomData<BE>,
 	_pair: PhantomData<P>,
 }
 
-impl<B, S, C, BE, P> BeefyWorker<B, S, C, BE, P>
+impl<B, C, BE, P> BeefyWorker<B, C, BE, P>
 where
 	B: Block,
 	BE: Backend<B>,
-	P: sp_core::Pair,
-	P::Public: AppPublic + Codec,
+	P: Pair,
+	P::Public: AppPublic,
 	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
 	C: Client<B, BE, P>,
 	C::Api: BeefyApi<B, P::Public>,
@@ -121,8 +217,9 @@ where
 	pub(crate) fn new(
 		client: Arc<C>,
 		key_store: SyncCryptoStorePtr,
-		signed_commitment_sender: notification::BeefySignedCommitmentSender<B, S>,
+		signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
 		gossip_engine: GossipEngine<B>,
+		gossip_validator: Arc<BeefyGossipValidator<B, P>>,
 		metrics: Option<Metrics>,
 	) -> Self {
 		BeefyWorker {
@@ -130,15 +227,15 @@ where
 			local_id: None,
 			key_store,
 			min_interval: 2,
-			rounds: round::Rounds::new(vec![]),
+			rounds: round::Rounds::new(ValidatorSet::empty()),
 			finality_notifications: client.finality_notification_stream(),
 			gossip_engine: Arc::new(Mutex::new(gossip_engine)),
 			signed_commitment_sender,
 			best_finalized_block: Zero::zero(),
 			best_block_voted_on: Zero::zero(),
-			validator_set_id: 0,
 			client,
 			metrics,
+			gossip_validator,
 			_backend: PhantomData,
 			_pair: PhantomData,
 		}
@@ -171,7 +268,7 @@ where
 		};
 
 		self.local_id = local_id;
-		self.rounds = round::Rounds::new(validator_set.validators.clone());
+		self.rounds = round::Rounds::new(validator_set.clone());
 
 		// we are actually interested in the best finalized block with the BEEFY pallet
 		// being available on-chain. That is why we set `best_finalized_block` here and
@@ -184,13 +281,12 @@ where
 	}
 }
 
-impl<B, S, C, BE, P> BeefyWorker<B, S, C, BE, P>
+impl<B, C, BE, P> BeefyWorker<B, C, BE, P>
 where
 	B: Block,
-	S: Clone + Codec + Debug + PartialEq + std::convert::TryFrom<Vec<u8>>,
 	BE: Backend<B>,
-	P: sp_core::Pair,
-	P::Public: AppPublic + Codec,
+	P: Pair,
+	P::Public: AppPublic,
 	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
 	C: Client<B, BE, P>,
 	C::Api: BeefyApi<B, P::Public>,
@@ -220,7 +316,7 @@ where
 		number == next_block_to_vote_on
 	}
 
-	fn sign_commitment(&self, id: &P::Public, commitment: &[u8]) -> Result<S, error::Crypto<P::Public>> {
+	fn sign_commitment(&self, id: &P::Public, commitment: &[u8]) -> Result<P::Signature, error::Crypto<P::Public>> {
 		let sig = SyncCryptoStore::sign_with(&*self.key_store, KEY_TYPE, &id.to_public_crypto_pair(), &commitment)
 			.map_err(|e| error::Crypto::CannotSign((*id).clone(), e.to_string()))?
 			.ok_or_else(|| error::Crypto::CannotSign((*id).clone(), "No key in KeyStore found".into()))?;
@@ -236,22 +332,27 @@ where
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {
 		debug!(target: "beefy", "🥩 Finality notification: {:?}", notification);
 
+		if let Some(new) = find_authorities_change::<B, P::Public>(&notification.header) {
+			debug!(target: "beefy", "🥩 New validator set: {:?}", new);
+
+			if let Some(metrics) = self.metrics.as_ref() {
+				metrics.beefy_validator_set_id.set(new.id);
+			}
+
+			self.rounds = round::Rounds::new(new);
+
+			// NOTE: currently we act as if this block has been finalized by BEEFY as we perform
+			// the validator set changes instantly (insecure). Once proper validator set changes
+			// are implemented this should be removed
+			self.best_finalized_block = *notification.header.number();
+		};
+
 		if self.should_vote_on(*notification.header.number()) {
-			let local_id = if let Some(id) = &self.local_id {
+			let local_id = if let Some(ref id) = self.local_id {
 				id
 			} else {
 				error!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
 				return;
-			};
-
-			if let Some(new) = find_authorities_change::<B, P::Public>(&notification.header) {
-				debug!(target: "beefy", "🥩 New validator set: {:?}", new);
-
-				if let Some(metrics) = self.metrics.as_ref() {
-					metrics.beefy_validator_set_id.set(new.id);
-				}
-
-				self.validator_set_id = new.id;
 			};
 
 			let mmr_root = if let Some(hash) = find_mmr_root_digest::<B, P::Public>(&notification.header) {
@@ -264,10 +365,10 @@ where
 			let commitment = Commitment {
 				payload: mmr_root,
 				block_number: notification.header.number(),
-				validator_set_id: self.validator_set_id,
+				validator_set_id: self.rounds.validator_set_id(),
 			};
 
-			let signature = match self.sign_commitment(local_id, commitment.encode().as_ref()) {
+			let signature = match self.sign_commitment(&local_id, commitment.encode().as_ref()) {
 				Ok(sig) => sig,
 				Err(err) => {
 					warn!(target: "beefy", "🥩 Error signing commitment: {:?}", err);
@@ -283,26 +384,28 @@ where
 				signature,
 			};
 
-			self.gossip_engine
-				.lock()
-				.gossip_message(topic::<B>(), message.encode(), false);
-
-			debug!(target: "beefy", "🥩 Sent vote message: {:?}", message);
+			let encoded_message = message.encode();
 
 			if let Some(metrics) = self.metrics.as_ref() {
 				metrics.beefy_gadget_votes.inc();
 			}
 
+			debug!(target: "beefy", "🥩 Sent vote message: {:?}", message);
+
 			self.handle_vote(
 				(message.commitment.payload, *message.commitment.block_number),
 				(message.id, message.signature),
 			);
-		}
 
-		self.best_finalized_block = *notification.header.number();
+			self.gossip_engine
+				.lock()
+				.gossip_message(topic::<B>(), encoded_message, false);
+		}
 	}
 
-	fn handle_vote(&mut self, round: (MmrRootHash, NumberFor<B>), vote: (P::Public, S)) {
+	fn handle_vote(&mut self, round: (MmrRootHash, NumberFor<B>), vote: (P::Public, P::Signature)) {
+		self.gossip_validator.note_round(round.1);
+
 		// TODO: validate signature
 		let vote_added = self.rounds.add_vote(round, vote);
 
@@ -311,7 +414,7 @@ where
 				let commitment = Commitment {
 					payload: round.0,
 					block_number: round.1,
-					validator_set_id: self.validator_set_id,
+					validator_set_id: self.rounds.validator_set_id(),
 				};
 
 				let signed_commitment = SignedCommitment { commitment, signatures };
@@ -319,6 +422,7 @@ where
 				info!(target: "beefy", "🥩 Round #{} concluded, committed: {:?}.", round.1, signed_commitment);
 
 				self.signed_commitment_sender.notify(signed_commitment);
+				self.best_finalized_block = round.1;
 			}
 		}
 	}
@@ -328,7 +432,10 @@ where
 			|notification| async move {
 				debug!(target: "beefy", "🥩 Got vote message: {:?}", notification);
 
-				VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, S>::decode(&mut &notification.message[..]).ok()
+				VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(
+					&mut &notification.message[..],
+				)
+				.ok()
 			},
 		));
 
