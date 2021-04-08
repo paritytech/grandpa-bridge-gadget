@@ -118,11 +118,13 @@ where
 		_sender: &sc_network::PeerId,
 		mut data: &[u8],
 	) -> GossipValidationResult<B::Hash> {
-		if VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut data).is_ok() {
-			GossipValidationResult::ProcessAndKeep(self.topic)
-		} else {
-			GossipValidationResult::Discard
+		if let Ok(msg) = VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut data) {
+			if P::verify(&msg.signature, &msg.commitment.encode(), &msg.id) {
+				return GossipValidationResult::ProcessAndKeep(self.topic);
+			}
 		}
+
+		GossipValidationResult::Discard
 	}
 
 	fn message_expired<'a>(&'a self) -> Box<dyn FnMut(B::Hash, &[u8]) -> bool + 'a> {
