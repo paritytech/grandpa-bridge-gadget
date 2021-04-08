@@ -120,9 +120,9 @@ where
 	) -> GossipValidationResult<B::Hash> {
 		if let Ok(msg) = VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut data) {
 			if P::verify(&msg.signature, &msg.commitment.encode(), &msg.id) {
-				// TODO: report peer
 				return GossipValidationResult::ProcessAndKeep(self.topic);
 			} else {
+				// TODO: report peer
 				debug!(target: "beefy", "🥩 Bad signature on message: {:?}, from: {:?}", msg, sender);
 			}
 		}
