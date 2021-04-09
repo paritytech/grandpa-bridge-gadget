@@ -191,7 +191,7 @@ where
 	finality_notifications: FinalityNotifications<B>,
 	gossip_engine: Arc<Mutex<GossipEngine<B>>>,
 	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
-	best_finalized_block: NumberFor<B>,
+	best_finalized_block: Option<NumberFor<B>>,
 	best_block_voted_on: NumberFor<B>,
 	client: Arc<C>,
 	metrics: Option<Metrics>,
@@ -236,7 +236,7 @@ where
 			finality_notifications: client.finality_notification_stream(),
 			gossip_engine: Arc::new(Mutex::new(gossip_engine)),
 			signed_commitment_sender,
-			best_finalized_block: Zero::zero(),
+			best_finalized_block: None,
 			best_block_voted_on: Zero::zero(),
 			client,
 			metrics,
@@ -279,7 +279,7 @@ where
 		// we are actually interested in the best finalized block with the BEEFY pallet
 		// being available on-chain. That is why we set `best_finalized_block` here and
 		// not as part of `new()` already.
-		self.best_finalized_block = info.finalized_number;
+		self.best_finalized_block = Some(info.finalized_number);
 
 		debug!(target: "beefy", "🥩 Validator set with id {} initialized", validator_set.id);
 
@@ -305,7 +305,13 @@ where
 			return false;
 		}
 
-		let diff = self.best_finalized_block.saturating_sub(self.best_block_voted_on);
+		let best_finalized = if let Some(block) = self.best_finalized_block {
+			block
+		} else {
+			return false;
+		};
+
+		let diff = best_finalized.saturating_sub(self.best_block_voted_on);
 		let diff = diff.saturated_into::<u32>();
 		let next_power_of_two = (diff / 2).next_power_of_two();
 		let next_block_to_vote_on = self.best_block_voted_on + self.min_interval.max(next_power_of_two).into();
@@ -350,7 +356,7 @@ where
 			// NOTE: currently we act as if this block has been finalized by BEEFY as we perform
 			// the validator set changes instantly (insecure). Once proper validator set changes
 			// are implemented this should be removed
-			self.best_finalized_block = *notification.header.number();
+			self.best_finalized_block = Some(*notification.header.number());
 		};
 
 		if self.should_vote_on(*notification.header.number()) {
@@ -427,7 +433,7 @@ where
 				info!(target: "beefy", "🥩 Round #{} concluded, committed: {:?}.", round.1, signed_commitment);
 
 				self.signed_commitment_sender.notify(signed_commitment);
-				self.best_finalized_block = round.1;
+				self.best_finalized_block = Some(round.1);
 			}
 		}
 	}
