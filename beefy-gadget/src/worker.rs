@@ -247,7 +247,8 @@ where
 	}
 
 	fn init_validator_set(&mut self) -> Result<(), error::Lifecycle> {
-		let at = BlockId::hash(self.client.info().best_hash);
+		let info = self.client.info();
+		let at = BlockId::hash(info.finalized_hash);
 
 		let validator_set = self
 			.client
@@ -278,7 +279,7 @@ where
 		// we are actually interested in the best finalized block with the BEEFY pallet
 		// being available on-chain. That is why we set `best_finalized_block` here and
 		// not as part of `new()` already.
-		self.best_finalized_block = self.client.info().finalized_number;
+		self.best_finalized_block = info.finalized_number;
 
 		debug!(target: "beefy", "🥩 Validator set with id {} initialized", validator_set.id);
 
