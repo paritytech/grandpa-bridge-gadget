@@ -342,10 +342,25 @@ where
 		Ok(sig)
 	}
 
+	/// Return the current active validator set.
+	///
+	/// Note that the validator set could be `None`. This is the case if we don't find
+	/// a BEEFY authority set change and we can't fetch the validator set from the
+	/// BEEFY on-chain state. Such a failure is usually an indication that the BEEFT
+	/// pallet has not been deplyed (yet).
+	fn validator_set(&self, header: &B::Header) -> Option<ValidatorSet<P::Public>> {
+		if let Some(new) = find_authorities_change::<B, P::Public>(header) {
+			Some(new)
+		} else {
+			let at = BlockId::hash(self.client.info().finalized_hash);
+			self.client.runtime_api().validator_set(&at).ok()
+		}
+	}
+
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {
 		debug!(target: "beefy", "🥩 Finality notification: {:?}", notification);
 
-		if let Some(new) = find_authorities_change::<B, P::Public>(&notification.header) {
+		if let Some(new) = self.validator_set(&notification.header) {
 			debug!(target: "beefy", "🥩 New validator set: {:?}", new);
 
 			if let Some(metrics) = self.metrics.as_ref() {
