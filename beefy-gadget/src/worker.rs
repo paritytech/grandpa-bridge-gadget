@@ -357,6 +357,21 @@ where
 		}
 	}
 
+	/// Return local authority id.
+	///
+	/// `None` is returned, if we are not permitted to vote
+	fn local_id(&self) -> Option<P::Public> {
+		match self
+			.rounds
+			.validators()
+			.iter()
+			.find(|id| SyncCryptoStore::has_keys(&*self.key_store, &[(id.to_raw_vec(), KEY_TYPE)]))
+		{
+			Some(id) => Some(id.clone()),
+			None => None,
+		}
+	}
+
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {
 		debug!(target: "beefy", "🥩 Finality notification: {:?}", notification);
 
@@ -376,7 +391,7 @@ where
 		};
 
 		if self.should_vote_on(*notification.header.number()) {
-			let local_id = if let Some(ref id) = self.local_id {
+			let local_id = if let Some(id) = self.local_id() {
 				id
 			} else {
 				error!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
