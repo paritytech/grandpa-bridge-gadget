@@ -308,6 +308,7 @@ where
 		let best_finalized = if let Some(block) = self.best_finalized_block {
 			block
 		} else {
+			debug!(target: "beefy", "🥩 Missing best finalized block - won't vote for: {:?}", number);
 			return false;
 		};
 
