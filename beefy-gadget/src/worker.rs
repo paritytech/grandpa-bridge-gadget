@@ -262,7 +262,7 @@ where
 		let diff = self.best_grandpa_block.saturating_sub(best_beefy_block);
 		let diff = diff.saturated_into::<u32>();
 		let next_power_of_two = (diff / 2).next_power_of_two();
-		let next_block_to_vote_on = best_beefy_block + self.min_interval.max(next_power_of_two).into();
+		let next_block_to_vote_on = self.best_block_voted_on + self.min_interval.max(next_power_of_two).into();
 
 		trace!(
 			target: "beefy",
