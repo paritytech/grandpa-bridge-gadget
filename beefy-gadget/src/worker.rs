@@ -40,7 +40,7 @@ use sp_runtime::{
 };
 
 use beefy_primitives::{
-	BeefyApi, Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, BEEFY_ENGINE_ID,
+	BeefyApi, Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, VoteMessage, BEEFY_ENGINE_ID,
 	GENESIS_AUTHORITY_SET_ID, KEY_TYPE,
 };
 
@@ -51,13 +51,6 @@ use crate::{
 	validator::{topic, BeefyGossipValidator},
 	Client,
 };
-/// BEEFY protocol vote
-#[derive(Debug, Decode, Encode)]
-pub(crate) struct VoteMessage<Hash, Number, Id, Signature> {
-	pub commitment: Commitment<Number, Hash>,
-	pub id: Id,
-	pub signature: Signature,
-}
 
 /// A BEEFY worker plays the BEEFY protocol
 pub(crate) struct BeefyWorker<B, C, BE, P>

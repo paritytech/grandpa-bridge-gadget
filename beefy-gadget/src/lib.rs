@@ -32,8 +32,6 @@ use sp_runtime::traits::Block;
 
 use beefy_primitives::BeefyApi;
 
-use crate::validator::BeefyGossipValidator;
-
 mod error;
 mod metrics;
 mod round;
@@ -108,7 +106,7 @@ pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 	N: GossipNetwork<B> + Clone + Send + 'static,
 	SO: SyncOracleT + Send + 'static,
 {
-	let gossip_validator = Arc::new(BeefyGossipValidator::new());
+	let gossip_validator = Arc::new(validator::BeefyGossipValidator::new());
 	let gossip_engine = GossipEngine::new(network, BEEFY_PROTOCOL_NAME, gossip_validator.clone(), None);
 
 	let metrics = prometheus_registry

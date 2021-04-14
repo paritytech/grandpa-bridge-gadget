@@ -30,9 +30,7 @@ use sc_network_gossip::{
 use sp_core::Pair;
 use sp_runtime::traits::{Block, Hash, Header, NumberFor};
 
-use beefy_primitives::MmrRootHash;
-
-use crate::worker::VoteMessage;
+use beefy_primitives::{MmrRootHash, VoteMessage};
 
 // Limit BEEFY gossip by keeping only a bound number of voting rounds alive.
 const MAX_LIVE_GOSSIP_ROUNDS: usize = 5;
