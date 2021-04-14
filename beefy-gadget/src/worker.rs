@@ -198,7 +198,7 @@ where
 		self.rounds
 			.validators()
 			.iter()
-			.find(|id| SyncCryptoStore::has_keys(&*self.key_store, &[(id.to_raw_vec(), KEY_TYPE)]))
+			.find(|id| SyncCryptoStore::has_keys(&*self.key_store, &[(id.to_raw_vec(), KEY_TYPE)]).found_any())
 			.cloned()
 	}
 
