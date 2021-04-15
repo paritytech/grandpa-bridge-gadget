@@ -67,7 +67,7 @@ where
 	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
 	gossip_engine: Arc<Mutex<GossipEngine<B>>>,
 	gossip_validator: Arc<BeefyGossipValidator<B, P>>,
-	block_delta: u32,
+	min_block_delta: u32,
 	metrics: Option<Metrics>,
 	rounds: round::Rounds<MmrRootHash, NumberFor<B>, P::Public, P::Signature>,
 	finality_notifications: FinalityNotifications<B>,
@@ -103,7 +103,7 @@ where
 		signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
 		gossip_engine: GossipEngine<B>,
 		gossip_validator: Arc<BeefyGossipValidator<B, P>>,
-		block_delta: u32,
+		min_block_delta: u32,
 		metrics: Option<Metrics>,
 	) -> Self {
 		BeefyWorker {
@@ -112,7 +112,7 @@ where
 			signed_commitment_sender,
 			gossip_engine: Arc::new(Mutex::new(gossip_engine)),
 			gossip_validator,
-			block_delta,
+			min_block_delta,
 			metrics,
 			rounds: round::Rounds::new(ValidatorSet::empty()),
 			finality_notifications: client.finality_notification_stream(),
@@ -149,7 +149,7 @@ where
 		let diff = self.best_grandpa_block.saturating_sub(best_beefy_block);
 		let diff = diff.saturated_into::<u32>();
 		let next_power_of_two = (diff / 2).next_power_of_two();
-		let next_block_to_vote_on = self.best_block_voted_on + self.block_delta.max(next_power_of_two).into();
+		let next_block_to_vote_on = self.best_block_voted_on + self.min_block_delta.max(next_power_of_two).into();
 
 		trace!(
 			target: "beefy",
