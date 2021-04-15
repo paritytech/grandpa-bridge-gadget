@@ -195,11 +195,13 @@ where
 	///
 	/// `None` is returned, if we are not permitted to vote
 	fn local_id(&self) -> Option<P::Public> {
-		self.rounds
-			.validators()
-			.iter()
-			.find(|id| SyncCryptoStore::has_keys(&*self.key_store, &[(id.to_raw_vec(), KEY_TYPE)]).found_any())
-			.cloned()
+		let keys: Vec<_> = self.rounds.validators().iter().map(|id|
+			(id.to_raw_vec(), KEY_TYPE)
+		).collect();
+
+		SyncCryptoStore::has_keys(&*self.key_store, &keys).into_found().next().and_then(|i|
+			Some(self.rounds.validators()[i].clone())
+		)
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {
