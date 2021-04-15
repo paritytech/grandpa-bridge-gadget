@@ -66,6 +66,9 @@ pub mod ecdsa {
 /// The `ConsensusEngineId` of BEEFY.
 pub const BEEFY_ENGINE_ID: sp_runtime::ConsensusEngineId = *b"BEEF";
 
+/// Authority set id starts with zero at genesis
+pub const GENESIS_AUTHORITY_SET_ID: u64 = 0;
+
 /// A typedef for validator set id.
 pub type ValidatorSetId = u64;
 
@@ -106,6 +109,20 @@ pub enum ConsensusLog<AuthorityId: Codec> {
 	/// MMR root hash.
 	#[codec(index = 3)]
 	MmrRoot(MmrRootHash),
+}
+
+/// BEEFY vote message.
+///
+/// A vote message is a direct vote created by a BEEFY node on every voting round
+/// and is gossiped to its peers.
+#[derive(Debug, Decode, Encode)]
+pub struct VoteMessage<Hash, Number, Id, Signature> {
+	/// Commit to information extracted from a finalized block
+	pub commitment: Commitment<Number, Hash>,
+	/// Node authority id
+	pub id: Id,
+	/// Node signature
+	pub signature: Signature,
 }
 
 sp_api::decl_runtime_apis! {
