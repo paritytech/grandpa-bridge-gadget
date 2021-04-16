@@ -46,6 +46,7 @@ use beefy_primitives::{
 
 use crate::{
 	error::{self},
+	metric_inc, metric_set,
 	metrics::Metrics,
 	notification, round,
 	validator::{topic, BeefyGossipValidator},
@@ -67,6 +68,7 @@ where
 	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
 	gossip_engine: Arc<Mutex<GossipEngine<B>>>,
 	gossip_validator: Arc<BeefyGossipValidator<B, P>>,
+	/// Min delta in block numbers between two blocks, BEEFY should vote on
 	min_block_delta: u32,
 	metrics: Option<Metrics>,
 	rounds: round::Rounds<MmrRootHash, NumberFor<B>, P::Public, P::Signature>,
@@ -160,6 +162,8 @@ where
 			next_block_to_vote_on,
 		);
 
+		metric_set!(self, beefy_should_vote_on, next_block_to_vote_on);
+
 		number == next_block_to_vote_on
 	}
 
@@ -212,9 +216,7 @@ where
 		if let Some(active) = self.validator_set(&notification.header) {
 			debug!(target: "beefy", "🥩 Active validator set id: {:?}", active);
 
-			if let Some(metrics) = self.metrics.as_ref() {
-				metrics.beefy_validator_set_id.set(active.id);
-			}
+			metric_set!(self, beefy_validator_set_id, active.id);
 
 			// Authority set change or genesis set id triggers new voting rounds
 			//
@@ -227,6 +229,8 @@ where
 				debug!(target: "beefy", "🥩 New Rounds for id: {:?}", active.id);
 
 				self.best_beefy_block = Some(*notification.header.number());
+
+				metric_set!(self, beefy_best_block, *notification.header.number());
 			}
 		};
 
@@ -269,9 +273,7 @@ where
 
 			let encoded_message = message.encode();
 
-			if let Some(metrics) = self.metrics.as_ref() {
-				metrics.beefy_gadget_votes.inc();
-			}
+			metric_inc!(self, beefy_votes_sent);
 
 			debug!(target: "beefy", "🥩 Sent vote message: {:?}", message);
 
@@ -301,10 +303,14 @@ where
 
 				let signed_commitment = SignedCommitment { commitment, signatures };
 
+				metric_set!(self, beefy_round_concluded, round.1);
+
 				info!(target: "beefy", "🥩 Round #{} concluded, committed: {:?}.", round.1, signed_commitment);
 
 				self.signed_commitment_sender.notify(signed_commitment);
 				self.best_beefy_block = Some(round.1);
+
+				metric_set!(self, beefy_best_block, round.1);
 			}
 		}
 	}
