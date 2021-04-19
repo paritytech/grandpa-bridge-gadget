@@ -79,6 +79,9 @@ where
 	best_beefy_block: Option<NumberFor<B>>,
 	/// Best block this node has voted for
 	best_block_voted_on: NumberFor<B>,
+	/// Validator set id for the last signed commitment
+	last_signed_id: u64,
+	// keep rustc happy
 	_backend: PhantomData<BE>,
 	_pair: PhantomData<P>,
 }
@@ -121,6 +124,7 @@ where
 			best_grandpa_block: client.info().finalized_number,
 			best_beefy_block: None,
 			best_block_voted_on: Zero::zero(),
+			last_signed_id: 0,
 			_backend: PhantomData,
 			_pair: PhantomData,
 		}
@@ -218,6 +222,11 @@ where
 
 			metric_set!(self, beefy_validator_set_id, active.id);
 
+			// BEEFY should produce a signed commitment for each session
+			if (active.id != GENESIS_AUTHORITY_SET_ID) && (active.id != (1 + self.last_signed_id)) {
+				metric_inc!(self, beefy_skipped_sessions);
+			}
+
 			// Authority set change or genesis set id triggers new voting rounds
 			//
 			// TODO: (adoerr) Enacting a new authority set will also implicitly 'conclude'
@@ -295,10 +304,13 @@ where
 
 		if vote_added && self.rounds.is_done(&round) {
 			if let Some(signatures) = self.rounds.drop(&round) {
+				// id is stored for skipped session metric calculation
+				self.last_signed_id = self.rounds.validator_set_id();
+
 				let commitment = Commitment {
 					payload: round.0,
 					block_number: round.1,
-					validator_set_id: self.rounds.validator_set_id(),
+					validator_set_id: self.last_signed_id,
 				};
 
 				let signed_commitment = SignedCommitment { commitment, signatures };

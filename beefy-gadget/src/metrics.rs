@@ -30,6 +30,8 @@ pub(crate) struct Metrics {
 	pub beefy_best_block: Gauge<U64>,
 	/// Next block BEEFY should vote on
 	pub beefy_should_vote_on: Gauge<U64>,
+	/// Number of sessions without a signed commitment
+	pub beefy_skipped_sessions: Counter<U64>,
 }
 
 impl Metrics {
@@ -55,10 +57,19 @@ impl Metrics {
 				Gauge::new("beefy_should_vote_on", "Next block, BEEFY should vote on")?,
 				registry,
 			)?,
+			beefy_skipped_sessions: register(
+				Counter::new(
+					"beefy_skipped_sessions",
+					"Number of sessions without a signed commitment",
+				)?,
+				registry,
+			)?,
 		})
 	}
 }
 
+// Note: we use the `format` macro to convert an expr into a `u64`. This will fail,
+// if expr does not derive `Display`.
 #[macro_export]
 macro_rules! metric_set {
 	($self:ident, $m:ident, $v:expr) => {{
