@@ -239,6 +239,8 @@ where
 
 				self.best_beefy_block = Some(*notification.header.number());
 
+				// this metric is kind of 'fake'. Best BEEFY block should only be updated once we have a
+				// signed commitment for the block. Remove once the above TODO is done.
 				metric_set!(self, beefy_best_block, *notification.header.number());
 			}
 		};
