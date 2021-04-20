@@ -24,7 +24,7 @@ use std::{
 use codec::{Codec, Decode, Encode};
 use futures::{future, FutureExt, StreamExt};
 use hex::ToHex;
-use log::{debug, error, info, trace, warn};
+use log::{debug, error, trace, warn};
 use parking_lot::Mutex;
 
 use sc_client_api::{Backend, FinalityNotification, FinalityNotifications};
