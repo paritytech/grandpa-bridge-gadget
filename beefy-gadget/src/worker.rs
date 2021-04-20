@@ -249,7 +249,7 @@ where
 			let local_id = if let Some(id) = self.local_id() {
 				id
 			} else {
-				error!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
+				debug!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
 				return;
 			};
 
