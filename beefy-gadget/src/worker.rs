@@ -218,21 +218,22 @@ where
 		self.best_grandpa_block = *notification.header.number();
 
 		if let Some(active) = self.validator_set(&notification.header) {
-			debug!(target: "beefy", "🥩 Active validator set id: {:?}", active);
-
-			metric_set!(self, beefy_validator_set_id, active.id);
-
-			// BEEFY should produce a signed commitment for each session
-			if (active.id != GENESIS_AUTHORITY_SET_ID) && (active.id != (1 + self.last_signed_id)) {
-				metric_inc!(self, beefy_skipped_sessions);
-			}
-
 			// Authority set change or genesis set id triggers new voting rounds
 			//
 			// TODO: (adoerr) Enacting a new authority set will also implicitly 'conclude'
 			// the currently active BEEFY voting round by starting a new one. This is
-			// temporary and needs to be repalced by proper round life cycle handling.
-			if (active.id != self.rounds.validator_set_id()) || (active.id == GENESIS_AUTHORITY_SET_ID) {
+			// temporary and needs to be replaced by proper round life cycle handling.
+			if active.id != self.rounds.validator_set_id()
+				|| (active.id == GENESIS_AUTHORITY_SET_ID && self.best_beefy_block.is_none())
+			{
+				debug!(target: "beefy", "🥩 New active validator set id: {:?}", active);
+				metric_set!(self, beefy_validator_set_id, active.id);
+
+				// BEEFY should produce a signed commitment for each session
+				if active.id != self.last_signed_id + 1 && active.id != GENESIS_AUTHORITY_SET_ID {
+					metric_inc!(self, beefy_skipped_sessions);
+				}
+
 				self.rounds = round::Rounds::new(active.clone());
 
 				debug!(target: "beefy", "🥩 New Rounds for id: {:?}", active.id);
@@ -243,7 +244,7 @@ where
 				// signed commitment for the block. Remove once the above TODO is done.
 				metric_set!(self, beefy_best_block, *notification.header.number());
 			}
-		};
+		}
 
 		if self.should_vote_on(*notification.header.number()) {
 			let local_id = if let Some(id) = self.local_id() {
