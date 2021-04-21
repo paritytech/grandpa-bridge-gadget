@@ -49,8 +49,7 @@ use crate::{
 	gossip::{topic, BeefyGossipValidator},
 	metric_inc, metric_set,
 	metrics::Metrics,
-	notification, round,
-	Client,
+	notification, round, Client,
 };
 
 /// A BEEFY worker plays the BEEFY protocol
