@@ -46,10 +46,10 @@ use beefy_primitives::{
 
 use crate::{
 	error::{self},
+	gossip::{topic, BeefyGossipValidator},
 	metric_inc, metric_set,
 	metrics::Metrics,
 	notification, round,
-	validator::{topic, BeefyGossipValidator},
 	Client,
 };
 
