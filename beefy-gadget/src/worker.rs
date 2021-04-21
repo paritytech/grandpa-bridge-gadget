@@ -212,7 +212,7 @@ where
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {
-		debug!(target: "beefy", "🥩 Finality notification: {:?}", notification);
+		trace!(target: "beefy", "🥩 Finality notification: {:?}", notification);
 
 		// update best GRANDPA finalized block we have seen
 		self.best_grandpa_block = *notification.header.number();
@@ -249,7 +249,7 @@ where
 			let local_id = if let Some(id) = self.local_id() {
 				id
 			} else {
-				debug!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
+				trace!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
 				return;
 			};
 
@@ -332,7 +332,7 @@ where
 	pub(crate) async fn run(mut self) {
 		let mut votes = Box::pin(self.gossip_engine.lock().messages_for(topic::<B>()).filter_map(
 			|notification| async move {
-				debug!(target: "beefy", "🥩 Got vote message: {:?}", notification);
+				trace!(target: "beefy", "🥩 Got vote message: {:?}", notification);
 
 				VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(
 					&mut &notification.message[..],
