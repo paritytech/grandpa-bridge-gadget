@@ -36,7 +36,7 @@ use sp_core::Pair;
 use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
 use sp_runtime::{
 	generic::OpaqueDigestItemId,
-	traits::{Block, Header, NumberFor, Zero},
+	traits::{Block, Header, NumberFor},
 };
 
 use beefy_primitives::{
@@ -76,8 +76,6 @@ where
 	best_grandpa_block: NumberFor<B>,
 	/// Best block a BEEFY voting round has been concluded for
 	best_beefy_block: Option<NumberFor<B>>,
-	/// Best block this node has voted for
-	best_block_voted_on: NumberFor<B>,
 	/// Validator set id for the last signed commitment
 	last_signed_id: u64,
 	// keep rustc happy
@@ -122,7 +120,6 @@ where
 			finality_notifications: client.finality_notification_stream(),
 			best_grandpa_block: client.info().finalized_number,
 			best_beefy_block: None,
-			best_block_voted_on: Zero::zero(),
 			last_signed_id: 0,
 			_backend: PhantomData,
 			_pair: PhantomData,
@@ -154,7 +151,7 @@ where
 		let diff = self.best_grandpa_block.saturating_sub(best_beefy_block);
 		let diff = diff.saturated_into::<u32>();
 		let next_power_of_two = (diff / 2).next_power_of_two();
-		let next_block_to_vote_on = self.best_block_voted_on + self.min_block_delta.max(next_power_of_two).into();
+		let next_block_to_vote_on = best_beefy_block + self.min_block_delta.max(next_power_of_two).into();
 
 		trace!(
 			target: "beefy",
@@ -273,8 +270,6 @@ where
 					return;
 				}
 			};
-
-			self.best_block_voted_on = *notification.header.number();
 
 			let message = VoteMessage {
 				commitment,
@@ -401,4 +396,47 @@ where
 	};
 
 	header.digest().convert_first(|l| l.try_to(id).and_then(filter))
+}
+
+#[cfg(test)]
+mod tests {
+	use sp_runtime::SaturatedConversion;
+
+	// This replicates the `should_vote_on()` core algorithm.
+	// We use that as an interim solution, until we can test `BeefyWorker` proper
+	fn should_vote_on(number: u64, best_grandpa: u64, best_beefy: u64, min_delta: u64) -> bool {
+		let diff = best_grandpa.saturating_sub(best_beefy);
+		let diff = diff.saturated_into::<u32>();
+		let next_power_of_two = (diff / 2).next_power_of_two() as u64;
+		let next_block_to_vote_on = best_beefy + min_delta.max(next_power_of_two);
+		number == next_block_to_vote_on
+	}
+
+	#[test]
+	fn should_vote_on_works() {
+		assert!(should_vote_on(4, 0, 0, 4));
+		assert!(should_vote_on(4, 1, 0, 4));
+
+		assert!(!should_vote_on(4, 0, 0, 8));
+		assert!(!should_vote_on(4, 1, 0, 8));
+
+		assert!(should_vote_on(8, 4, 4, 4));
+		assert!(should_vote_on(12, 4, 4, 8));
+
+		assert!(!should_vote_on(8, 4, 4, 8));
+
+		assert!(should_vote_on(462, 577, 206, 4));
+		assert!(should_vote_on(462, 577, 206, 8));
+
+		assert!(should_vote_on(767, 1024, 511, 4));
+		assert!(should_vote_on(768, 1024, 512, 4));
+		assert!(should_vote_on(512, 1024, 0, 4));
+
+		assert!(!should_vote_on(1024, 1024, 512, 4));
+		assert!(!should_vote_on(1024, 1024, 512, 600));
+		assert!(!should_vote_on(513, 1024, 0, 4));
+
+		assert!(should_vote_on(13, 10, 9, 4));
+		assert!(!should_vote_on(10, 10, 9, 4));
+	}
 }
