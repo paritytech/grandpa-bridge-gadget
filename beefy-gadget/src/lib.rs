@@ -16,16 +16,12 @@
 
 use std::{convert::TryFrom, fmt::Debug, sync::Arc};
 
-use beefy_primitives::BeefyApi;
 use codec::Codec;
 use log::debug;
 use prometheus::Registry;
 
 use sc_client_api::{Backend, BlockchainEvents, Finalizer};
-use sc_network_gossip::{
-	GossipEngine, Network as GossipNetwork, ValidationResult as GossipValidationResult, Validator as GossipValidator,
-	ValidatorContext as GossipValidatorContext,
-};
+use sc_network_gossip::{GossipEngine, Network as GossipNetwork};
 
 use sp_api::ProvideRuntimeApi;
 use sp_application_crypto::AppPublic;
@@ -34,7 +30,10 @@ use sp_consensus::SyncOracle as SyncOracleT;
 use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::traits::Block;
 
+use beefy_primitives::BeefyApi;
+
 mod error;
+mod gossip;
 mod metrics;
 mod round;
 mod worker;
@@ -86,25 +85,6 @@ where
 	// empty
 }
 
-/// Allows all gossip messages to get through.
-struct AllowAll<Hash> {
-	topic: Hash,
-}
-
-impl<B> GossipValidator<B> for AllowAll<B::Hash>
-where
-	B: Block,
-{
-	fn validate(
-		&self,
-		_context: &mut dyn GossipValidatorContext<B>,
-		_sender: &sc_network::PeerId,
-		_data: &[u8],
-	) -> GossipValidationResult<B::Hash> {
-		GossipValidationResult::ProcessAndKeep(self.topic)
-	}
-}
-
 /// Start the BEEFY gadget.
 ///
 /// This is a thin shim around running and awaiting a BEEFY worker.
@@ -114,6 +94,7 @@ pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 	network: N,
 	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
 	_sync_oracle: SO,
+	min_block_delta: u32,
 	prometheus_registry: Option<Registry>,
 ) where
 	B: Block,
@@ -126,14 +107,8 @@ pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 	N: GossipNetwork<B> + Clone + Send + 'static,
 	SO: SyncOracleT + Send + 'static,
 {
-	let gossip_engine = GossipEngine::new(
-		network,
-		BEEFY_PROTOCOL_NAME,
-		Arc::new(AllowAll {
-			topic: worker::topic::<B>(),
-		}),
-		None,
-	);
+	let gossip_validator = Arc::new(gossip::BeefyGossipValidator::new());
+	let gossip_engine = GossipEngine::new(network, BEEFY_PROTOCOL_NAME, gossip_validator.clone(), None);
 
 	let metrics = prometheus_registry
 		.as_ref()
@@ -154,6 +129,8 @@ pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 		key_store,
 		signed_commitment_sender,
 		gossip_engine,
+		gossip_validator,
+		min_block_delta,
 		metrics,
 	);
 
