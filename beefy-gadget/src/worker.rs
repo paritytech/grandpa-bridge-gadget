@@ -399,15 +399,14 @@ where
 {
 	let diff = best_grandpa.saturating_sub(best_beefy);
 	let diff = diff.saturated_into::<u32>();
-	let pow_two = (diff / 2).next_power_of_two();
-	let candidate = best_beefy + min_delta.max(pow_two).into();
+	let candidate = best_beefy + min_delta.max(diff.next_power_of_two()).into();
 
 	trace!(
 		target: "beefy",
 		"🥩 should_vote_on: #{:?}, diff: {:?}, next_power_of_two: {:?}, next_block_to_vote_on: #{:?}",
 		number,
 		diff,
-		pow_two,
+		diff.next_power_of_two(),
 		candidate,
 	);
 
@@ -428,7 +427,7 @@ mod tests {
 	}
 
 	#[test]
-	fn vote_candidate_works() {
+	fn vote_on_min_block_delta() {
 		let c = vote_candidate::<MockBlock>(block!(1), block!(1), block!(0), 4);
 		assert_eq!(4, c);
 		let c = vote_candidate::<MockBlock>(block!(2), block!(2), block!(0), 4);
@@ -437,6 +436,9 @@ mod tests {
 		assert_eq!(4, c);
 		let c = vote_candidate::<MockBlock>(block!(4), block!(4), block!(0), 4);
 		assert_eq!(4, c);
+
+		let c = vote_candidate::<MockBlock>(block!(4), block!(4), block!(4), 4);
+		assert_eq!(8, c);
 
 		let c = vote_candidate::<MockBlock>(block!(10), block!(10), block!(10), 4);
 		assert_eq!(14, c);
@@ -457,32 +459,58 @@ mod tests {
 		assert_eq!(18, c);
 	}
 
-	/// In order to catch up, `best_beefy_block` has to get into `min_block_delta` range
-	/// of `best_grandpa_block`. Otherwise, we will never catch up.
-	///
-	/// This is currently not an issue, since we update `best_beefy_block` whenever we see
-	/// a BEEFY `AuthorityChange` digest. In this case (AuthorityChange), `best_beefy_block`
-	/// will become the same as `best_grandpa_block` and we are good.
-	///
-	/// Once we update `best_beefy_block` only if we have a BEEFY `SignedCommitment` (as it
-	/// should be), there might be a timing issue, however. Basically the rate at which BEEFY
-	/// produces signed commitments **must not** fall behind more than `min_block_delta` blocks
-	/// behind the rate at which GRANDPA fianlises new blocks.
 	#[test]
-	fn vote_candidate_will_catch_up() {
+	fn vote_on_power_of_two() {
 		let c = vote_candidate::<MockBlock>(block!(1008), block!(1008), block!(1000), 4);
-		assert_eq!(1004, c);
+		assert_eq!(1008, c);
 
-		let c = vote_candidate::<MockBlock>(block!(1016), block!(1016), block!(1004), 4);
-		assert_eq!(1012, c);
+		let c = vote_candidate::<MockBlock>(block!(1016), block!(1016), block!(1000), 4);
+		assert_eq!(1016, c);
 
-		let c = vote_candidate::<MockBlock>(block!(1032), block!(1032), block!(1016), 4);
-		assert_eq!(1024, c);
+		let c = vote_candidate::<MockBlock>(block!(1032), block!(1032), block!(1000), 4);
+		assert_eq!(1032, c);
 
-		let c = vote_candidate::<MockBlock>(block!(1064), block!(1064), block!(1048), 4);
-		assert_eq!(1056, c);
+		let c = vote_candidate::<MockBlock>(block!(1064), block!(1064), block!(1000), 4);
+		assert_eq!(1064, c);
 
-		let c = vote_candidate::<MockBlock>(block!(1128), block!(1128), block!(1124), 4);
+		let c = vote_candidate::<MockBlock>(block!(1128), block!(1128), block!(1000), 4);
 		assert_eq!(1128, c);
+
+		let c = vote_candidate::<MockBlock>(block!(1256), block!(1256), block!(1000), 4);
+		assert_eq!(1256, c);
+
+		let c = vote_candidate::<MockBlock>(block!(1512), block!(1512), block!(1000), 4);
+		assert_eq!(1512, c);
+
+		let c = vote_candidate::<MockBlock>(block!(1024), block!(1024), block!(0), 4);
+		assert_eq!(1024, c);
+	}
+
+	#[test]
+	fn vote_on_target_block() {
+		let c = vote_candidate::<MockBlock>(block!(1008), block!(1008), block!(1002), 4);
+		assert_eq!(1010, c);
+		let c = vote_candidate::<MockBlock>(block!(1010), block!(1010), block!(1002), 4);
+		assert_eq!(1010, c);
+
+		let c = vote_candidate::<MockBlock>(block!(1016), block!(1016), block!(1006), 4);
+		assert_eq!(1022, c);
+		let c = vote_candidate::<MockBlock>(block!(1022), block!(1022), block!(1006), 4);
+		assert_eq!(1022, c);
+
+		let c = vote_candidate::<MockBlock>(block!(1032), block!(1032), block!(1012), 4);
+		assert_eq!(1044, c);
+		let c = vote_candidate::<MockBlock>(block!(1044), block!(1044), block!(1012), 4);
+		assert_eq!(1044, c);
+
+		let c = vote_candidate::<MockBlock>(block!(1064), block!(1064), block!(1014), 4);
+		assert_eq!(1078, c);
+		let c = vote_candidate::<MockBlock>(block!(1078), block!(1078), block!(1014), 4);
+		assert_eq!(1078, c);
+
+		let c = vote_candidate::<MockBlock>(block!(1128), block!(1128), block!(1008), 4);
+		assert_eq!(1136, c);
+		let c = vote_candidate::<MockBlock>(block!(1136), block!(1136), block!(1008), 4);
+		assert_eq!(1136, c);
 	}
 }
