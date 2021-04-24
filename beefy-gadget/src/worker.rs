@@ -36,7 +36,8 @@ use sp_core::Pair;
 use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
 use sp_runtime::{
 	generic::OpaqueDigestItemId,
-	traits::{Block, Header, NumberFor},
+	traits::{Block, Header, NumberFor, Saturating},
+	SaturatedConversion,
 };
 
 use beefy_primitives::{
@@ -139,8 +140,6 @@ where
 {
 	/// Return `true`, if we should vote on block `number`
 	fn should_vote_on(&self, number: NumberFor<B>) -> bool {
-		use sp_runtime::{traits::Saturating, SaturatedConversion};
-
 		let best_beefy_block = if let Some(block) = self.best_beefy_block {
 			block
 		} else {
@@ -148,23 +147,11 @@ where
 			return false;
 		};
 
-		let diff = self.best_grandpa_block.saturating_sub(best_beefy_block);
-		let diff = diff.saturated_into::<u32>();
-		let next_power_of_two = (diff / 2).next_power_of_two();
-		let next_block_to_vote_on = best_beefy_block + self.min_block_delta.max(next_power_of_two).into();
+		let candidate = vote_candidate::<B>(number, self.best_grandpa_block, best_beefy_block, self.min_block_delta);
 
-		trace!(
-			target: "beefy",
-			"should_vote_on: #{:?}, diff: {:?}, next_power_of_two: {:?}, next_block_to_vote_on: #{:?}",
-			number,
-			diff,
-			next_power_of_two,
-			next_block_to_vote_on,
-		);
+		metric_set!(self, beefy_should_vote_on, candidate);
 
-		metric_set!(self, beefy_should_vote_on, next_block_to_vote_on);
-
-		number == next_block_to_vote_on
+		number == candidate
 	}
 
 	fn sign_commitment(&self, id: &P::Public, commitment: &[u8]) -> Result<P::Signature, error::Crypto<P::Public>> {
@@ -398,45 +385,104 @@ where
 	header.digest().convert_first(|l| l.try_to(id).and_then(filter))
 }
 
+/// Calculate the candidate block for the next BEEY vote.
+///
+/// Note, `number` is only used for better tracing output.
+fn vote_candidate<B>(
+	number: NumberFor<B>,
+	best_grandpa: NumberFor<B>,
+	best_beefy: NumberFor<B>,
+	min_delta: u32,
+) -> NumberFor<B>
+where
+	B: Block,
+{
+	let diff = best_grandpa.saturating_sub(best_beefy);
+	let diff = diff.saturated_into::<u32>();
+	let pow_two = (diff / 2).next_power_of_two();
+	let candidate = best_beefy + min_delta.max(pow_two).into();
+
+	trace!(
+		target: "beefy",
+		"🥩 should_vote_on: #{:?}, diff: {:?}, next_power_of_two: {:?}, next_block_to_vote_on: #{:?}",
+		number,
+		diff,
+		pow_two,
+		candidate,
+	);
+
+	candidate
+}
+
 #[cfg(test)]
 mod tests {
-	use sp_runtime::SaturatedConversion;
+	use super::vote_candidate;
+	use sp_runtime::testing::{Block, ExtrinsicWrapper, Header};
 
-	// This replicates the `should_vote_on()` core algorithm.
-	// We use that as an interim solution, until we can test `BeefyWorker` proper
-	fn should_vote_on(number: u64, best_grandpa: u64, best_beefy: u64, min_delta: u64) -> bool {
-		let diff = best_grandpa.saturating_sub(best_beefy);
-		let diff = diff.saturated_into::<u32>();
-		let next_power_of_two = (diff / 2).next_power_of_two() as u64;
-		let next_block_to_vote_on = best_beefy + min_delta.max(next_power_of_two);
-		number == next_block_to_vote_on
+	type MockBlock = Block<ExtrinsicWrapper<u64>>;
+
+	macro_rules! block {
+		($n:expr) => {
+			Header::new_from_number($n).number;
+		};
 	}
 
 	#[test]
-	fn should_vote_on_works() {
-		assert!(should_vote_on(4, 0, 0, 4));
-		assert!(should_vote_on(4, 1, 0, 4));
+	fn vote_candidate_works() {
+		let c = vote_candidate::<MockBlock>(block!(1), block!(1), block!(0), 4);
+		assert_eq!(4, c);
+		let c = vote_candidate::<MockBlock>(block!(2), block!(2), block!(0), 4);
+		assert_eq!(4, c);
+		let c = vote_candidate::<MockBlock>(block!(3), block!(3), block!(0), 4);
+		assert_eq!(4, c);
+		let c = vote_candidate::<MockBlock>(block!(4), block!(4), block!(0), 4);
+		assert_eq!(4, c);
 
-		assert!(!should_vote_on(4, 0, 0, 8));
-		assert!(!should_vote_on(4, 1, 0, 8));
+		let c = vote_candidate::<MockBlock>(block!(10), block!(10), block!(10), 4);
+		assert_eq!(14, c);
+		let c = vote_candidate::<MockBlock>(block!(11), block!(11), block!(10), 4);
+		assert_eq!(14, c);
+		let c = vote_candidate::<MockBlock>(block!(12), block!(12), block!(10), 4);
+		assert_eq!(14, c);
+		let c = vote_candidate::<MockBlock>(block!(13), block!(13), block!(10), 4);
+		assert_eq!(14, c);
 
-		assert!(should_vote_on(8, 4, 4, 4));
-		assert!(should_vote_on(12, 4, 4, 8));
+		let c = vote_candidate::<MockBlock>(block!(10), block!(10), block!(10), 8);
+		assert_eq!(18, c);
+		let c = vote_candidate::<MockBlock>(block!(11), block!(11), block!(10), 8);
+		assert_eq!(18, c);
+		let c = vote_candidate::<MockBlock>(block!(12), block!(12), block!(10), 8);
+		assert_eq!(18, c);
+		let c = vote_candidate::<MockBlock>(block!(13), block!(13), block!(10), 8);
+		assert_eq!(18, c);
+	}
 
-		assert!(!should_vote_on(8, 4, 4, 8));
+	/// In order to catch up, `best_beefy_block` has to get into `min_block_delta` range
+	/// of `best_grandpa_block`. Otherwise, we will never catch up.
+	///
+	/// This is currently not an issue, since we update `best_beefy_block` whenever we see
+	/// a BEEFY `AuthorityChange` digest. In this case (AuthorityChange), `best_beefy_block`
+	/// will become the same as `best_grandpa_block` and we are good.
+	///
+	/// Once we update `best_beefy_block` only if we have a BEEFY `SignedCommitment` (as it
+	/// should be), there might be a timing issue, however. Basically the rate at which BEEFY
+	/// produces signed commitments **must not** fall behind more than `min_block_delta` blocks
+	/// behind the rate at which GRANDPA fianlises new blocks.
+	#[test]
+	fn vote_candidate_will_catch_up() {
+		let c = vote_candidate::<MockBlock>(block!(1008), block!(1008), block!(1000), 4);
+		assert_eq!(1004, c);
 
-		assert!(should_vote_on(462, 577, 206, 4));
-		assert!(should_vote_on(462, 577, 206, 8));
+		let c = vote_candidate::<MockBlock>(block!(1016), block!(1016), block!(1004), 4);
+		assert_eq!(1012, c);
 
-		assert!(should_vote_on(767, 1024, 511, 4));
-		assert!(should_vote_on(768, 1024, 512, 4));
-		assert!(should_vote_on(512, 1024, 0, 4));
+		let c = vote_candidate::<MockBlock>(block!(1032), block!(1032), block!(1016), 4);
+		assert_eq!(1024, c);
 
-		assert!(!should_vote_on(1024, 1024, 512, 4));
-		assert!(!should_vote_on(1024, 1024, 512, 600));
-		assert!(!should_vote_on(513, 1024, 0, 4));
+		let c = vote_candidate::<MockBlock>(block!(1064), block!(1064), block!(1048), 4);
+		assert_eq!(1056, c);
 
-		assert!(should_vote_on(13, 10, 9, 4));
-		assert!(!should_vote_on(10, 10, 9, 4));
+		let c = vote_candidate::<MockBlock>(block!(1128), block!(1128), block!(1124), 4);
+		assert_eq!(1128, c);
 	}
 }
