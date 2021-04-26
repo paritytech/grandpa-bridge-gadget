@@ -147,11 +147,13 @@ where
 			return false;
 		};
 
-		let candidate = vote_candidate::<B>(number, self.best_grandpa_block, best_beefy_block, self.min_block_delta);
+		let target = vote_target::<B>(self.best_grandpa_block, best_beefy_block, self.min_block_delta);
 
-		metric_set!(self, beefy_should_vote_on, candidate);
+		trace!(target: "beefy", "🥩 should_vote_on: #{:?}, next_block_to_vote_on: #{:?}", number, target);
 
-		number == candidate
+		metric_set!(self, beefy_should_vote_on, target);
+
+		number == target
 	}
 
 	fn sign_commitment(&self, id: &P::Public, commitment: &[u8]) -> Result<P::Signature, error::Crypto<P::Public>> {
@@ -385,132 +387,123 @@ where
 	header.digest().convert_first(|l| l.try_to(id).and_then(filter))
 }
 
-/// Calculate the candidate block for the next BEEY vote.
-///
-/// Note, `number` is only used for better tracing output.
-fn vote_candidate<B>(
-	number: NumberFor<B>,
-	best_grandpa: NumberFor<B>,
-	best_beefy: NumberFor<B>,
-	min_delta: u32,
-) -> NumberFor<B>
+/// Calculate next block number to vote on
+fn vote_target<N>(best_grandpa: NumberFor<N>, best_beefy: NumberFor<N>, min_delta: u32) -> NumberFor<N>
 where
-	B: Block,
+	N: Block,
 {
 	let diff = best_grandpa.saturating_sub(best_beefy);
 	let diff = diff.saturated_into::<u32>();
-	let candidate = best_beefy + min_delta.max(diff.next_power_of_two()).into();
+	let target = best_beefy + min_delta.max(diff.next_power_of_two()).into();
 
 	trace!(
 		target: "beefy",
-		"🥩 should_vote_on: #{:?}, diff: {:?}, next_power_of_two: {:?}, next_block_to_vote_on: #{:?}",
-		number,
+		"🥩 vote target - diff: {:?}, next_power_of_two: {:?}, target block: #{:?}",
 		diff,
 		diff.next_power_of_two(),
-		candidate,
+		target,
 	);
 
-	candidate
+	target
 }
 
 #[cfg(test)]
 mod tests {
-	use super::vote_candidate;
-	use sp_runtime::testing::{Block, ExtrinsicWrapper, Header};
+	use super::vote_target;
+	use sp_api::NumberFor;
+	use sp_runtime::testing::{Block, ExtrinsicWrapper};
 
 	type MockBlock = Block<ExtrinsicWrapper<u64>>;
 
-	macro_rules! block {
-		($n:expr) => {
-			Header::new_from_number($n).number;
-		};
+	fn block(num: u32) -> NumberFor<MockBlock> {
+		num.into()
 	}
 
 	#[test]
 	fn vote_on_min_block_delta() {
-		let c = vote_candidate::<MockBlock>(block!(1), block!(1), block!(0), 4);
-		assert_eq!(4, c);
-		let c = vote_candidate::<MockBlock>(block!(2), block!(2), block!(0), 4);
-		assert_eq!(4, c);
-		let c = vote_candidate::<MockBlock>(block!(3), block!(3), block!(0), 4);
-		assert_eq!(4, c);
-		let c = vote_candidate::<MockBlock>(block!(4), block!(4), block!(0), 4);
-		assert_eq!(4, c);
+		let t = vote_target::<MockBlock>(block(1), block(0), 4);
+		assert_eq!(4, t);
+		let t = vote_target::<MockBlock>(block(2), block(0), 4);
+		assert_eq!(4, t);
+		let t = vote_target::<MockBlock>(block(3), block(0), 4);
+		assert_eq!(4, t);
+		let t = vote_target::<MockBlock>(block(4), block(0), 4);
+		assert_eq!(4, t);
 
-		let c = vote_candidate::<MockBlock>(block!(4), block!(4), block!(4), 4);
-		assert_eq!(8, c);
+		let t = vote_target::<MockBlock>(block(4), block(4), 4);
+		assert_eq!(8, t);
 
-		let c = vote_candidate::<MockBlock>(block!(10), block!(10), block!(10), 4);
-		assert_eq!(14, c);
-		let c = vote_candidate::<MockBlock>(block!(11), block!(11), block!(10), 4);
-		assert_eq!(14, c);
-		let c = vote_candidate::<MockBlock>(block!(12), block!(12), block!(10), 4);
-		assert_eq!(14, c);
-		let c = vote_candidate::<MockBlock>(block!(13), block!(13), block!(10), 4);
-		assert_eq!(14, c);
+		let t = vote_target::<MockBlock>(block(10), block(10), 4);
+		assert_eq!(14, t);
+		let t = vote_target::<MockBlock>(block(11), block(10), 4);
+		assert_eq!(14, t);
+		let t = vote_target::<MockBlock>(block(12), block(10), 4);
+		assert_eq!(14, t);
+		let t = vote_target::<MockBlock>(block(13), block(10), 4);
+		assert_eq!(14, t);
 
-		let c = vote_candidate::<MockBlock>(block!(10), block!(10), block!(10), 8);
-		assert_eq!(18, c);
-		let c = vote_candidate::<MockBlock>(block!(11), block!(11), block!(10), 8);
-		assert_eq!(18, c);
-		let c = vote_candidate::<MockBlock>(block!(12), block!(12), block!(10), 8);
-		assert_eq!(18, c);
-		let c = vote_candidate::<MockBlock>(block!(13), block!(13), block!(10), 8);
-		assert_eq!(18, c);
+		let t = vote_target::<MockBlock>(block(10), block(10), 8);
+		assert_eq!(18, t);
+		let t = vote_target::<MockBlock>(block(11), block(10), 8);
+		assert_eq!(18, t);
+		let t = vote_target::<MockBlock>(block(12), block(10), 8);
+		assert_eq!(18, t);
+		let t = vote_target::<MockBlock>(block(13), block(10), 8);
+		assert_eq!(18, t);
 	}
 
 	#[test]
 	fn vote_on_power_of_two() {
-		let c = vote_candidate::<MockBlock>(block!(1008), block!(1008), block!(1000), 4);
-		assert_eq!(1008, c);
+		let t = vote_target::<MockBlock>(block(1008), block(1000), 4);
+		assert_eq!(1008, t);
 
-		let c = vote_candidate::<MockBlock>(block!(1016), block!(1016), block!(1000), 4);
-		assert_eq!(1016, c);
+		let t = vote_target::<MockBlock>(block(1016), block(1000), 4);
+		assert_eq!(1016, t);
 
-		let c = vote_candidate::<MockBlock>(block!(1032), block!(1032), block!(1000), 4);
-		assert_eq!(1032, c);
+		let t = vote_target::<MockBlock>(block(1032), block(1000), 4);
+		assert_eq!(1032, t);
 
-		let c = vote_candidate::<MockBlock>(block!(1064), block!(1064), block!(1000), 4);
-		assert_eq!(1064, c);
+		let t = vote_target::<MockBlock>(block(1064), block(1000), 4);
+		assert_eq!(1064, t);
 
-		let c = vote_candidate::<MockBlock>(block!(1128), block!(1128), block!(1000), 4);
-		assert_eq!(1128, c);
+		let t = vote_target::<MockBlock>(block(1128), block(1000), 4);
+		assert_eq!(1128, t);
 
-		let c = vote_candidate::<MockBlock>(block!(1256), block!(1256), block!(1000), 4);
-		assert_eq!(1256, c);
+		let t = vote_target::<MockBlock>(block(1256), block(1000), 4);
+		assert_eq!(1256, t);
 
-		let c = vote_candidate::<MockBlock>(block!(1512), block!(1512), block!(1000), 4);
-		assert_eq!(1512, c);
+		let t = vote_target::<MockBlock>(block(1512), block(1000), 4);
+		assert_eq!(1512, t);
 
-		let c = vote_candidate::<MockBlock>(block!(1024), block!(1024), block!(0), 4);
-		assert_eq!(1024, c);
+		let t = vote_target::<MockBlock>(block(1024), block(0), 4);
+		assert_eq!(1024, t);
 	}
 
 	#[test]
 	fn vote_on_target_block() {
-		let c = vote_candidate::<MockBlock>(block!(1008), block!(1008), block!(1002), 4);
-		assert_eq!(1010, c);
-		let c = vote_candidate::<MockBlock>(block!(1010), block!(1010), block!(1002), 4);
-		assert_eq!(1010, c);
+		let t = vote_target::<MockBlock>(block(1008), block(1002), 4);
+		assert_eq!(1010, t);
+		let t = vote_target::<MockBlock>(block(1010), block(1002), 4);
+		assert_eq!(1010, t);
 
-		let c = vote_candidate::<MockBlock>(block!(1016), block!(1016), block!(1006), 4);
-		assert_eq!(1022, c);
-		let c = vote_candidate::<MockBlock>(block!(1022), block!(1022), block!(1006), 4);
-		assert_eq!(1022, c);
+		let t = vote_target::<MockBlock>(block(1016), block(1006), 4);
+		assert_eq!(1022, t);
+		let t = vote_target::<MockBlock>(block(1022), block(1006), 4);
+		assert_eq!(1022, t);
 
-		let c = vote_candidate::<MockBlock>(block!(1032), block!(1032), block!(1012), 4);
-		assert_eq!(1044, c);
-		let c = vote_candidate::<MockBlock>(block!(1044), block!(1044), block!(1012), 4);
-		assert_eq!(1044, c);
+		let t = vote_target::<MockBlock>(block(1032), block(1012), 4);
+		assert_eq!(1044, t);
+		let t = vote_target::<MockBlock>(block(1044), block(1012), 4);
+		assert_eq!(1044, t);
 
-		let c = vote_candidate::<MockBlock>(block!(1064), block!(1064), block!(1014), 4);
-		assert_eq!(1078, c);
-		let c = vote_candidate::<MockBlock>(block!(1078), block!(1078), block!(1014), 4);
-		assert_eq!(1078, c);
+		let t = vote_target::<MockBlock>(block(1064), block(1014), 4);
+		assert_eq!(1078, t);
+		let t = vote_target::<MockBlock>(block(1078), block(1014), 4);
+		assert_eq!(1078, t);
 
-		let c = vote_candidate::<MockBlock>(block!(1128), block!(1128), block!(1008), 4);
-		assert_eq!(1136, c);
-		let c = vote_candidate::<MockBlock>(block!(1136), block!(1136), block!(1008), 4);
-		assert_eq!(1136, c);
+		let t = vote_target::<MockBlock>(block(1128), block(1008), 4);
+		assert_eq!(1136, t);
+		let t = vote_target::<MockBlock>(block(1136), block(1008), 4);
+		assert_eq!(1136, t);
 	}
 }
