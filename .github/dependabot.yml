@@ -1,0 +1,29 @@
+version: 2
+updates:
+- package-ecosystem: cargo
+  directory: "/"
+  schedule:
+    interval: weekly
+    time: "03:00"
+    timezone: Europe/Berlin
+  open-pull-requests-limit: 20
+  ignore:
+  - dependency-name: frame-*
+    versions:
+    - ">= 0"
+  - dependency-name: pallet-*
+    versions:
+    - ">= 0"
+  - dependency-name: sc-*
+    versions:
+    - ">= 0"
+  - dependency-name: sp-*
+    versions:
+    - ">= 0"
+  - dependency-name: substrate-*
+    versions:
+    - ">= 0"
+  - dependency-name: serde_json
+    versions:
+    - 1.0.62
+  rebase-strategy: disabled
