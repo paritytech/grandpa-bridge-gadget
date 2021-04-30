@@ -231,20 +231,6 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		task_manager.spawn_essential_handle().spawn_blocking("aura", aura);
 	}
 
-	// Start the BEEFY bridge gadget.
-	task_manager.spawn_essential_handle().spawn_blocking(
-		"beefy-gadget",
-		beefy_gadget::start_beefy_gadget::<_, beefy_primitives::ecdsa::AuthorityPair, _, _, _, _>(
-			client,
-			keystore_container.sync_keystore(),
-			network.clone(),
-			signed_commitment_sender,
-			network.clone(),
-			4,
-			prometheus_registry.clone(),
-		),
-	);
-
 	// if the node isn't actively participating in consensus then it doesn't
 	// need a keystore, regardless of which protocol we use below.
 	let keystore = if role.is_authority() {
@@ -252,6 +238,20 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 	} else {
 		None
 	};
+
+	// Start the BEEFY bridge gadget.
+	task_manager.spawn_essential_handle().spawn_blocking(
+		"beefy-gadget",
+		beefy_gadget::start_beefy_gadget::<_, beefy_primitives::ecdsa::AuthorityPair, _, _, _, _>(
+			client,
+			keystore.clone(),
+			network.clone(),
+			signed_commitment_sender,
+			network.clone(),
+			4,
+			prometheus_registry.clone(),
+		),
+	);
 
 	let grandpa_config = sc_finality_grandpa::Config {
 		// FIXME #1578 make this available through chainspec
