@@ -65,6 +65,7 @@ where
 	C: Client<B, BE, P>,
 {
 	client: Arc<C>,
+	backend: Arc<BE>,
 	key_store: Option<SyncCryptoStorePtr>,
 	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
 	gossip_engine: Arc<Mutex<GossipEngine<B>>>,
@@ -101,8 +102,10 @@ where
 	/// BEEFY pallet has been deployed on-chain.
 	///
 	/// The BEEFY pallet is needed in order to keep track of the BEEFY authority set.
+	#[allow(clippy::too_many_arguments)]
 	pub(crate) fn new(
 		client: Arc<C>,
+		backend: Arc<BE>,
 		key_store: Option<SyncCryptoStorePtr>,
 		signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
 		gossip_engine: GossipEngine<B>,
@@ -112,6 +115,7 @@ where
 	) -> Self {
 		BeefyWorker {
 			client: client.clone(),
+			backend,
 			key_store,
 			signed_commitment_sender,
 			gossip_engine: Arc::new(Mutex::new(gossip_engine)),
@@ -312,6 +316,14 @@ where
 				metric_set!(self, beefy_round_concluded, round.1);
 
 				debug!(target: "beefy", "🥩 Round #{} concluded, committed: {:?}.", round.1, signed_commitment);
+
+				if self
+					.backend
+					.append_justification(BlockId::Number(round.1), (BEEFY_ENGINE_ID, signed_commitment.encode()))
+					.is_err()
+				{
+					error!(target: "beefy", "🥩 Failed to append justification: {:?}", signed_commitment);
+				}
 
 				self.signed_commitment_sender.notify(signed_commitment);
 				self.best_beefy_block = Some(round.1);

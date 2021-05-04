@@ -192,7 +192,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		rpc_extensions_builder,
 		on_demand: None,
 		remote_blockchain: None,
-		backend,
+		backend: backend.clone(),
 		network_status_sinks,
 		system_rpc_tx,
 		config,
@@ -244,6 +244,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		"beefy-gadget",
 		beefy_gadget::start_beefy_gadget::<_, beefy_primitives::ecdsa::AuthorityPair, _, _, _, _>(
 			client,
+			backend,
 			keystore.clone(),
 			network.clone(),
 			signed_commitment_sender,

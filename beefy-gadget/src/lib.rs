@@ -88,8 +88,10 @@ where
 /// Start the BEEFY gadget.
 ///
 /// This is a thin shim around running and awaiting a BEEFY worker.
+#[allow(clippy::too_many_arguments)]
 pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 	client: Arc<C>,
+	backend: Arc<BE>,
 	key_store: Option<SyncCryptoStorePtr>,
 	network: N,
 	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
@@ -125,7 +127,8 @@ pub async fn start_beefy_gadget<B, P, BE, C, N, SO>(
 		});
 
 	let worker = worker::BeefyWorker::<_, _, BE, P>::new(
-		client.clone(),
+		client,
+		backend,
 		key_store,
 		signed_commitment_sender,
 		gossip_engine,
