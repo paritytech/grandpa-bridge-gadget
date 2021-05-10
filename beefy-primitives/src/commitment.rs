@@ -77,7 +77,7 @@ where
 }
 
 /// A commitment with matching GRANDPA validators' signatures.
-#[derive(Clone, Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
+#[derive(Clone, Debug, PartialEq, Eq, codec::Decode)]
 pub struct SignedCommitment<TBlockNumber, TPayload, TSignature> {
 	/// The commitment signatures are collected for.
 	pub commitment: Commitment<TBlockNumber, TPayload>,
@@ -92,6 +92,42 @@ impl<TBlockNumber, TPayload, TSignature> SignedCommitment<TBlockNumber, TPayload
 	/// Return the number of collected signatures.
 	pub fn no_of_signatures(&self) -> usize {
 		self.signatures.iter().filter(|x| x.is_some()).count()
+	}
+}
+
+impl<TBlockNumber, TPayload, TSignature> codec::Encode for SignedCommitment<TBlockNumber, TPayload, TSignature> {
+	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
+		type BitVec = Vec<u128>;
+
+		#[derive(codec::Encode, codec::Decode)]
+		struct TemporarySignatures<TSignature> {
+			signatures_from: BitVec,
+			signatures: Vec<TSignature>,
+		}
+
+		impl<TBlockNumber, TPayload, TSignature> From<SignedCommitment<TBlockNumber, TPayload, TSignature>>
+			for TemporarySignatures<TSignature>
+		{
+			fn from(signed_commitment: SignedCommitment<TBlockNumber, TPayload, TSignature>) -> Self {
+				let SignedCommitment { signatures, .. } = signed_commitment;
+				let signatures_from = signatures.iter().map(|x| if x.is_some() { 1 } else { 0 }).collect();
+				let mut raw_signatures = vec![];
+				for signature in signatures.iter() {
+					match signature {
+						Some(value) => raw_signatures.push(*(value.clone())),
+						None => (),
+					}
+				}
+
+				Self {
+					signatures_from,
+					signatures: raw_signatures,
+				}
+			}
+		}
+
+		let temp = TemporarySignatures::<TSignature>::from(*self);
+		temp.using_encoded(f)
 	}
 }
 
