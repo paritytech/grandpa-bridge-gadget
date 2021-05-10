@@ -239,19 +239,20 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		None
 	};
 
+	let beefy_params = beefy_gadget::BeefyParams {
+		client,
+		backend,
+		key_store: keystore.clone(),
+		network: network.clone(),
+		signed_commitment_sender,
+		min_block_delta: 4,
+		prometheus_registry: prometheus_registry.clone(),
+	};
+
 	// Start the BEEFY bridge gadget.
 	task_manager.spawn_essential_handle().spawn_blocking(
 		"beefy-gadget",
-		beefy_gadget::start_beefy_gadget::<_, beefy_primitives::ecdsa::AuthorityPair, _, _, _, _>(
-			client,
-			backend,
-			keystore.clone(),
-			network.clone(),
-			signed_commitment_sender,
-			network.clone(),
-			4,
-			prometheus_registry.clone(),
-		),
+		beefy_gadget::start_beefy_gadget::<_, beefy_primitives::ecdsa::AuthorityPair, _, _, _>(beefy_params),
 	);
 
 	let grandpa_config = sc_finality_grandpa::Config {
