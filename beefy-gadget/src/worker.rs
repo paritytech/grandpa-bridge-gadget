@@ -54,6 +54,22 @@ use crate::{
 	notification, round, Client,
 };
 
+pub(crate) struct WorkerParams<B, P, BE, C>
+where
+	B: Block,
+	P: sp_core::Pair,
+	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
+{
+	pub client: Arc<C>,
+	pub backend: Arc<BE>,
+	pub key_store: Option<SyncCryptoStorePtr>,
+	pub signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
+	pub gossip_engine: GossipEngine<B>,
+	pub gossip_validator: Arc<BeefyGossipValidator<B, P>>,
+	pub min_block_delta: u32,
+	pub metrics: Option<Metrics>,
+}
+
 /// A BEEFY worker plays the BEEFY protocol
 pub(crate) struct BeefyWorker<B, C, BE, P>
 where
@@ -102,17 +118,18 @@ where
 	/// BEEFY pallet has been deployed on-chain.
 	///
 	/// The BEEFY pallet is needed in order to keep track of the BEEFY authority set.
-	#[allow(clippy::too_many_arguments)]
-	pub(crate) fn new(
-		client: Arc<C>,
-		backend: Arc<BE>,
-		key_store: Option<SyncCryptoStorePtr>,
-		signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
-		gossip_engine: GossipEngine<B>,
-		gossip_validator: Arc<BeefyGossipValidator<B, P>>,
-		min_block_delta: u32,
-		metrics: Option<Metrics>,
-	) -> Self {
+	pub(crate) fn new(worker_params: WorkerParams<B, P, BE, C>) -> Self {
+		let WorkerParams {
+			client,
+			backend,
+			key_store,
+			signed_commitment_sender,
+			gossip_engine,
+			gossip_validator,
+			min_block_delta,
+			metrics,
+		} = worker_params;
+
 		BeefyWorker {
 			client: client.clone(),
 			backend,

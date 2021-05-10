@@ -84,6 +84,7 @@ where
 	// empty
 }
 
+/// BEEFY gadget initialization parameters.
 pub struct BeefyParams<B, P, BE, C, N>
 where
 	B: Block,
@@ -147,7 +148,7 @@ where
 			}
 		});
 
-	let worker = worker::BeefyWorker::<_, _, BE, P>::new(
+	let worker_params = worker::WorkerParams {
 		client,
 		backend,
 		key_store,
@@ -156,7 +157,9 @@ where
 		gossip_validator,
 		min_block_delta,
 		metrics,
-	);
+	};
+
+	let worker = worker::BeefyWorker::<_, _, _, _>::new(worker_params);
 
 	worker.run().await
 }
