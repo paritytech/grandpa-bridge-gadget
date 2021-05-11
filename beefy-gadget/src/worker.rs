@@ -42,8 +42,8 @@ use sp_runtime::{
 };
 
 use beefy_primitives::{
-	BeefyApi, Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, VoteMessage, BEEFY_ENGINE_ID,
-	GENESIS_AUTHORITY_SET_ID, KEY_TYPE,
+	BeefyApi, Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, VersionedCommitment, VoteMessage,
+	BEEFY_ENGINE_ID, GENESIS_AUTHORITY_SET_ID, KEY_TYPE,
 };
 
 use crate::{
@@ -336,7 +336,13 @@ where
 
 				if self
 					.backend
-					.append_justification(BlockId::Number(round.1), (BEEFY_ENGINE_ID, signed_commitment.encode()))
+					.append_justification(
+						BlockId::Number(round.1),
+						(
+							BEEFY_ENGINE_ID,
+							VersionedCommitment::V1(signed_commitment.clone()).encode(),
+						),
+					)
 					.is_err()
 				{
 					// this is a warning for now, because until the round lifecycle is improved, we will
