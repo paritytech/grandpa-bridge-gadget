@@ -339,7 +339,9 @@ where
 					.append_justification(BlockId::Number(round.1), (BEEFY_ENGINE_ID, signed_commitment.encode()))
 					.is_err()
 				{
-					error!(target: "beefy", "🥩 Failed to append justification: {:?}", signed_commitment);
+					// this is a warning for now, because until the round lifecycle is improved, we will
+					// conclude certain rounds multiple times.
+					warn!(target: "beefy", "🥩 Failed to append justification: {:?}", signed_commitment);
 				}
 
 				self.signed_commitment_sender.notify(signed_commitment);
