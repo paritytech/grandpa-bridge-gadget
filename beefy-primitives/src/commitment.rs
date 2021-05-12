@@ -97,26 +97,62 @@ impl<TBlockNumber, TPayload, TSignature> SignedCommitment<TBlockNumber, TPayload
 
 impl<TBlockNumber, TPayload, TSignature> codec::Encode for SignedCommitment<TBlockNumber, TPayload, TSignature> {
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
-		type BitVec = Vec<u128>;
+		type BitVec = Vec<u8>;
 
-		#[derive(codec::Encode, codec::Decode)]
+		#[derive(Clone, Debug, PartialEq, Eq, codec::Decode)]
 		struct TemporarySignatures<TSignature> {
 			signatures_from: BitVec,
 			signatures: Vec<TSignature>,
 		}
 
+		impl<TSignature> codec::Encode for TemporarySignatures<TSignature> {
+			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
+				self.using_encode(|buf| dest.write(buf));
+			}
+
+			fn encode(&self) -> Vec<u8> {
+				let mut r = vec![];
+				self.encode_to(&mut r);
+				r
+			}
+
+			fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
+				f(&self.encode())
+			}
+		}
+
 		impl<TBlockNumber, TPayload, TSignature> From<SignedCommitment<TBlockNumber, TPayload, TSignature>>
 			for TemporarySignatures<TSignature>
 		{
+			/// Convert `SignedCommitment`s into `TemporarySignatures` that are packed better for
+			/// network transport.
 			fn from(signed_commitment: SignedCommitment<TBlockNumber, TPayload, TSignature>) -> Self {
 				let SignedCommitment { signatures, .. } = signed_commitment;
-				let signatures_from = signatures.iter().map(|x| if x.is_some() { 1 } else { 0 }).collect();
-				let mut raw_signatures = vec![];
+				let mut signatures_from: Vec<u8> = vec![];
+				let mut raw_signatures: Vec<TSignature> = vec![];
+
 				for signature in signatures.iter() {
 					match signature {
 						Some(value) => raw_signatures.push(*(value.clone())),
 						None => (),
 					}
+				}
+
+				// Compress 8 bit values into a single u8 Byte
+				const CONTAINER_BIT_SIZE: usize = 8;
+
+				let bits: Vec<u8> = signatures.iter().map(|x| if x.is_some() { 1 } else { 0 }).collect();
+				let chunks = bits.chunks(CONTAINER_BIT_SIZE);
+				for chunk in chunks {
+					let mut iter = chunk.into_iter().copied();
+					let mut v = iter.next().unwrap() as u8;
+
+					for bit in iter {
+						v = v << 1;
+						v = v | bit as u8;
+					}
+
+					signatures_from.push(v);
 				}
 
 				Self {
