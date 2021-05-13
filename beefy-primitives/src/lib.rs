@@ -73,7 +73,7 @@ pub const GENESIS_AUTHORITY_SET_ID: u64 = 0;
 pub type ValidatorSetId = u64;
 
 /// A set of BEEFY authorities, a.k.a. validators.
-#[derive(Decode, Encode, Debug, PartialEq, Clone)]
+#[derive(Decode, Encode, Debug, PartialEq, Clone, scale_info::TypeInfo)]
 pub struct ValidatorSet<AuthorityId> {
 	/// Public keys of the validator set elements
 	pub validators: Vec<AuthorityId>,
@@ -98,7 +98,7 @@ pub type AuthorityIndex = u32;
 pub type MmrRootHash = H256;
 
 /// A consensus log item for BEEFY.
-#[derive(Decode, Encode)]
+#[derive(Decode, Encode, scale_info::TypeInfo)]
 pub enum ConsensusLog<AuthorityId: Codec> {
 	/// The authorities have changed.
 	#[codec(index = 1)]

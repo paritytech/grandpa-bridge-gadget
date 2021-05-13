@@ -591,6 +591,7 @@ version = "0.1.0"
 dependencies = [
  "hex-literal",
  "parity-scale-codec",
+ "scale-info",
  "sp-api",
  "sp-application-crypto",
  "sp-core",
@@ -6204,6 +6205,28 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "thiserror",
  "wasm-timer",
+]
+
+[[package]]
+name = "scale-info"
+version = "0.6.0"
+source = "git+https://github.com/paritytech/scale-info?branch=aj-substrate#ff42886b35a3c5e960a8b2089bdef5fccd0ee245"
+dependencies = [
+ "cfg-if 1.0.0",
+ "derive_more",
+ "parity-scale-codec",
+ "scale-info-derive",
+]
+
+[[package]]
+name = "scale-info-derive"
+version = "0.4.0"
+source = "git+https://github.com/paritytech/scale-info?branch=aj-substrate#ff42886b35a3c5e960a8b2089bdef5fccd0ee245"
+dependencies = [
+ "proc-macro-crate 1.0.0",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
