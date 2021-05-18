@@ -15,6 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use sp_std::{cmp, prelude::*};
+use codec::{Encode, Decode};
 
 use crate::ValidatorSetId;
 
@@ -23,7 +24,7 @@ use crate::ValidatorSetId;
 /// The commitment contains a [payload] extracted from the finalized block at height [block_number].
 /// GRANDPA validators collect signatures on commitments and a stream of such signed commitments
 /// (see [SignedCommitment]) forms the BEEFY protocol.
-#[derive(Clone, Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
+#[derive(Clone, Debug, PartialEq, Eq, Encode, Decode)]
 pub struct Commitment<TBlockNumber, TPayload> {
 	/// The payload being signed.
 	///
@@ -77,7 +78,7 @@ where
 }
 
 /// A commitment with matching GRANDPA validators' signatures.
-#[derive(Clone, Debug, PartialEq, Eq, codec::Decode)]
+#[derive(Clone, Debug, PartialEq, Eq, Decode)]
 pub struct SignedCommitment<TBlockNumber, TPayload, TSignature> {
 	/// The commitment signatures are collected for.
 	pub commitment: Commitment<TBlockNumber, TPayload>,
@@ -95,30 +96,14 @@ impl<TBlockNumber, TPayload, TSignature> SignedCommitment<TBlockNumber, TPayload
 	}
 }
 
-impl<TBlockNumber, TPayload, TSignature> codec::Encode for SignedCommitment<TBlockNumber, TPayload, TSignature> {
+impl<TBlockNumber, TPayload, TSignature> Encode for SignedCommitment<TBlockNumber, TPayload, TSignature> {
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		type BitVec = Vec<u8>;
 
-		#[derive(Clone, Debug, PartialEq, Eq, codec::Decode)]
+		#[derive(Clone, Debug, PartialEq, Eq, Encode, Decode)]
 		struct TemporarySignatures<TSignature> {
 			signatures_from: BitVec,
 			signatures: Vec<TSignature>,
-		}
-
-		impl<TSignature> codec::Encode for TemporarySignatures<TSignature> {
-			fn encode_to<T: codec::Output + ?Sized>(&self, dest: &mut T) {
-				self.using_encode(|buf| dest.write(buf));
-			}
-
-			fn encode(&self) -> Vec<u8> {
-				let mut r = vec![];
-				self.encode_to(&mut r);
-				r
-			}
-
-			fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
-				f(&self.encode())
-			}
 		}
 
 		impl<TBlockNumber, TPayload, TSignature> From<SignedCommitment<TBlockNumber, TPayload, TSignature>>
