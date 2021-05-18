@@ -31,7 +31,7 @@ impl SignedCommitment {
 	) -> Self
 	where
 		Block: BlockT,
-		Signature: Encode,
+		Signature: Encode + Clone, // TODO This `Clone` bound should not be necessary.
 	{
 		SignedCommitment(signed_commitment.encode().into())
 	}
