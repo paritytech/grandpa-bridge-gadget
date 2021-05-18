@@ -99,31 +99,30 @@ impl<TBlockNumber, TPayload, TSignature> SignedCommitment<TBlockNumber, TPayload
 impl<TBlockNumber, TPayload, TSignature> Encode for SignedCommitment<TBlockNumber, TPayload, TSignature>
 where
 	TSignature: Encode,
-	TSignature: Clone,
 {
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		type BitVec = Vec<u8>;
 
+		/// Temporary representation used for encoding efficiency.
 		#[derive(Clone, Debug, PartialEq, Eq, Encode, Decode)]
-		// Ideally this should be `TemporarySignatures<'a, TSignature>` to avoid cloning.
-		struct TemporarySignatures<TSignature> {
+		struct TemporarySignatures<'a, TSignature> {
 			signatures_from: BitVec,
-			signatures: Vec<TSignature>,
+			signatures: Vec<&'a TSignature>,
 		}
 
-		impl<'a, TBlockNumber, TPayload, TSignature: Clone>
-			From<&'a SignedCommitment<TBlockNumber, TPayload, TSignature>> for TemporarySignatures<TSignature>
+		impl<'a, TBlockNumber, TPayload, TSignature: Encode + 'a>
+			From<&'a SignedCommitment<TBlockNumber, TPayload, TSignature>> for TemporarySignatures<'a, TSignature>
 		{
 			/// Convert `SignedCommitment`s into `TemporarySignatures` that are packed better for
 			/// network transport.
-			fn from(signed_commitment: &SignedCommitment<TBlockNumber, TPayload, TSignature>) -> Self {
+			fn from(signed_commitment: &'a SignedCommitment<TBlockNumber, TPayload, TSignature>) -> Self {
 				let SignedCommitment { signatures, .. } = signed_commitment;
 				let mut signatures_from: Vec<u8> = vec![];
-				let mut raw_signatures: Vec<TSignature> = vec![];
+				let mut raw_signatures: Vec<&TSignature> = vec![];
 
 				for signature in signatures {
 					match signature {
-						Some(value) => raw_signatures.push(value.clone()),
+						Some(value) => raw_signatures.push(value),
 						None => (),
 					}
 				}
