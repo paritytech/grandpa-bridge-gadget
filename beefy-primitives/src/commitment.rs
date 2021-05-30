@@ -185,14 +185,14 @@ where
 		let mut bits: Vec<u8> = vec![];
 		let last_byte = signatures_no % 8;
 		for byte in signatures_from {
-			let takes = if signatures_no > last_byte {
-				CONTAINER_BIT_SIZE as u32
+			let start = if signatures_no > last_byte {
+				0
 			} else {
-				last_byte
+				CONTAINER_BIT_SIZE - last_byte as usize
 			};
 
-			for bit in 0..takes {
-				let bit_position = CONTAINER_BIT_SIZE as u32 - bit - 1;
+			for bit in start..CONTAINER_BIT_SIZE {
+				let bit_position = CONTAINER_BIT_SIZE - bit - 1;
 				bits.push(byte >> bit_position & 1);
 				signatures_no -= 1;
 			}
