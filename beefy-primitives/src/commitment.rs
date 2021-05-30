@@ -103,24 +103,24 @@ const CONTAINER_BIT_SIZE: usize = 8;
 
 /// Temporary representation used for encoding efficiency.
 #[derive(Clone, Debug, PartialEq, Eq, Encode, Decode)]
-struct TemporarySignatures<'a, TBlockNumber, TPayload, TSignature> {
-	commitment: Commitment<TBlockNumber, TPayload>,
+struct TemporarySignatures<TCommitment, TSignature> {
+	commitment: TCommitment,
 	signatures_from: BitField,
 	signatures_no: u32,
-	signatures: Vec<&'a TSignature>,
+	signatures: Vec<TSignature>,
 }
 
 impl<'a, TBlockNumber, TPayload, TSignature> From<&'a SignedCommitment<TBlockNumber, TPayload, TSignature>>
-	for TemporarySignatures<'a, TBlockNumber, TPayload, TSignature>
+	for TemporarySignatures<&'a Commitment<TBlockNumber, TPayload>, &'a TSignature>
 where
 	TSignature: Encode,
-	TBlockNumber: Encode + Clone,
-	TPayload: Encode + Clone,
+	TBlockNumber: Encode,
+	TPayload: Encode,
 {
 	/// Convert `SignedCommitment`s into `TemporarySignatures` that are packed better for
 	/// network transport.
 	fn from(signed_commitment: &'a SignedCommitment<TBlockNumber, TPayload, TSignature>) -> Self {
-		let SignedCommitment { commitment, signatures } = signed_commitment.clone();
+		let SignedCommitment { commitment, signatures } = signed_commitment;
 		let signatures_no = signatures.len() as u32;
 		let mut signatures_from: BitField = vec![];
 		let mut raw_signatures: Vec<&TSignature> = vec![];
@@ -147,7 +147,7 @@ where
 		}
 
 		Self {
-			commitment: commitment.clone(),
+			commitment,
 			signatures_from,
 			signatures_no,
 			signatures: raw_signatures,
@@ -158,33 +158,33 @@ where
 impl<TBlockNumber, TPayload, TSignature> Encode for SignedCommitment<TBlockNumber, TPayload, TSignature>
 where
 	TSignature: Encode,
-	TBlockNumber: Encode + Clone,
-	TPayload: Encode + Clone,
+	TBlockNumber: Encode,
+	TPayload: Encode,
 {
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
-		let temp = TemporarySignatures::<TBlockNumber, TPayload, TSignature>::from(self);
+		let temp = TemporarySignatures::from(self);
 		temp.using_encoded(f)
 	}
 }
 
-impl<'a, TBlockNumber, TPayload, TSignature> From<&'a TemporarySignatures<'a, TBlockNumber, TPayload, TSignature>>
+impl<TBlockNumber, TPayload, TSignature> From<TemporarySignatures<Commitment<TBlockNumber, TPayload>, TSignature>>
 	for SignedCommitment<TBlockNumber, TPayload, TSignature>
 where
-	TBlockNumber: Decode + Clone,
-	TPayload: Decode + Clone,
+	TBlockNumber: Decode,
+	TPayload: Decode,
 	TSignature: Decode,
 {
 	/// Convert `TemporarySignatures` back into `SignedCommitment`.
-	fn from(temporary_signatures: &'a TemporarySignatures<'a, TBlockNumber, TPayload, TSignature>) -> Self {
+	fn from(temporary_signatures: TemporarySignatures<Commitment<TBlockNumber, TPayload>, TSignature>) -> Self {
 		let TemporarySignatures {
 			commitment,
 			signatures_from,
 			mut signatures_no,
 			signatures,
-		} = temporary_signatures.clone();
+		} = temporary_signatures;
 		let mut bits: Vec<u8> = vec![];
 		let last_byte = signatures_no % 8;
-		for &byte in signatures_from {
+		for byte in signatures_from {
 			let takes = if signatures_no > last_byte {
 				CONTAINER_BIT_SIZE as u32
 			} else {
@@ -198,24 +198,13 @@ where
 			}
 		}
 
-		let mut idx = 1;
-
-		let raw_signatures: Vec<Option<&TSignature>> = bits
+		let mut next_signature = signatures.into_iter();
+		let signatures: Vec<Option<TSignature>> = bits
 			.iter()
-			.map(|&x| {
-				if x == 1 {
-					idx += 1;
-					Some(signatures[idx - 1].clone())
-				} else {
-					None
-				}
-			})
+			.map(|&x| if x == 1 { next_signature.next() } else { None })
 			.collect();
 
-		Self {
-			commitment: commitment.clone(),
-			signatures: raw_signatures,
-		}
+		Self { commitment, signatures }
 	}
 }
 
@@ -226,7 +215,7 @@ where
 	TSignature: Decode,
 {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
-		let temp = TemporarySignatures::<TBlockNumber, TPayload, TSignature>::decode(input)?;
+		let temp = TemporarySignatures::decode(input)?;
 		Ok(temp.into())
 	}
 }
