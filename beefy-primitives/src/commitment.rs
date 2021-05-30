@@ -183,17 +183,17 @@ where
 			signatures,
 		} = temporary_signatures;
 		let mut bits: Vec<u8> = vec![];
-		let last_byte = signatures_no % 8;
-		for byte in signatures_from {
-			let start = if signatures_no > last_byte {
+		let last_block = signatures_no % CONTAINER_BIT_SIZE as u32;
+		for block in signatures_from {
+			let start_bit = if signatures_no > last_block {
 				0
 			} else {
-				CONTAINER_BIT_SIZE - last_byte as usize
+				CONTAINER_BIT_SIZE - last_block as usize
 			};
 
-			for bit in start..CONTAINER_BIT_SIZE {
+			for bit in start_bit..CONTAINER_BIT_SIZE {
 				let bit_position = CONTAINER_BIT_SIZE - bit - 1;
-				bits.push(byte >> bit_position & 1);
+				bits.push(block >> bit_position & 1);
 				signatures_no -= 1;
 			}
 		}
