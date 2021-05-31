@@ -119,16 +119,14 @@ struct CompactSignedCommitment<TCommitment, TSignature> {
 	signatures_compact: Vec<TSignature>,
 }
 
-impl<'a, TBlockNumber, TPayload, TSignature> From<&'a SignedCommitment<TBlockNumber, TPayload, TSignature>>
-	for CompactSignedCommitment<&'a Commitment<TBlockNumber, TPayload>, &'a TSignature>
+impl<'a, TBlockNumber, TPayload, TSignature> CompactSignedCommitment<&'a Commitment<TBlockNumber, TPayload>, &'a TSignature>
 where
 	TSignature: Encode,
 	TBlockNumber: Encode,
 	TPayload: Encode,
 {
-	/// Convert `SignedCommitment`s into `CompactSignedCommitment` that are packed better for
-	/// network transport.
-	fn from(signed_commitment: &'a SignedCommitment<TBlockNumber, TPayload, TSignature>) -> Self {
+	/// Packs a `SignedCommitment` into the compressed `CompactSignedCommitment` format for efficient network transport.
+	fn pack(signed_commitment: &'a SignedCommitment<TBlockNumber, TPayload, TSignature>) -> Self {
 		let SignedCommitment { commitment, signatures } = signed_commitment;
 		let signatures_len = signatures.len() as u32;
 		let mut signatures_from: BitField = vec![];
@@ -171,20 +169,19 @@ where
 	TPayload: Encode,
 {
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
-		let temp = CompactSignedCommitment::from(self);
+		let temp = CompactSignedCommitment::pack(self);
 		temp.using_encoded(f)
 	}
 }
 
-impl<TBlockNumber, TPayload, TSignature> From<CompactSignedCommitment<Commitment<TBlockNumber, TPayload>, TSignature>>
-	for SignedCommitment<TBlockNumber, TPayload, TSignature>
+impl<TBlockNumber, TPayload, TSignature> CompactSignedCommitment<Commitment<TBlockNumber, TPayload>, TSignature>
 where
 	TBlockNumber: Decode,
 	TPayload: Decode,
 	TSignature: Decode,
 {
-	/// Convert `CompactSignedCommitment` back into `SignedCommitment`.
-	fn from(temporary_signatures: CompactSignedCommitment<Commitment<TBlockNumber, TPayload>, TSignature>) -> Self {
+	/// Unpacks a `CompactSignedCommitment` into the uncompressed `SignedCommitment` form.
+	fn unpack(temporary_signatures: CompactSignedCommitment<Commitment<TBlockNumber, TPayload>, TSignature>) -> SignedCommitment<TBlockNumber, TPayload, TSignature> {
 		let CompactSignedCommitment {
 			commitment,
 			signatures_from,
@@ -213,7 +210,7 @@ where
 			.map(|&x| if x == 1 { next_signature.next() } else { None })
 			.collect();
 
-		Self { commitment, signatures }
+		SignedCommitment { commitment, signatures }
 	}
 }
 
@@ -225,7 +222,7 @@ where
 {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
 		let temp = CompactSignedCommitment::decode(input)?;
-		Ok(temp.into())
+		Ok(CompactSignedCommitment::unpack(temp))
 	}
 }
 
