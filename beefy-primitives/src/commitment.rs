@@ -135,12 +135,12 @@ where
 		let bits: Vec<u8> = signatures.iter().map(|x| if x.is_some() { 1 } else { 0 }).collect();
 		let chunks = bits.chunks(CONTAINER_BIT_SIZE);
 		for chunk in chunks {
-			let mut iter = chunk.into_iter().copied();
+			let mut iter = chunk.iter().copied();
 			let mut v = iter.next().unwrap() as u8;
 
 			for bit in iter {
-				v = v << 1;
-				v = v | bit as u8;
+				v <<= 1;
+				v |= bit as u8;
 			}
 
 			signatures_from.push(v);
