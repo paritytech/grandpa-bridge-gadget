@@ -80,7 +80,7 @@ where
 /// A commitment with matching GRANDPA validators' signatures.
 ///
 /// Note that SCALE-encoding of the structure is optimized for size efficiency over the wire,
-/// please take a look at custom [`Encode`] and [`Decode`] implementations and [`TemporarySignatures`] struct.
+/// please take a look at custom [`Encode`] and [`Decode`] implementations and [`CompactSignedCommitment`] struct.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SignedCommitment<TBlockNumber, TPayload, TSignature> {
 	/// The commitment signatures are collected for.
@@ -104,33 +104,39 @@ type BitField = Vec<u8>;
 /// Compress 8 bit values into a single u8 Byte
 const CONTAINER_BIT_SIZE: usize = 8;
 
-/// Temporary representation used for encoding efficiency.
+/// Compressed representation of [`SignedCommitment`], used for encoding efficiency.
 #[derive(Clone, Debug, PartialEq, Eq, Encode, Decode)]
-struct TemporarySignatures<TCommitment, TSignature> {
+struct CompactSignedCommitment<TCommitment, TSignature> {
+	/// The commitment signatures, as is.
 	commitment: TCommitment,
+	/// A `Vec<u8>`, where each bit in a `u8` represents an `Option<TSignature>`
+	/// in the uncompressed GRANDPA validators' signatures.
 	signatures_from: BitField,
-	signatures_no: u32,
-	signatures: Vec<TSignature>,
+	/// Length of the `Vec` containing uncompressed GRANDPA validators' signatures.
+	signatures_len: u32,
+	/// A `Vec` containing all `TSignature` values present in the uncompressed
+	/// GRANDPA validators' signatures.
+	signatures_compact: Vec<TSignature>,
 }
 
 impl<'a, TBlockNumber, TPayload, TSignature> From<&'a SignedCommitment<TBlockNumber, TPayload, TSignature>>
-	for TemporarySignatures<&'a Commitment<TBlockNumber, TPayload>, &'a TSignature>
+	for CompactSignedCommitment<&'a Commitment<TBlockNumber, TPayload>, &'a TSignature>
 where
 	TSignature: Encode,
 	TBlockNumber: Encode,
 	TPayload: Encode,
 {
-	/// Convert `SignedCommitment`s into `TemporarySignatures` that are packed better for
+	/// Convert `SignedCommitment`s into `CompactSignedCommitment` that are packed better for
 	/// network transport.
 	fn from(signed_commitment: &'a SignedCommitment<TBlockNumber, TPayload, TSignature>) -> Self {
 		let SignedCommitment { commitment, signatures } = signed_commitment;
-		let signatures_no = signatures.len() as u32;
+		let signatures_len = signatures.len() as u32;
 		let mut signatures_from: BitField = vec![];
-		let mut raw_signatures: Vec<&TSignature> = vec![];
+		let mut signatures_compact: Vec<&TSignature> = vec![];
 
 		for signature in signatures {
 			match signature {
-				Some(value) => raw_signatures.push(value),
+				Some(value) => signatures_compact.push(value),
 				None => (),
 			}
 		}
@@ -152,8 +158,8 @@ where
 		Self {
 			commitment,
 			signatures_from,
-			signatures_no,
-			signatures: raw_signatures,
+			signatures_len,
+			signatures_compact,
 		}
 	}
 }
@@ -165,30 +171,30 @@ where
 	TPayload: Encode,
 {
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
-		let temp = TemporarySignatures::from(self);
+		let temp = CompactSignedCommitment::from(self);
 		temp.using_encoded(f)
 	}
 }
 
-impl<TBlockNumber, TPayload, TSignature> From<TemporarySignatures<Commitment<TBlockNumber, TPayload>, TSignature>>
+impl<TBlockNumber, TPayload, TSignature> From<CompactSignedCommitment<Commitment<TBlockNumber, TPayload>, TSignature>>
 	for SignedCommitment<TBlockNumber, TPayload, TSignature>
 where
 	TBlockNumber: Decode,
 	TPayload: Decode,
 	TSignature: Decode,
 {
-	/// Convert `TemporarySignatures` back into `SignedCommitment`.
-	fn from(temporary_signatures: TemporarySignatures<Commitment<TBlockNumber, TPayload>, TSignature>) -> Self {
-		let TemporarySignatures {
+	/// Convert `CompactSignedCommitment` back into `SignedCommitment`.
+	fn from(temporary_signatures: CompactSignedCommitment<Commitment<TBlockNumber, TPayload>, TSignature>) -> Self {
+		let CompactSignedCommitment {
 			commitment,
 			signatures_from,
-			mut signatures_no,
-			signatures,
+			mut signatures_len,
+			signatures_compact,
 		} = temporary_signatures;
 		let mut bits: Vec<u8> = vec![];
-		let last_block = signatures_no % CONTAINER_BIT_SIZE as u32;
+		let last_block = signatures_len % CONTAINER_BIT_SIZE as u32;
 		for block in signatures_from {
-			let start_bit = if signatures_no > last_block {
+			let start_bit = if signatures_len > last_block {
 				0
 			} else {
 				CONTAINER_BIT_SIZE - last_block as usize
@@ -197,11 +203,11 @@ where
 			for bit in start_bit..CONTAINER_BIT_SIZE {
 				let bit_position = CONTAINER_BIT_SIZE - bit - 1;
 				bits.push(block >> bit_position & 1);
-				signatures_no -= 1;
+				signatures_len -= 1;
 			}
 		}
 
-		let mut next_signature = signatures.into_iter();
+		let mut next_signature = signatures_compact.into_iter();
 		let signatures: Vec<Option<TSignature>> = bits
 			.iter()
 			.map(|&x| if x == 1 { next_signature.next() } else { None })
@@ -218,7 +224,7 @@ where
 	TSignature: Decode,
 {
 	fn decode<I: Input>(input: &mut I) -> Result<Self, Error> {
-		let temp = TemporarySignatures::decode(input)?;
+		let temp = CompactSignedCommitment::decode(input)?;
 		Ok(temp.into())
 	}
 }
