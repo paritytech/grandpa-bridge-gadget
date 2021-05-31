@@ -78,6 +78,9 @@ where
 }
 
 /// A commitment with matching GRANDPA validators' signatures.
+///
+/// Note that SCALE-encoding of the structure is optimized for size efficiency over the wire,
+/// please take a look at custom [`Encode`] and [`Decode`] implementations and [`TemporarySignatures`] struct.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SignedCommitment<TBlockNumber, TPayload, TSignature> {
 	/// The commitment signatures are collected for.
