@@ -33,6 +33,7 @@ use beefy_primitives::BeefyApi;
 
 mod error;
 mod gossip;
+mod keystore;
 mod metrics;
 mod round;
 mod worker;
