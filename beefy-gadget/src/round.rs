@@ -14,7 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, convert::TryFrom, fmt::Debug};
+
+use codec::Codec;
+
+use sp_application_crypto::AppPublic;
+use sp_core::Pair;
 
 use beefy_primitives::{ValidatorSet, ValidatorSetId};
 
@@ -53,51 +58,51 @@ fn threshold(authorities: usize) -> usize {
 	authorities - faulty
 }
 
-pub(crate) struct Rounds<Hash, Number, Id, Signature> {
-	rounds: BTreeMap<(Hash, Number), RoundTracker<Id, Signature>>,
-	validator_set: ValidatorSet<Id>,
+pub(crate) struct Rounds<H, N, P>
+where
+	P: Pair,
+	P::Public: AppPublic,
+	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
+{
+	rounds: BTreeMap<(H, N), RoundTracker<P::Public, P::Signature>>,
+	validator_set: ValidatorSet<P::Public>,
 }
 
-impl<Hash, Number, Id, Signature> Rounds<Hash, Number, Id, Signature>
+impl<H, N, P> Rounds<H, N, P>
 where
-	Hash: Ord,
-	Number: Ord,
+	H: Ord,
+	N: Ord,
+	P: Pair,
+	P::Public: AppPublic,
+	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
 {
-	pub(crate) fn new(validator_set: ValidatorSet<Id>) -> Self {
+	pub(crate) fn new(validator_set: ValidatorSet<P::Public>) -> Self {
 		Rounds {
 			rounds: BTreeMap::new(),
 			validator_set,
 		}
 	}
-}
 
-impl<Hash, Number, Id, Signature> Rounds<Hash, Number, Id, Signature>
-where
-	Hash: Ord,
-	Number: Ord,
-	Id: PartialEq + Clone,
-	Signature: Clone + PartialEq,
-{
 	pub(crate) fn validator_set_id(&self) -> ValidatorSetId {
 		self.validator_set.id
 	}
 
-	pub(crate) fn validators(&self) -> Vec<Id> {
+	pub(crate) fn validators(&self) -> Vec<P::Public> {
 		self.validator_set.validators.clone()
 	}
 
-	pub(crate) fn add_vote(&mut self, round: (Hash, Number), vote: (Id, Signature)) -> bool {
+	pub(crate) fn add_vote(&mut self, round: (H, N), vote: (P::Public, P::Signature)) -> bool {
 		self.rounds.entry(round).or_default().add_vote(vote)
 	}
 
-	pub(crate) fn is_done(&self, round: &(Hash, Number)) -> bool {
+	pub(crate) fn is_done(&self, round: &(H, N)) -> bool {
 		self.rounds
 			.get(round)
 			.map(|tracker| tracker.is_done(threshold(self.validator_set.validators.len())))
 			.unwrap_or(false)
 	}
 
-	pub(crate) fn drop(&mut self, round: &(Hash, Number)) -> Option<Vec<Option<Signature>>> {
+	pub(crate) fn drop(&mut self, round: &(H, N)) -> Option<Vec<Option<P::Signature>>> {
 		let signatures = self.rounds.remove(round)?.votes;
 
 		Some(

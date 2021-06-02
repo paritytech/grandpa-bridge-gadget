@@ -89,7 +89,7 @@ where
 	/// Min delta in block numbers between two blocks, BEEFY should vote on
 	min_block_delta: u32,
 	metrics: Option<Metrics>,
-	rounds: round::Rounds<MmrRootHash, NumberFor<B>, P::Public, P::Signature>,
+	rounds: round::Rounds<MmrRootHash, NumberFor<B>, P>,
 	finality_notifications: FinalityNotifications<B>,
 	/// Best block we received a GRANDPA notification for
 	best_grandpa_block: NumberFor<B>,
