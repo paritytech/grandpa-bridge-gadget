@@ -32,3 +32,11 @@ pub(crate) enum Crypto<Id: Public + Debug> {
 	#[error("Failed to sign comitment using key: {0:?}. Reason: {1}")]
 	CannotSign(Id, String),
 }
+
+#[derive(Debug, thiserror::Error, PartialEq)]
+pub(crate) enum Error {
+	#[error("Keystore error: {0}")]
+	Keystore(String),
+	#[error("Signature error: {0}")]
+	Signature(String),
+}

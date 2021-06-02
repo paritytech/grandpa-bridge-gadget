@@ -12,23 +12,28 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use sp_core::{ecdsa, keccak_256, Pair};
-use sp_keystore::{Error, SyncCryptoStore};
+use sp_keystore::SyncCryptoStore;
 
 use beefy_primitives::KEY_TYPE;
+
+use crate::error::{self};
 
 pub(crate) trait BeefyKeystore<P>
 where
 	P: Pair,
 {
-	fn sign(&self, public: P::Public, message: &[u8]) -> Result<P::Signature, Error>;
+	fn sign(&self, public: P::Public, message: &[u8]) -> Result<P::Signature, error::Error>;
 }
 
 impl BeefyKeystore<ecdsa::Pair> for dyn SyncCryptoStore {
-	fn sign(&self, public: ecdsa::Public, message: &[u8]) -> Result<ecdsa::Signature, Error> {
+	fn sign(&self, public: ecdsa::Public, message: &[u8]) -> Result<ecdsa::Signature, error::Error> {
 		let msg = keccak_256(message);
-		let sig = SyncCryptoStore::ecdsa_sign_prehashed(&*self, KEY_TYPE, &public, &msg)?;
 
-		Ok(sig.unwrap())
+		let sig = SyncCryptoStore::ecdsa_sign_prehashed(&*self, KEY_TYPE, &public, &msg)
+			.map_err(|e| error::Error::Keystore(e.to_string()))?
+			.ok_or_else(|| error::Error::Signature("ecdsa_sign_prehashed() failed".to_string()))?;
+
+		Ok(sig)
 	}
 }
 
@@ -41,8 +46,10 @@ mod tests {
 	use sp_core::{ecdsa, keccak_256, Pair};
 	use sp_keystore::{testing::KeyStore, SyncCryptoStore, SyncCryptoStorePtr};
 
+	use crate::error::Error;
+
 	#[test]
-	fn beefy_keystore_sign_works() {
+	fn sign_works() {
 		let store: SyncCryptoStorePtr = KeyStore::new().into();
 
 		let suri = "//Alice";
@@ -51,14 +58,30 @@ mod tests {
 		let res = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, suri, pair.public().as_ref()).unwrap();
 		assert_eq!((), res);
 
-		let msg = b"this should be a hashed message";
+		let msg = b"are you involved or comitted?";
 		let sig1 = store.sign(pair.public(), msg).unwrap();
 
-		let msg = keccak_256(b"this should be a hashed message");
+		let msg = keccak_256(b"are you involved or comitted?");
 		let sig2 = SyncCryptoStore::ecdsa_sign_prehashed(&*store, KEY_TYPE, &pair.public(), &msg)
 			.unwrap()
 			.unwrap();
 
 		assert_eq!(sig1, sig2);
+	}
+
+	#[test]
+	fn sign_error() {
+		let store: SyncCryptoStorePtr = KeyStore::new().into();
+
+		let bob = ecdsa::Pair::from_string("//Bob", None).unwrap();
+		let res = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, "//Bob", bob.public().as_ref()).unwrap();
+		assert_eq!((), res);
+
+		let alice = ecdsa::Pair::from_string("//Alice", None).unwrap();
+
+		let msg = b"are you involved or comitted?";
+		let sig = store.sign(alice.public(), msg).err().unwrap();
+		let err = Error::Signature("ecdsa_sign_prehashed() failed".to_string());
+		assert_eq!(sig, err);
 	}
 }
