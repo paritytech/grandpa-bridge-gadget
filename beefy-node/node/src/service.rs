@@ -136,7 +136,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 	config.network.extra_sets.push(beefy_gadget::beefy_peers_set_config());
 
-	let (network, network_status_sinks, system_rpc_tx, network_starter) =
+	let (network, system_rpc_tx, network_starter) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
 			client: client.clone(),
@@ -192,7 +192,6 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		on_demand: None,
 		remote_blockchain: None,
 		backend: backend.clone(),
-		network_status_sinks,
 		system_rpc_tx,
 		config,
 		telemetry: telemetry.as_mut(),
