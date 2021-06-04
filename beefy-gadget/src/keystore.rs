@@ -23,6 +23,8 @@ where
 	P: Pair,
 {
 	fn sign(&self, public: P::Public, message: &[u8]) -> Result<P::Signature, error::Error>;
+
+	fn verify(&self, public: P::Public, sig: P::Signature, message: &[u8]) -> bool;
 }
 
 impl BeefyKeystore<ecdsa::Pair> for dyn SyncCryptoStore {
@@ -34,6 +36,12 @@ impl BeefyKeystore<ecdsa::Pair> for dyn SyncCryptoStore {
 			.ok_or_else(|| error::Error::Signature("ecdsa_sign_prehashed() failed".to_string()))?;
 
 		Ok(sig)
+	}
+
+	fn verify(&self, public: ecdsa::Public, sig: ecdsa::Signature, message: &[u8]) -> bool {
+		let msg = keccak_256(message);
+
+		ecdsa::Pair::verify_prehashed(&sig, &msg, &public)
 	}
 }
 
