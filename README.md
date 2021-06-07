@@ -13,6 +13,7 @@ on top of it to work correctly.
 - [Build](#build)
 - [Documentation](#documentation)
 - [Project Layout](#project-layout)
+- [BEEFY Key](#beefy-key)
 - [Running BEEFY](#running-beefy)
 
 ## Build
@@ -75,10 +76,12 @@ be utilized by a light client implementation.
 
 ## BEEFY Key
 
-The current cryptographic scheme used by BEEFY is `ecdsa`. This is **different** from other schemes like `sr25519` and `ed25519` which are commonly used in Substrate configuration for other pallets (BABE, GRANDPA, AuRa, etc). The most noticeable difference is that an `ecdsa` public key 
-is `33` bytes long, instead of `32` bytes for a `sr25519` based public key. So, a BEEFY key [sticks out](https://github.com/paritytech/polkadot/blob/25951e45b1907853f120c752aaa01631a0b3e783/node/service/src/chain_spec.rs#L738) among the other public keys a bit. For other crypto (in default Substrate configuration) the `AccountId` (32-bits) matches the `PublicKey`, but note that it's not the case for BEEFY. The easiest way to generate a BEEFY key is by using the [Subkey](https://substrate.dev/docs/en/knowledgebase/integrate/subkey) tool. 
+The current cryptographic scheme used by BEEFY is `ecdsa`. This is **different** from other schemes like `sr25519` and `ed25519` which are commonly used in Substrate configurations for other pallets (BABE, GRANDPA, AuRa, etc). The most noticeable difference is that an `ecdsa` public key 
+is `33` bytes long, instead of `32` bytes for a `sr25519` based public key. So, a BEEFY key [sticks out](https://github.com/paritytech/polkadot/blob/25951e45b1907853f120c752aaa01631a0b3e783/node/service/src/chain_spec.rs#L738) among the other public keys a bit.
 
-Generate a BEEFY key using the following command
+For other crypto (using the default Substrate configuration) the `AccountId` (32-bytes) matches the `PublicKey`, but note that it's not the case for BEEFY. As a consequence of this, you can **not** convert the `AccountId` raw bytes into a BEEFY `PublicKey`.
+
+The easiest way to generate or view hex-encoded or SS58-encoded BEEFY Public Key is by using the [Subkey](https://substrate.dev/docs/en/knowledgebase/integrate/subkey) tool. Generate a BEEFY key using the following command
 
 ```sh
 subkey generate --scheme ecdsa
