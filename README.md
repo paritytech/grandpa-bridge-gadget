@@ -81,7 +81,7 @@ is `33` bytes long, instead of `32` bytes for a `sr25519` based public key. So, 
 
 For other crypto (using the default Substrate configuration) the `AccountId` (32-bytes) matches the `PublicKey`, but note that it's not the case for BEEFY. As a consequence of this, you can **not** convert the `AccountId` raw bytes into a BEEFY `PublicKey`.
 
-The easiest way to generate a BEEFY key is by using the [Subkey](https://substrate.dev/docs/en/knowledgebase/integrate/subkey) tool. Generate a BEEFY key using the following command
+The easiest way to generate or view hex-encoded or SS58-encoded BEEFY Public Key is by using the [Subkey](https://substrate.dev/docs/en/knowledgebase/integrate/subkey) tool. Generate a BEEFY key using the following command
 
 ```sh
 subkey generate --scheme ecdsa
