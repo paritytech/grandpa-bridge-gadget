@@ -48,9 +48,10 @@ notice = "warn"
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.
 ignore = [
-    # 'cranelift-codegen' is a dep of 'wasmtime'. We need to wait until this
-    # advisory is resolved in upstream Substrate
-    "RUSTSEC-2021-0067",
+    # `nalgebra` is a dep of `linregress 0.4.1` which in turn is a dep of
+    # `frame-benchmarking`. `linregress` needs to update it's `nalgebra`
+    # dep and publish a new release
+    "RUSTSEC-2021-0070"
 ]
 # Threshold for security vulnerabilities, any vulnerability with a CVSS score
 # lower than the range specified will be ignored. Note that ignored advisories
