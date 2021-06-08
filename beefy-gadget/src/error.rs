@@ -24,7 +24,7 @@ use sp_core::crypto::Public;
 
 /// Crypto related errors
 #[derive(Debug, thiserror::Error)]
-pub(crate) enum Crypto<Id: Public + Debug> {
+pub enum Crypto<Id: Public + Debug> {
 	/// Check signature error
 	#[error("Message signature {0} by {1:?} is invalid.")]
 	InvalidSignature(String, Id),
@@ -34,7 +34,7 @@ pub(crate) enum Crypto<Id: Public + Debug> {
 }
 
 #[derive(Debug, thiserror::Error, PartialEq)]
-pub(crate) enum Error {
+pub enum Error {
 	#[error("Keystore error: {0}")]
 	Keystore(String),
 	#[error("Signature error: {0}")]

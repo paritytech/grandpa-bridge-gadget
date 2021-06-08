@@ -17,6 +17,7 @@
 use std::{convert::TryFrom, fmt::Debug, sync::Arc};
 
 use codec::Codec;
+use keystore::BeefyKeystore;
 use log::debug;
 use prometheus::Registry;
 
@@ -29,15 +30,15 @@ use sp_blockchain::HeaderBackend;
 use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::traits::Block;
 
-use beefy_primitives::BeefyApi;
+use beefy_primitives::{ecdsa, BeefyApi};
 
-mod error;
 mod gossip;
 mod keystore;
 mod metrics;
 mod round;
 mod worker;
 
+pub mod error;
 pub mod notification;
 
 pub const BEEFY_PROTOCOL_NAME: &str = "/paritytech/beefy/1";
@@ -90,7 +91,7 @@ where
 	/// Client Backend
 	pub backend: Arc<BE>,
 	/// Local key store
-	pub key_store: Option<SyncCryptoStorePtr>,
+	pub key_store: Option<Arc<dyn BeefyKeystore<P>>>,
 	/// Gossip network
 	pub network: N,
 	/// BEEFY signed commitment sender
@@ -107,10 +108,10 @@ where
 pub async fn start_beefy_gadget<B, P, BE, C, N>(beefy_params: BeefyParams<B, P, BE, C, N>)
 where
 	B: Block,
+	BE: Backend<B>,
 	P: sp_core::Pair,
 	P::Public: AppPublic + Codec,
 	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
-	BE: Backend<B>,
 	C: Client<B, BE, P>,
 	C::Api: BeefyApi<B, P::Public>,
 	N: GossipNetwork<B> + Clone + Send + 'static,

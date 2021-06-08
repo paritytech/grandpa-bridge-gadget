@@ -248,10 +248,11 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		None
 	};
 
-	let beefy_params = beefy_gadget::BeefyParams {
+	let beefy_params = beefy_gadget::BeefyParams::<_, beefy_primitives::ecdsa::Pair, _, _, _> {
 		client,
 		backend,
-		key_store: keystore.clone(),
+		// TODO [ToDr]  this is shit we have an Arc<Arc<>> here, I'm sure we can do better.
+		key_store: keystore.as_ref().map(|x| Arc::new(x.clone()) as _),
 		network: network.clone(),
 		signed_commitment_sender,
 		min_block_delta: 4,
@@ -259,10 +260,9 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 	};
 
 	// Start the BEEFY bridge gadget.
-	task_manager.spawn_essential_handle().spawn_blocking(
-		"beefy-gadget",
-		beefy_gadget::start_beefy_gadget::<_, beefy_primitives::ecdsa::AuthorityPair, _, _, _>(beefy_params),
-	);
+	task_manager
+		.spawn_essential_handle()
+		.spawn_blocking("beefy-gadget", beefy_gadget::start_beefy_gadget(beefy_params));
 
 	let grandpa_config = sc_finality_grandpa::Config {
 		// FIXME #1578 make this available through chainspec

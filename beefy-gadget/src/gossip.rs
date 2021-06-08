@@ -105,6 +105,7 @@ where
 		mut data: &[u8],
 	) -> GossipValidationResult<B::Hash> {
 		if let Ok(msg) = VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(&mut data) {
+			// TODO [ToDr] This should be using BeefyKeystore.
 			if P::verify(&msg.signature, &msg.commitment.encode(), &msg.id) {
 				return GossipValidationResult::ProcessAndKeep(self.topic);
 			} else {

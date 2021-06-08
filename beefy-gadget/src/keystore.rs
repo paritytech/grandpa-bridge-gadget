@@ -11,37 +11,53 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use sp_core::{ecdsa, keccak_256, Pair};
+use sp_application_crypto::Public;
+use sp_core::{keccak_256, Pair};
 use sp_keystore::SyncCryptoStore;
 
-use beefy_primitives::KEY_TYPE;
+use beefy_primitives::{ecdsa, KEY_TYPE};
 
-use crate::error::{self};
+use crate::error;
 
-pub(crate) trait BeefyKeystore<P>
+pub trait BeefyKeystore<P>: Sync + Send + 'static
 where
 	P: Pair,
 {
+	fn find_key(&self, list: &[P::Public]) -> Option<P::Public>;
+
 	fn sign(&self, public: &P::Public, message: &[u8]) -> Result<P::Signature, error::Error>;
 
 	fn verify(&self, public: &P::Public, sig: &P::Signature, message: &[u8]) -> bool;
 }
 
-impl BeefyKeystore<ecdsa::Pair> for dyn SyncCryptoStore {
+impl BeefyKeystore<ecdsa::Pair> for std::sync::Arc<dyn SyncCryptoStore> {
+	fn find_key(&self, list: &[ecdsa::Public]) -> Option<ecdsa::Public> {
+		for id in list {
+			if SyncCryptoStore::has_keys(&**self, &[(id.to_raw_vec(), KEY_TYPE)]) {
+				return Some(id.clone());
+			}
+		}
+
+		None
+	}
+
 	fn sign(&self, public: &ecdsa::Public, message: &[u8]) -> Result<ecdsa::Signature, error::Error> {
 		let msg = keccak_256(message);
+		let public = public.as_ref();
 
-		let sig = SyncCryptoStore::ecdsa_sign_prehashed(&*self, KEY_TYPE, public, &msg)
+		let sig = SyncCryptoStore::ecdsa_sign_prehashed(&**self, KEY_TYPE, public, &msg)
 			.map_err(|e| error::Error::Keystore(e.to_string()))?
 			.ok_or_else(|| error::Error::Signature("ecdsa_sign_prehashed() failed".to_string()))?;
 
-		Ok(sig)
+		Ok(sig.into())
 	}
 
 	fn verify(&self, public: &ecdsa::Public, sig: &ecdsa::Signature, message: &[u8]) -> bool {
 		let msg = keccak_256(message);
+		let sig = sig.as_ref();
+		let public = public.as_ref();
 
-		ecdsa::Pair::verify_prehashed(sig, &msg, public)
+		sp_core::ecdsa::Pair::verify_prehashed(sig, &msg, public)
 	}
 }
 

@@ -34,7 +34,6 @@ use sp_api::BlockId;
 use sp_application_crypto::{AppPublic, Public};
 use sp_arithmetic::traits::AtLeast32Bit;
 use sp_core::Pair;
-use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
 use sp_runtime::{
 	generic::OpaqueDigestItemId,
 	traits::{Block, Header, NumberFor},
@@ -47,8 +46,9 @@ use beefy_primitives::{
 };
 
 use crate::{
-	error::{self},
+	error,
 	gossip::{topic, BeefyGossipValidator},
+	keystore::BeefyKeystore,
 	metric_inc, metric_set,
 	metrics::Metrics,
 	notification, round, Client,
@@ -62,7 +62,7 @@ where
 {
 	pub client: Arc<C>,
 	pub backend: Arc<BE>,
-	pub key_store: Option<SyncCryptoStorePtr>,
+	pub key_store: Option<Arc<dyn BeefyKeystore<P>>>,
 	pub signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
 	pub gossip_engine: GossipEngine<B>,
 	pub gossip_validator: Arc<BeefyGossipValidator<B, P>>,
@@ -82,7 +82,7 @@ where
 {
 	client: Arc<C>,
 	backend: Arc<BE>,
-	key_store: Option<SyncCryptoStorePtr>,
+	key_store: Option<Arc<dyn BeefyKeystore<P>>>,
 	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
 	gossip_engine: Arc<Mutex<GossipEngine<B>>>,
 	gossip_validator: Arc<BeefyGossipValidator<B, P>>,
@@ -181,17 +181,16 @@ where
 	fn sign_commitment(&self, id: &P::Public, commitment: &[u8]) -> Result<P::Signature, error::Crypto<P::Public>> {
 		let key_store = self
 			.key_store
-			.clone()
+			.as_ref()
 			.ok_or_else(|| error::Crypto::CannotSign((*id).clone(), "Missing KeyStore".into()))?;
 
-		let sig = SyncCryptoStore::sign_with(&*key_store, KEY_TYPE, &id.to_public_crypto_pair(), commitment)
-			.map_err(|e| error::Crypto::CannotSign((*id).clone(), e.to_string()))?
-			.ok_or_else(|| error::Crypto::CannotSign((*id).clone(), "No key in KeyStore found".into()))?;
+		let sig = BeefyKeystore::sign(&**key_store, id, commitment)
+			.map_err(|e| error::Crypto::CannotSign((*id).clone(), e.to_string()))?;
 
+		let encoded_sig = sig.encode_hex();
 		let sig = sig
-			.clone()
 			.try_into()
-			.map_err(|_| error::Crypto::InvalidSignature(sig.encode_hex(), (*id).clone()))?;
+			.map_err(|_| error::Crypto::InvalidSignature(encoded_sig, (*id).clone()))?;
 
 		Ok(sig)
 	}
@@ -216,13 +215,9 @@ where
 	///
 	/// `None` is returned, if we are not permitted to vote
 	fn local_id(&self) -> Option<P::Public> {
-		let key_store = self.key_store.clone()?;
+		let key_store = self.key_store.as_ref()?;
 
-		self.rounds
-			.validators()
-			.iter()
-			.find(|id| SyncCryptoStore::has_keys(&*key_store, &[(id.to_raw_vec(), KEY_TYPE)]))
-			.cloned()
+		key_store.find_key(&self.rounds.validators())
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {

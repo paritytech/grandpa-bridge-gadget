@@ -51,6 +51,8 @@ pub mod ecdsa {
 		app_crypto!(ecdsa, crate::KEY_TYPE);
 	}
 
+	pub use self::app_ecdsa::*;
+
 	sp_application_crypto::with_pair! {
 		/// A BEEFY authority keypair using ECDSA as its crypto.
 		pub type AuthorityPair = app_ecdsa::Pair;
