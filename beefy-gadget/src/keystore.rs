@@ -52,15 +52,10 @@ impl BeefyKeystore<ecdsa::Pair> for std::sync::Arc<dyn SyncCryptoStore> {
 			.ok_or_else(|| error::Error::Signature("ecdsa_sign_prehashed() failed".to_string()))?;
 
 		// check that `sig` has the expected result type
-		let sig = match sig.clone().try_into() {
-			Ok(s) => s,
-			_ => {
-				return Err(error::Error::Signature(format!(
-					"invalid signature {:?} for key {:?}",
-					sig, public
-				)))
-			}
-		};
+		let sig = sig
+			.clone()
+			.try_into()
+			.map_err(|_| error::Error::Signature(format!("invalid signature {:?} for key {:?}", sig, public)))?;
 
 		Ok(sig)
 	}

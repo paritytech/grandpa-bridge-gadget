@@ -20,19 +20,6 @@
 
 use std::fmt::Debug;
 
-use sp_core::crypto::Public;
-
-/// Crypto related errors
-#[derive(Debug, thiserror::Error)]
-pub enum Crypto<Id: Public + Debug> {
-	/// Check signature error
-	#[error("Message signature {0} by {1:?} is invalid.")]
-	InvalidSignature(String, Id),
-	/// Sign commitment error
-	#[error("Failed to sign comitment using key: {0:?}. Reason: {1}")]
-	CannotSign(Id, String),
-}
-
 #[derive(Debug, thiserror::Error, PartialEq)]
 pub enum Error {
 	#[error("Keystore error: {0}")]
