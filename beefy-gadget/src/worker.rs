@@ -203,7 +203,7 @@ where
 	fn local_id(&self) -> Option<P::Public> {
 		let key_store = self.key_store.as_ref()?;
 
-		key_store.find_key(&self.rounds.validators())
+		key_store.local_id(&self.rounds.validators())
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {

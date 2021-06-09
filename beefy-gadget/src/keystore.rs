@@ -25,7 +25,7 @@ pub trait BeefyKeystore<P>: Sync + Send + 'static
 where
 	P: Pair,
 {
-	fn find_key(&self, list: &[P::Public]) -> Option<P::Public>;
+	fn local_id(&self, keys: &[P::Public]) -> Option<P::Public>;
 
 	fn sign(&self, public: &P::Public, message: &[u8]) -> Result<P::Signature, error::Error>;
 
@@ -33,10 +33,10 @@ where
 }
 
 impl BeefyKeystore<ecdsa::Pair> for std::sync::Arc<dyn SyncCryptoStore> {
-	fn find_key(&self, list: &[ecdsa::Public]) -> Option<ecdsa::Public> {
-		for id in list {
-			if SyncCryptoStore::has_keys(&**self, &[(id.to_raw_vec(), KEY_TYPE)]) {
-				return Some(id.clone());
+	fn local_id(&self, keys: &[ecdsa::Public]) -> Option<ecdsa::Public> {
+		for key in keys {
+			if SyncCryptoStore::has_keys(&**self, &[(key.to_raw_vec(), KEY_TYPE)]) {
+				return Some(key.clone());
 			}
 		}
 
@@ -79,6 +79,27 @@ mod tests {
 	use sp_keystore::{testing::KeyStore, SyncCryptoStore, SyncCryptoStorePtr};
 
 	use crate::error::Error;
+
+	#[test]
+	fn local_id_works() {
+		let store: SyncCryptoStorePtr = KeyStore::new().into();
+
+		let alice = ecdsa::Pair::from_string("//Alice", None).unwrap();
+		let _ = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, "//Alice", alice.public().as_ref()).unwrap();
+
+		let bob = ecdsa::Pair::from_string("//Bob", None).unwrap();
+		let charlie = ecdsa::Pair::from_string("//Charlie", None).unwrap();
+
+		let mut keys = vec![bob.public(), charlie.public()];
+
+		let local_id = store.local_id(&keys);
+		assert!(local_id.is_none());
+
+		keys.push(alice.public());
+
+		let local_id = store.local_id(&keys).unwrap();
+		assert_eq!(local_id, alice.public());
+	}
 
 	#[test]
 	fn sign_works() {
