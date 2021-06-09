@@ -14,16 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use std::{
-	convert::{TryFrom, TryInto},
-	fmt::Debug,
-	marker::PhantomData,
-	sync::Arc,
-};
+use std::{convert::TryFrom, fmt::Debug, marker::PhantomData, sync::Arc};
 
 use codec::{Codec, Decode, Encode};
 use futures::{future, FutureExt, StreamExt};
-use hex::ToHex;
 use log::{debug, error, trace, warn};
 use parking_lot::Mutex;
 
@@ -31,7 +25,7 @@ use sc_client_api::{Backend, FinalityNotification, FinalityNotifications};
 use sc_network_gossip::GossipEngine;
 
 use sp_api::BlockId;
-use sp_application_crypto::{AppPublic, Public};
+use sp_application_crypto::AppPublic;
 use sp_arithmetic::traits::AtLeast32Bit;
 use sp_core::Pair;
 use sp_runtime::{
@@ -42,7 +36,7 @@ use sp_runtime::{
 
 use beefy_primitives::{
 	BeefyApi, Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, VersionedCommitment, VoteMessage,
-	BEEFY_ENGINE_ID, GENESIS_AUTHORITY_SET_ID, KEY_TYPE,
+	BEEFY_ENGINE_ID, GENESIS_AUTHORITY_SET_ID,
 };
 
 use crate::{
@@ -178,21 +172,13 @@ where
 		number == target
 	}
 
-	fn sign_commitment(&self, id: &P::Public, commitment: &[u8]) -> Result<P::Signature, error::Crypto<P::Public>> {
+	fn sign_commitment(&self, id: &P::Public, commitment: &[u8]) -> Result<P::Signature, error::Error> {
 		let key_store = self
 			.key_store
 			.as_ref()
-			.ok_or_else(|| error::Crypto::CannotSign((*id).clone(), "Missing KeyStore".into()))?;
+			.ok_or_else(|| error::Error::Keystore("Missing KeyStore".to_string()))?;
 
-		let sig = BeefyKeystore::sign(&**key_store, id, commitment)
-			.map_err(|e| error::Crypto::CannotSign((*id).clone(), e.to_string()))?;
-
-		let encoded_sig = sig.encode_hex();
-		let sig = sig
-			.try_into()
-			.map_err(|_| error::Crypto::InvalidSignature(encoded_sig, (*id).clone()))?;
-
-		Ok(sig)
+		BeefyKeystore::sign(&**key_store, id, commitment)
 	}
 
 	/// Return the current active validator set at header `header`.

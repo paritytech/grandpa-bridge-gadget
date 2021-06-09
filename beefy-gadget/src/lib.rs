@@ -27,10 +27,9 @@ use sc_network_gossip::{GossipEngine, Network as GossipNetwork};
 use sp_api::ProvideRuntimeApi;
 use sp_application_crypto::AppPublic;
 use sp_blockchain::HeaderBackend;
-use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::traits::Block;
 
-use beefy_primitives::{ecdsa, BeefyApi};
+use beefy_primitives::BeefyApi;
 
 mod gossip;
 mod keystore;

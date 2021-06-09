@@ -11,6 +11,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+use std::convert::TryInto;
+
 use sp_application_crypto::Public;
 use sp_core::{keccak_256, Pair};
 use sp_keystore::SyncCryptoStore;
@@ -49,7 +51,18 @@ impl BeefyKeystore<ecdsa::Pair> for std::sync::Arc<dyn SyncCryptoStore> {
 			.map_err(|e| error::Error::Keystore(e.to_string()))?
 			.ok_or_else(|| error::Error::Signature("ecdsa_sign_prehashed() failed".to_string()))?;
 
-		Ok(sig.into())
+		// check that `sig` has the expected result type
+		let sig = match sig.clone().try_into() {
+			Ok(s) => s,
+			_ => {
+				return Err(error::Error::Signature(format!(
+					"invalid signature {:?} for key {:?}",
+					sig, public
+				)))
+			}
+		};
+
+		Ok(sig)
 	}
 
 	fn verify(&self, public: &ecdsa::Public, sig: &ecdsa::Signature, message: &[u8]) -> bool {
@@ -66,8 +79,8 @@ mod tests {
 	#![allow(clippy::unit_cmp)]
 
 	use super::BeefyKeystore;
-	use beefy_primitives::KEY_TYPE;
-	use sp_core::{ecdsa, keccak_256, Pair};
+	use beefy_primitives::{ecdsa, KEY_TYPE};
+	use sp_core::{keccak_256, Pair};
 	use sp_keystore::{testing::KeyStore, SyncCryptoStore, SyncCryptoStorePtr};
 
 	use crate::error::Error;
@@ -77,20 +90,20 @@ mod tests {
 		let store: SyncCryptoStorePtr = KeyStore::new().into();
 
 		let suri = "//Alice";
-		let pair = ecdsa::Pair::from_string(suri, None).unwrap();
+		let pair = sp_core::ecdsa::Pair::from_string(suri, None).unwrap();
 
 		let res = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, suri, pair.public().as_ref()).unwrap();
 		assert_eq!((), res);
 
 		let msg = b"are you involved or comitted?";
-		let sig1 = store.sign(&pair.public(), msg).unwrap();
+		let sig1 = store.sign(&pair.public().into(), msg).unwrap();
 
 		let msg = keccak_256(b"are you involved or comitted?");
 		let sig2 = SyncCryptoStore::ecdsa_sign_prehashed(&*store, KEY_TYPE, &pair.public(), &msg)
 			.unwrap()
 			.unwrap();
 
-		assert_eq!(sig1, sig2);
+		assert_eq!(sig1, sig2.into());
 	}
 
 	#[test]
