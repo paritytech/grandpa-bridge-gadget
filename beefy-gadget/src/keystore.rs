@@ -22,8 +22,8 @@ use beefy_primitives::{ecdsa, KEY_TYPE};
 use crate::error;
 
 /// BEEFY specifc keystore which allows to customize message signature related
-/// crypto functions based on a concrete type for [`sp_core::Pair`]. This
-/// conrete type is also known as the `BEEFY Key`.
+/// crypto functions based on a concrete type for [`sp_core::Pair`]. This conrete
+/// type is also known as the `BEEFY Key`.
 pub trait BeefyKeystore<P>: Sync + Send + 'static
 where
 	P: Pair,
@@ -40,12 +40,12 @@ where
 	///
 	/// Note that `message` usually will be pre-hashed before being singed.
 	///
-	/// Return the message signature or and error in case of failure.S
+	/// Return the message signature or an error in case of failure.
 	fn sign(&self, public: &P::Public, message: &[u8]) -> Result<P::Signature, error::Error>;
 
 	/// Use the `public` key to verify that `sig` is a valid signature for `message`.
 	///
-	/// Return `true` if the signature is authentic, `fasle` otherwise.
+	/// Return `true` if the signature is authentic, `false` otherwise.
 	fn verify(&self, public: &P::Public, sig: &P::Signature, message: &[u8]) -> bool;
 }
 
