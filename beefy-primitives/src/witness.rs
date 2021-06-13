@@ -25,6 +25,7 @@
 use sp_std::prelude::*;
 
 use crate::commitment::{Commitment, SignedCommitment};
+use crate::crypto::Signature;
 
 /// A light form of [SignedCommitment].
 ///
@@ -56,12 +57,12 @@ impl<TBlockNumber, TPayload, TMerkleRoot> SignedCommitmentWitness<TBlockNumber, 
 	/// and a merkle root of all signatures.
 	///
 	/// Returns the full list of signatures along with the witness.
-	pub fn from_signed<TSignature, TMerkelize>(
-		signed: SignedCommitment<TBlockNumber, TPayload, TSignature>,
+	pub fn from_signed<TMerkelize>(
+		signed: SignedCommitment<TBlockNumber, TPayload>,
 		merkelize: TMerkelize,
-	) -> (Self, Vec<Option<TSignature>>)
+	) -> (Self, Vec<Option<Signature>>)
 	where
-		TMerkelize: FnOnce(&[Option<TSignature>]) -> TMerkleRoot,
+		TMerkelize: FnOnce(&[Option<Signature>]) -> TMerkleRoot,
 	{
 		let SignedCommitment { commitment, signatures } = signed;
 		let signed_by = signatures.iter().map(|s| s.is_some()).collect();
@@ -80,12 +81,14 @@ impl<TBlockNumber, TPayload, TMerkleRoot> SignedCommitmentWitness<TBlockNumber, 
 
 #[cfg(test)]
 mod tests {
+	use std::convert::TryInto;
+
 	use super::*;
 	use codec::Decode;
 
 	type TestCommitment = Commitment<u128, String>;
-	type TestSignedCommitment = SignedCommitment<u128, String, Vec<u8>>;
-	type TestSignedCommitmentWitness = SignedCommitmentWitness<u128, String, Vec<Option<Vec<u8>>>>;
+	type TestSignedCommitment = SignedCommitment<u128, String>;
+	type TestSignedCommitmentWitness = SignedCommitmentWitness<u128, String, Vec<Option<Signature>>>;
 
 	fn signed_commitment() -> TestSignedCommitment {
 		let commitment: TestCommitment = Commitment {
@@ -96,7 +99,12 @@ mod tests {
 
 		SignedCommitment {
 			commitment,
-			signatures: vec![None, None, Some(vec![1, 2, 3, 4]), Some(vec![5, 6, 7, 8])],
+			signatures: vec![
+				None,
+				None,
+				Some(vec![1, 2, 3, 4].try_into().unwrap()),
+				Some(vec![5, 6, 7, 8].try_into().unwrap()),
+			],
 		}
 	}
 

@@ -14,16 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use std::{
-	convert::{TryFrom, TryInto},
-	fmt::Debug,
-	marker::PhantomData,
-	sync::Arc,
-};
+use std::{fmt::Debug, marker::PhantomData, sync::Arc};
 
 use codec::{Codec, Decode, Encode};
 use futures::{future, FutureExt, StreamExt};
-use hex::ToHex;
 use log::{debug, error, info, trace, warn};
 use parking_lot::Mutex;
 
@@ -31,10 +25,7 @@ use sc_client_api::{Backend, FinalityNotification, FinalityNotifications};
 use sc_network_gossip::GossipEngine;
 
 use sp_api::BlockId;
-use sp_application_crypto::{AppPublic, Public};
 use sp_arithmetic::traits::AtLeast32Bit;
-use sp_core::Pair;
-use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
 use sp_runtime::{
 	generic::OpaqueDigestItemId,
 	traits::{Block, Header, NumberFor},
@@ -42,54 +33,51 @@ use sp_runtime::{
 };
 
 use beefy_primitives::{
+	crypto::{Public, Signature},
 	BeefyApi, Commitment, ConsensusLog, MmrRootHash, SignedCommitment, ValidatorSet, VersionedCommitment, VoteMessage,
-	BEEFY_ENGINE_ID, GENESIS_AUTHORITY_SET_ID, KEY_TYPE,
+	BEEFY_ENGINE_ID, GENESIS_AUTHORITY_SET_ID,
 };
 
 use crate::{
 	error::{self},
 	gossip::{topic, BeefyGossipValidator},
+	keystore::BeefyKeystore,
 	metric_inc, metric_set,
 	metrics::Metrics,
 	notification, round, Client,
 };
 
-pub(crate) struct WorkerParams<B, P, BE, C>
+pub(crate) struct WorkerParams<B, BE, C>
 where
 	B: Block,
-	P: sp_core::Pair,
-	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
 {
 	pub client: Arc<C>,
 	pub backend: Arc<BE>,
-	pub key_store: Option<SyncCryptoStorePtr>,
-	pub signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
+	pub key_store: BeefyKeystore,
+	pub signed_commitment_sender: notification::BeefySignedCommitmentSender<B>,
 	pub gossip_engine: GossipEngine<B>,
-	pub gossip_validator: Arc<BeefyGossipValidator<B, P>>,
+	pub gossip_validator: Arc<BeefyGossipValidator<B>>,
 	pub min_block_delta: u32,
 	pub metrics: Option<Metrics>,
 }
 
 /// A BEEFY worker plays the BEEFY protocol
-pub(crate) struct BeefyWorker<B, C, BE, P>
+pub(crate) struct BeefyWorker<B, C, BE>
 where
 	B: Block,
 	BE: Backend<B>,
-	P: Pair,
-	P::Public: AppPublic + Codec,
-	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
-	C: Client<B, BE, P>,
+	C: Client<B, BE>,
 {
 	client: Arc<C>,
 	backend: Arc<BE>,
-	key_store: Option<SyncCryptoStorePtr>,
-	signed_commitment_sender: notification::BeefySignedCommitmentSender<B, P::Signature>,
+	key_store: BeefyKeystore,
+	signed_commitment_sender: notification::BeefySignedCommitmentSender<B>,
 	gossip_engine: Arc<Mutex<GossipEngine<B>>>,
-	gossip_validator: Arc<BeefyGossipValidator<B, P>>,
+	gossip_validator: Arc<BeefyGossipValidator<B>>,
 	/// Min delta in block numbers between two blocks, BEEFY should vote on
 	min_block_delta: u32,
 	metrics: Option<Metrics>,
-	rounds: round::Rounds<MmrRootHash, NumberFor<B>, P::Public, P::Signature>,
+	rounds: round::Rounds<MmrRootHash, NumberFor<B>>,
 	finality_notifications: FinalityNotifications<B>,
 	/// Best block we received a GRANDPA notification for
 	best_grandpa_block: NumberFor<B>,
@@ -99,18 +87,14 @@ where
 	last_signed_id: u64,
 	// keep rustc happy
 	_backend: PhantomData<BE>,
-	_pair: PhantomData<P>,
 }
 
-impl<B, C, BE, P> BeefyWorker<B, C, BE, P>
+impl<B, C, BE> BeefyWorker<B, C, BE>
 where
-	B: Block,
+	B: Block + Codec,
 	BE: Backend<B>,
-	P: Pair,
-	P::Public: AppPublic,
-	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
-	C: Client<B, BE, P>,
-	C::Api: BeefyApi<B, P::Public>,
+	C: Client<B, BE>,
+	C::Api: BeefyApi<B>,
 {
 	/// Return a new BEEFY worker instance.
 	///
@@ -118,7 +102,7 @@ where
 	/// BEEFY pallet has been deployed on-chain.
 	///
 	/// The BEEFY pallet is needed in order to keep track of the BEEFY authority set.
-	pub(crate) fn new(worker_params: WorkerParams<B, P, BE, C>) -> Self {
+	pub(crate) fn new(worker_params: WorkerParams<B, BE, C>) -> Self {
 		let WorkerParams {
 			client,
 			backend,
@@ -145,20 +129,16 @@ where
 			best_beefy_block: None,
 			last_signed_id: 0,
 			_backend: PhantomData,
-			_pair: PhantomData,
 		}
 	}
 }
 
-impl<B, C, BE, P> BeefyWorker<B, C, BE, P>
+impl<B, C, BE> BeefyWorker<B, C, BE>
 where
 	B: Block,
 	BE: Backend<B>,
-	P: Pair,
-	P::Public: AppPublic,
-	P::Signature: Clone + Codec + Debug + PartialEq + TryFrom<Vec<u8>>,
-	C: Client<B, BE, P>,
-	C::Api: BeefyApi<B, P::Public>,
+	C: Client<B, BE>,
+	C::Api: BeefyApi<B>,
 {
 	/// Return `true`, if we should vote on block `number`
 	fn should_vote_on(&self, number: NumberFor<B>) -> bool {
@@ -178,22 +158,8 @@ where
 		number == target
 	}
 
-	fn sign_commitment(&self, id: &P::Public, commitment: &[u8]) -> Result<P::Signature, error::Crypto<P::Public>> {
-		let key_store = self
-			.key_store
-			.clone()
-			.ok_or_else(|| error::Crypto::CannotSign((*id).clone(), "Missing KeyStore".into()))?;
-
-		let sig = SyncCryptoStore::sign_with(&*key_store, KEY_TYPE, &id.to_public_crypto_pair(), commitment)
-			.map_err(|e| error::Crypto::CannotSign((*id).clone(), e.to_string()))?
-			.ok_or_else(|| error::Crypto::CannotSign((*id).clone(), "No key in KeyStore found".into()))?;
-
-		let sig = sig
-			.clone()
-			.try_into()
-			.map_err(|_| error::Crypto::InvalidSignature(sig.encode_hex(), (*id).clone()))?;
-
-		Ok(sig)
+	fn sign_commitment(&self, id: &Public, commitment: &[u8]) -> Result<Signature, error::Error> {
+		self.key_store.sign(id, commitment)
 	}
 
 	/// Return the current active validator set at header `header`.
@@ -203,8 +169,8 @@ where
 	/// BEEFY on-chain state.
 	///
 	/// Such a failure is usually an indication that the BEEFT pallet has not been deployed (yet).
-	fn validator_set(&self, header: &B::Header) -> Option<ValidatorSet<P::Public>> {
-		if let Some(new) = find_authorities_change::<B, P::Public>(header) {
+	fn validator_set(&self, header: &B::Header) -> Option<ValidatorSet<Public>> {
+		if let Some(new) = find_authorities_change::<B, Public>(header) {
 			Some(new)
 		} else {
 			let at = BlockId::hash(header.hash());
@@ -215,14 +181,8 @@ where
 	/// Return the local authority id.
 	///
 	/// `None` is returned, if we are not permitted to vote
-	fn local_id(&self) -> Option<P::Public> {
-		let key_store = self.key_store.clone()?;
-
-		self.rounds
-			.validators()
-			.iter()
-			.find(|id| SyncCryptoStore::has_keys(&*key_store, &[(id.to_raw_vec(), KEY_TYPE)]))
-			.cloned()
+	fn local_id(&self) -> Option<Public> {
+		self.key_store.authority_id(&self.rounds.validators().as_slice())
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {
@@ -268,7 +228,7 @@ where
 				return;
 			};
 
-			let mmr_root = if let Some(hash) = find_mmr_root_digest::<B, P::Public>(&notification.header) {
+			let mmr_root = if let Some(hash) = find_mmr_root_digest::<B, Public>(&notification.header) {
 				hash
 			} else {
 				warn!(target: "beefy", "🥩 No MMR root digest found for: {:?}", notification.header.hash());
@@ -312,7 +272,7 @@ where
 		}
 	}
 
-	fn handle_vote(&mut self, round: (MmrRootHash, NumberFor<B>), vote: (P::Public, P::Signature)) {
+	fn handle_vote(&mut self, round: (MmrRootHash, NumberFor<B>), vote: (Public, Signature)) {
 		self.gossip_validator.note_round(round.1);
 
 		let vote_added = self.rounds.add_vote(round, vote);
@@ -363,10 +323,7 @@ where
 			|notification| async move {
 				trace!(target: "beefy", "🥩 Got vote message: {:?}", notification);
 
-				VoteMessage::<MmrRootHash, NumberFor<B>, P::Public, P::Signature>::decode(
-					&mut &notification.message[..],
-				)
-				.ok()
+				VoteMessage::<MmrRootHash, NumberFor<B>, Public, Signature>::decode(&mut &notification.message[..]).ok()
 			},
 		));
 

@@ -1,4 +1,4 @@
-// Copyright (C) 2020 Parity Technologies (UK) Ltd.
+// Copyright (C) 2020-2021 Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -56,11 +56,25 @@ pub mod ecdsa {
 		pub type AuthorityPair = app_ecdsa::Pair;
 	}
 
+	pub use app_ecdsa::*;
+
 	/// Identity of a BEEFY authority using ECDSA as its crypto.
 	pub type AuthorityId = app_ecdsa::Public;
 
 	/// Signature for a BEEFY authority using ECDSA as its crypto.
 	pub type AuthoritySignature = app_ecdsa::Signature;
+}
+
+/// BEEFY cryptographic types based on ECDSA
+pub mod crypto {
+	use sp_application_crypto::{app_crypto, ecdsa};
+	app_crypto!(ecdsa, crate::KEY_TYPE);
+
+	/// Identity of a BEEFY authority using ECDSA as its crypto.
+	pub type AuthorityId = Public;
+
+	/// Signature for a BEEFY authority using ECDSA as its crypto.
+	pub type AuthoritySignature = Signature;
 }
 
 /// The `ConsensusEngineId` of BEEFY.
@@ -127,7 +141,8 @@ pub struct VoteMessage<Hash, Number, Id, Signature> {
 
 sp_api::decl_runtime_apis! {
 	/// API necessary for BEEFY voters.
-	pub trait BeefyApi<AuthorityId: Codec> {
+	pub trait BeefyApi<AuthorityId: Codec>
+	{
 		/// Return the current active BEEFY validator set
 		fn validator_set() -> ValidatorSet<AuthorityId>;
 	}

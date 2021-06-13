@@ -63,14 +63,14 @@ pub trait BeefyApi<Notification, Hash> {
 }
 
 /// Implements the BeefyApi RPC trait for interacting with BEEFY.
-pub struct BeefyRpcHandler<Block: BlockT, Signature> {
-	signed_commitment_stream: BeefySignedCommitmentStream<Block, Signature>,
+pub struct BeefyRpcHandler<Block: BlockT> {
+	signed_commitment_stream: BeefySignedCommitmentStream<Block>,
 	manager: SubscriptionManager,
 }
 
-impl<Block: BlockT, Signature> BeefyRpcHandler<Block, Signature> {
+impl<Block: BlockT> BeefyRpcHandler<Block> {
 	/// Creates a new BeefyRpcHandler instance.
-	pub fn new<E>(signed_commitment_stream: BeefySignedCommitmentStream<Block, Signature>, executor: E) -> Self
+	pub fn new<E>(signed_commitment_stream: BeefySignedCommitmentStream<Block>, executor: E) -> Self
 	where
 		E: Executor01<Box<dyn Future01<Item = (), Error = ()> + Send>> + Send + Sync + 'static,
 	{
@@ -82,10 +82,9 @@ impl<Block: BlockT, Signature> BeefyRpcHandler<Block, Signature> {
 	}
 }
 
-impl<Block, Signature> BeefyApi<notification::SignedCommitment, Block> for BeefyRpcHandler<Block, Signature>
+impl<Block> BeefyApi<notification::SignedCommitment, Block> for BeefyRpcHandler<Block>
 where
 	Block: BlockT,
-	Signature: Clone + Encode + Send + 'static,
 {
 	type Metadata = sc_rpc::Metadata;
 
@@ -97,7 +96,7 @@ where
 		let stream = self
 			.signed_commitment_stream
 			.subscribe()
-			.map(|x| Ok::<_, ()>(notification::SignedCommitment::new::<Block, Signature>(x)))
+			.map(|x| Ok::<_, ()>(notification::SignedCommitment::new::<Block>(x)))
 			.map_err(|e| warn!("Notification stream error: {:?}", e))
 			.compat();
 

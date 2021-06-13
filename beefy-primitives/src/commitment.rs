@@ -16,6 +16,7 @@
 
 use sp_std::{cmp, prelude::*};
 
+use crate::crypto::Signature;
 use crate::ValidatorSetId;
 
 /// A commitment signed by GRANDPA validators as part of BEEFY protocol.
@@ -78,17 +79,17 @@ where
 
 /// A commitment with matching GRANDPA validators' signatures.
 #[derive(Clone, Debug, PartialEq, Eq, codec::Encode, codec::Decode)]
-pub struct SignedCommitment<TBlockNumber, TPayload, TSignature> {
+pub struct SignedCommitment<TBlockNumber, TPayload> {
 	/// The commitment signatures are collected for.
 	pub commitment: Commitment<TBlockNumber, TPayload>,
 	/// GRANDPA validators' signatures for the commitment.
 	///
 	/// The length of this `Vec` must match number of validators in the current set (see
 	/// [Commitment::validator_set_id]).
-	pub signatures: Vec<Option<TSignature>>,
+	pub signatures: Vec<Option<Signature>>,
 }
 
-impl<TBlockNumber, TPayload, TSignature> SignedCommitment<TBlockNumber, TPayload, TSignature> {
+impl<TBlockNumber, TPayload> SignedCommitment<TBlockNumber, TPayload> {
 	/// Return the number of collected signatures.
 	pub fn no_of_signatures(&self) -> usize {
 		self.signatures.iter().filter(|x| x.is_some()).count()
@@ -99,20 +100,22 @@ impl<TBlockNumber, TPayload, TSignature> SignedCommitment<TBlockNumber, TPayload
 /// to the block justifications for the block for which the signed commitment
 /// has been generated.
 #[derive(Clone, Debug, PartialEq, codec::Encode, codec::Decode)]
-pub enum VersionedCommitment<N, P, S> {
+pub enum VersionedCommitment<N, P> {
 	#[codec(index = 1)]
 	/// Current active version
-	V1(SignedCommitment<N, P, S>),
+	V1(SignedCommitment<N, P>),
 }
 
 #[cfg(test)]
 mod tests {
+	use std::convert::TryInto;
+
 	use super::*;
 	use codec::Decode;
 
 	type TestCommitment = Commitment<u128, String>;
-	type TestSignedCommitment = SignedCommitment<u128, String, Vec<u8>>;
-	type TestVersionedCommitment = VersionedCommitment<u128, String, Vec<u8>>;
+	type TestSignedCommitment = SignedCommitment<u128, String>;
+	type TestVersionedCommitment = VersionedCommitment<u128, String>;
 
 	#[test]
 	fn commitment_encode_decode() {
@@ -145,7 +148,12 @@ mod tests {
 		};
 		let signed = SignedCommitment {
 			commitment,
-			signatures: vec![None, None, Some(vec![1, 2, 3, 4]), Some(vec![5, 6, 7, 8])],
+			signatures: vec![
+				None,
+				None,
+				Some(vec![1, 2, 3, 4].try_into().unwrap()),
+				Some(vec![5, 6, 7, 8].try_into().unwrap()),
+			],
 		};
 
 		// when
@@ -172,7 +180,12 @@ mod tests {
 		};
 		let mut signed = SignedCommitment {
 			commitment,
-			signatures: vec![None, None, Some(vec![1, 2, 3, 4]), Some(vec![5, 6, 7, 8])],
+			signatures: vec![
+				None,
+				None,
+				Some(vec![1, 2, 3, 4].try_into().unwrap()),
+				Some(vec![5, 6, 7, 8].try_into().unwrap()),
+			],
 		};
 		assert_eq!(signed.no_of_signatures(), 2);
 
@@ -217,7 +230,12 @@ mod tests {
 
 		let signed = SignedCommitment {
 			commitment,
-			signatures: vec![None, None, Some(vec![1, 2, 3, 4]), Some(vec![5, 6, 7, 8])],
+			signatures: vec![
+				None,
+				None,
+				Some(vec![1, 2, 3, 4].try_into().unwrap()),
+				Some(vec![5, 6, 7, 8].try_into().unwrap()),
+			],
 		};
 
 		let versioned = TestVersionedCommitment::V1(signed.clone());

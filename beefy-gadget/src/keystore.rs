@@ -36,7 +36,7 @@ impl BeefyKeystore {
 	///
 	/// Return the public key for which we also do have a private key. If no
 	/// matching private key is found, `None` will be returned.
-	fn authority_id(&self, keys: &[Public]) -> Option<Public> {
+	pub fn authority_id(&self, keys: &[Public]) -> Option<Public> {
 		let store = if let Some(store) = self.0.clone() {
 			store
 		} else {
@@ -57,7 +57,7 @@ impl BeefyKeystore {
 	/// Note that `message` usually will be pre-hashed before being singed.
 	///
 	/// Return the message signature or an error in case of failure.
-	fn sign(&self, public: &Public, message: &[u8]) -> Result<Signature, error::Error> {
+	pub fn sign(&self, public: &Public, message: &[u8]) -> Result<Signature, error::Error> {
 		let store = if let Some(store) = self.0.clone() {
 			store
 		} else {
@@ -83,7 +83,7 @@ impl BeefyKeystore {
 	/// Use the `public` key to verify that `sig` is a valid signature for `message`.
 	///
 	/// Return `true` if the signature is authentic, `false` otherwise.
-	fn verify(public: &Public, sig: &Signature, message: &[u8]) -> bool {
+	pub fn verify(public: &Public, sig: &Signature, message: &[u8]) -> bool {
 		let msg = keccak_256(message);
 		let sig = sig.as_ref();
 		let public = public.as_ref();
