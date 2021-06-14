@@ -16,6 +16,7 @@ sp-std = { git = "https://github.com/paritytech/substrate", default-features = f
 
 [dev-dependencies]
 hex-literal = "0.3"
+hex = "0.4"
 
 [features]
 default = ["std"]

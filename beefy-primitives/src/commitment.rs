@@ -108,7 +108,7 @@ pub enum VersionedCommitment<N, P> {
 
 #[cfg(test)]
 mod tests {
-	use std::convert::TryInto;
+	use std::convert::TryFrom;
 
 	use super::*;
 	use codec::Decode;
@@ -116,6 +116,16 @@ mod tests {
 	type TestCommitment = Commitment<u128, String>;
 	type TestSignedCommitment = SignedCommitment<u128, String>;
 	type TestVersionedCommitment = VersionedCommitment<u128, String>;
+
+	macro_rules! sig {
+		($vec:expr) => {{
+			use std::convert::TryFrom;
+
+			let sig = sp_core::ecdsa::Signature::try_from($vec.as_slice()).unwrap();
+			let sig: crate::crypto::Signature = sig.into();
+			sig
+		}};
+	}
 
 	#[test]
 	fn commitment_encode_decode() {
@@ -146,19 +156,22 @@ mod tests {
 			block_number: 5,
 			validator_set_id: 0,
 		};
+
+		let sig1 = sig!(vec![1, 2, 3, 4]);
+		dbg!(sig1);
+		let sig2 = Signature::try_from(vec![5, 6, 7, 8]).unwrap();
+
 		let signed = SignedCommitment {
 			commitment,
-			signatures: vec![
-				None,
-				None,
-				Some(vec![1, 2, 3, 4].try_into().unwrap()),
-				Some(vec![5, 6, 7, 8].try_into().unwrap()),
-			],
+			signatures: vec![None.into(), None.into(), Some(sig2.clone()), Some(sig2)],
 		};
 
 		// when
 		let encoded = codec::Encode::encode(&signed);
 		let decoded = TestSignedCommitment::decode(&mut &*encoded);
+
+		let hex = hex::encode(encoded.clone());
+		dbg!(hex);
 
 		// then
 		assert_eq!(decoded, Ok(signed));
@@ -183,8 +196,8 @@ mod tests {
 			signatures: vec![
 				None,
 				None,
-				Some(vec![1, 2, 3, 4].try_into().unwrap()),
-				Some(vec![5, 6, 7, 8].try_into().unwrap()),
+				Some(Signature::try_from(vec![1, 2, 3, 4]).unwrap()),
+				Some(Signature::try_from(vec![5, 6, 7, 8]).unwrap()),
 			],
 		};
 		assert_eq!(signed.no_of_signatures(), 2);
@@ -233,8 +246,8 @@ mod tests {
 			signatures: vec![
 				None,
 				None,
-				Some(vec![1, 2, 3, 4].try_into().unwrap()),
-				Some(vec![5, 6, 7, 8].try_into().unwrap()),
+				Some(Signature::try_from(vec![1, 2, 3, 4]).unwrap()),
+				Some(Signature::try_from(vec![5, 6, 7, 8]).unwrap()),
 			],
 		};
 
