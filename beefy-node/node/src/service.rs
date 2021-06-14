@@ -70,7 +70,7 @@ pub fn new_partial(config: &Configuration) -> Result<ServiceComponents, ServiceE
 		config.transaction_pool.clone(),
 		config.role.is_authority().into(),
 		config.prometheus_registry(),
-		task_manager.spawn_handle(),
+		task_manager.spawn_essential_handle(),
 		client.clone(),
 	);
 
