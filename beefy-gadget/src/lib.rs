@@ -18,7 +18,6 @@ use std::sync::Arc;
 
 use log::debug;
 use prometheus::Registry;
-use codec::Codec;
 
 use sc_client_api::{Backend, BlockchainEvents, Finalizer};
 use sc_network_gossip::{GossipEngine, Network as GossipNetwork};
@@ -28,10 +27,7 @@ use sp_blockchain::HeaderBackend;
 use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::traits::Block;
 
-use beefy_primitives::{
-	crypto::{Public, Signature},
-	BeefyApi,
-};
+use beefy_primitives::BeefyApi;
 
 mod error;
 mod gossip;
@@ -80,7 +76,7 @@ where
 	B: Block,
 	BE: Backend<B>,
 	C: Client<B, BE>,
-	//C::Api: BeefyApi<B, dyn Codec>,
+	C::Api: BeefyApi<B>,
 	N: GossipNetwork<B> + Clone + Send + 'static,
 {
 	/// BEEFY client
@@ -107,7 +103,7 @@ where
 	B: Block,
 	BE: Backend<B>,
 	C: Client<B, BE>,
-	//C::Api: BeefyApi<B, Codec>,
+	C::Api: BeefyApi<B>,
 	N: GossipNetwork<B> + Clone + Send + 'static,
 {
 	let BeefyParams {
@@ -148,7 +144,7 @@ where
 		metrics,
 	};
 
-	let worker = worker::BeefyWorker::<_, _, _,_>::new(worker_params);
+	let worker = worker::BeefyWorker::<_, _, _>::new(worker_params);
 
 	worker.run().await
 }

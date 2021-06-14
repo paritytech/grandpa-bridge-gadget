@@ -19,7 +19,6 @@
 #![warn(missing_docs)]
 
 use beefy_gadget::notification::BeefySignedCommitmentStream;
-use codec::Encode;
 use futures::{StreamExt, TryStreamExt};
 use jsonrpc_core::futures::{
 	future::{Executor as Executor01, Future as Future01},

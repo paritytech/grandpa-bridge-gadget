@@ -44,27 +44,6 @@ use sp_std::prelude::*;
 /// Key type for BEEFY module.
 pub const KEY_TYPE: sp_application_crypto::KeyTypeId = sp_application_crypto::KeyTypeId(*b"beef");
 
-/// BEEFY application-specific crypto types using ECDSA.
-pub mod ecdsa {
-	mod app_ecdsa {
-		use sp_application_crypto::{app_crypto, ecdsa};
-		app_crypto!(ecdsa, crate::KEY_TYPE);
-	}
-
-	sp_application_crypto::with_pair! {
-		/// A BEEFY authority keypair using ECDSA as its crypto.
-		pub type AuthorityPair = app_ecdsa::Pair;
-	}
-
-	pub use app_ecdsa::*;
-
-	/// Identity of a BEEFY authority using ECDSA as its crypto.
-	pub type AuthorityId = app_ecdsa::Public;
-
-	/// Signature for a BEEFY authority using ECDSA as its crypto.
-	pub type AuthoritySignature = app_ecdsa::Signature;
-}
-
 /// BEEFY cryptographic types based on ECDSA
 pub mod crypto {
 	use sp_application_crypto::{app_crypto, ecdsa};
@@ -141,9 +120,9 @@ pub struct VoteMessage<Hash, Number, Id, Signature> {
 
 sp_api::decl_runtime_apis! {
 	/// API necessary for BEEFY voters.
-	pub trait BeefyApi<AuthorityId: Codec>
+	pub trait BeefyApi
 	{
 		/// Return the current active BEEFY validator set
-		fn validator_set() -> ValidatorSet<AuthorityId>;
+		fn validator_set() -> ValidatorSet<crypto::AuthorityId>;
 	}
 }

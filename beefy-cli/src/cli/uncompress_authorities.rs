@@ -15,7 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::cli::utils::{parse_hex, Authorities};
-use beefy_primitives::ecdsa::AuthorityId;
+use beefy_primitives::crypto::AuthorityId;
 use parity_scale_codec::Decode;
 use structopt::StructOpt;
 
