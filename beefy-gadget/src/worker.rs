@@ -39,7 +39,6 @@ use beefy_primitives::{
 };
 
 use crate::{
-	error::{self},
 	gossip::{topic, BeefyGossipValidator},
 	keystore::BeefyKeystore,
 	metric_inc, metric_set,
@@ -158,10 +157,6 @@ where
 		number == target
 	}
 
-	fn sign_commitment(&self, id: &Public, commitment: &[u8]) -> Result<Signature, error::Error> {
-		self.key_store.sign(id, commitment)
-	}
-
 	/// Return the current active validator set at header `header`.
 	///
 	/// Note that the validator set could be `None`. This is the case if we don't find
@@ -176,13 +171,6 @@ where
 			let at = BlockId::hash(header.hash());
 			self.client.runtime_api().validator_set(&at).ok()
 		}
-	}
-
-	/// Return the local authority id.
-	///
-	/// `None` is returned, if we are not permitted to vote
-	fn local_id(&self) -> Option<Public> {
-		self.key_store.authority_id(self.rounds.validators().as_slice())
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {
@@ -221,7 +209,7 @@ where
 		}
 
 		if self.should_vote_on(*notification.header.number()) {
-			let local_id = if let Some(id) = self.local_id() {
+			let authority_id = if let Some(id) = self.key_store.authority_id(self.rounds.validators().as_slice()) {
 				id
 			} else {
 				trace!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
@@ -241,7 +229,7 @@ where
 				validator_set_id: self.rounds.validator_set_id(),
 			};
 
-			let signature = match self.sign_commitment(&local_id, commitment.encode().as_ref()) {
+			let signature = match self.key_store.sign(&authority_id, commitment.encode().as_ref()) {
 				Ok(sig) => sig,
 				Err(err) => {
 					warn!(target: "beefy", "🥩 Error signing commitment: {:?}", err);
@@ -251,7 +239,7 @@ where
 
 			let message = VoteMessage {
 				commitment,
-				id: local_id,
+				id: authority_id,
 				signature,
 			};
 

@@ -44,7 +44,18 @@ use sp_std::prelude::*;
 /// Key type for BEEFY module.
 pub const KEY_TYPE: sp_application_crypto::KeyTypeId = sp_application_crypto::KeyTypeId(*b"beef");
 
-/// BEEFY cryptographic types based on ECDSA
+/// BEEFY cryptographic types
+///
+/// This module basically introduces three crypto types:
+/// - `crypto::Pair`
+/// - `crypto::Public`
+/// - `crypto::Signature`
+///
+/// Your code should use the above types as concrete types for all crypto related
+/// functionality.
+///
+/// The current underlying crypto scheme used is ECDSA. This can be changed,
+/// without affecting code restricted against the above listed crypto types.
 pub mod crypto {
 	use sp_application_crypto::{app_crypto, ecdsa};
 	app_crypto!(ecdsa, crate::KEY_TYPE);
