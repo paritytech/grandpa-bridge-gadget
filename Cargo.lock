@@ -580,12 +580,12 @@ dependencies = [
 name = "beefy-primitives"
 version = "0.1.0"
 dependencies = [
- "hex",
  "hex-literal",
  "parity-scale-codec",
  "sp-api",
  "sp-application-crypto",
  "sp-core",
+ "sp-keystore",
  "sp-runtime",
  "sp-std",
 ]

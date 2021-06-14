@@ -37,11 +37,7 @@ impl BeefyKeystore {
 	/// Return the public key for which we also do have a private key. If no
 	/// matching private key is found, `None` will be returned.
 	pub fn authority_id(&self, keys: &[Public]) -> Option<Public> {
-		let store = if let Some(store) = self.0.clone() {
-			store
-		} else {
-			return None;
-		};
+		let store = self.0.clone()?;
 
 		for key in keys {
 			if SyncCryptoStore::has_keys(&*store, &[(key.to_raw_vec(), KEY_TYPE)]) {

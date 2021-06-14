@@ -16,8 +16,7 @@
 
 use sp_std::{cmp, prelude::*};
 
-use crate::crypto::Signature;
-use crate::ValidatorSetId;
+use crate::{crypto::Signature, ValidatorSetId};
 
 /// A commitment signed by GRANDPA validators as part of BEEFY protocol.
 ///
@@ -108,23 +107,37 @@ pub enum VersionedCommitment<N, P> {
 
 #[cfg(test)]
 mod tests {
-	use std::convert::TryFrom;
+
+	use sp_core::{keccak_256, Pair};
+	use sp_keystore::{testing::KeyStore, SyncCryptoStore, SyncCryptoStorePtr};
 
 	use super::*;
 	use codec::Decode;
+
+	use crate::{crypto, KEY_TYPE};
 
 	type TestCommitment = Commitment<u128, String>;
 	type TestSignedCommitment = SignedCommitment<u128, String>;
 	type TestVersionedCommitment = VersionedCommitment<u128, String>;
 
-	macro_rules! sig {
-		($vec:expr) => {{
-			use std::convert::TryFrom;
+	// The mock signatures are equivalent to the ones produced by the BEEFY keystore
+	fn mock_signatures() -> (crypto::Signature, crypto::Signature) {
+		let store: SyncCryptoStorePtr = KeyStore::new().into();
 
-			let sig = sp_core::ecdsa::Signature::try_from($vec.as_slice()).unwrap();
-			let sig: crate::crypto::Signature = sig.into();
-			sig
-		}};
+		let alice = sp_core::ecdsa::Pair::from_string("//Alice", None).unwrap();
+		let _ = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, "//Alice", alice.public().as_ref()).unwrap();
+
+		let msg = keccak_256(b"This is the first message");
+		let sig1 = SyncCryptoStore::ecdsa_sign_prehashed(&*store, KEY_TYPE, &alice.public(), &msg)
+			.unwrap()
+			.unwrap();
+
+		let msg = keccak_256(b"This is the second message");
+		let sig2 = SyncCryptoStore::ecdsa_sign_prehashed(&*store, KEY_TYPE, &alice.public(), &msg)
+			.unwrap()
+			.unwrap();
+
+		(sig1.into(), sig2.into())
 	}
 
 	#[test]
@@ -157,29 +170,22 @@ mod tests {
 			validator_set_id: 0,
 		};
 
-		let sig1 = sig!(vec![1, 2, 3, 4]);
-		dbg!(sig1);
-		let sig2 = Signature::try_from(vec![5, 6, 7, 8]).unwrap();
+		let sigs = mock_signatures();
 
 		let signed = SignedCommitment {
 			commitment,
-			signatures: vec![None.into(), None.into(), Some(sig2.clone()), Some(sig2)],
+			signatures: vec![None, None, Some(sigs.0), Some(sigs.1)],
 		};
 
 		// when
 		let encoded = codec::Encode::encode(&signed);
 		let decoded = TestSignedCommitment::decode(&mut &*encoded);
 
-		let hex = hex::encode(encoded.clone());
-		dbg!(hex);
-
 		// then
 		assert_eq!(decoded, Ok(signed));
 		assert_eq!(
 			encoded,
-			hex_literal::hex!(
-				"3048656c6c6f20576f726c6421050000000000000000000000000000000000000000000000100000011001020304011005060708"
-			)
+			hex_literal::hex!("3048656c6c6f20576f726c642105000000000000000000000000000000000000000000000010000001558455ad81279df0795cc985580e4fb75d72d948d1107b2ac80a09abed4da8480c746cc321f2319a5e99a830e314d10dd3cd68ce3dc0c33c86e99bcb7816f9ba01012d6e1f8105c337a86cdd9aaacdc496577f3db8c55ef9e6fd48f2c5c05a2274707491635d8ba3df64f324575b7b2a34487bca2324b6a0046395a71681be3d0c2a00")
 		);
 	}
 
@@ -191,14 +197,12 @@ mod tests {
 			block_number: 5,
 			validator_set_id: 0,
 		};
+
+		let sigs = mock_signatures();
+
 		let mut signed = SignedCommitment {
 			commitment,
-			signatures: vec![
-				None,
-				None,
-				Some(Signature::try_from(vec![1, 2, 3, 4]).unwrap()),
-				Some(Signature::try_from(vec![5, 6, 7, 8]).unwrap()),
-			],
+			signatures: vec![None, None, Some(sigs.0), Some(sigs.1)],
 		};
 		assert_eq!(signed.no_of_signatures(), 2);
 
@@ -241,14 +245,11 @@ mod tests {
 			validator_set_id: 0,
 		};
 
+		let sigs = mock_signatures();
+
 		let signed = SignedCommitment {
 			commitment,
-			signatures: vec![
-				None,
-				None,
-				Some(Signature::try_from(vec![1, 2, 3, 4]).unwrap()),
-				Some(Signature::try_from(vec![5, 6, 7, 8]).unwrap()),
-			],
+			signatures: vec![None, None, Some(sigs.0), Some(sigs.1)],
 		};
 
 		let versioned = TestVersionedCommitment::V1(signed.clone());

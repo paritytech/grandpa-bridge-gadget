@@ -182,7 +182,7 @@ where
 	///
 	/// `None` is returned, if we are not permitted to vote
 	fn local_id(&self) -> Option<Public> {
-		self.key_store.authority_id(&self.rounds.validators().as_slice())
+		self.key_store.authority_id(self.rounds.validators().as_slice())
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {

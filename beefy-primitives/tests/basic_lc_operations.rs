@@ -361,5 +361,4 @@ fn light_client_reject_set_transition_with_invalid_proof() {
 	// then
 	assert_eq!(result, Err(Error::InvalidValidatorSetProof));
 }
-
 */
