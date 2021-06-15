@@ -198,7 +198,16 @@ where
 				bits.push((block >> (CONTAINER_BIT_SIZE - bit - 1)) & 1);
 			}
 		}
-		let bits = &bits[bits.len() - signatures_len as usize..];
+		let last_byte_len = signatures_len as usize % CONTAINER_BIT_SIZE;
+		let bits = if last_byte_len != 0 {
+			[
+				&bits[..bits.len() - CONTAINER_BIT_SIZE],
+				&bits[bits.len() - last_byte_len..],
+			]
+			.concat()
+		} else {
+			bits
+		};
 
 		let mut next_signature = signatures_compact.into_iter();
 		let signatures: Vec<Option<TSignature>> = bits
