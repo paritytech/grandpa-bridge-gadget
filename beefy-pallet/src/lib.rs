@@ -105,24 +105,20 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn change_authorities(new: Vec<T::AuthorityId>, queued: Vec<T::AuthorityId>) {
-		// As in GRANDPA, we trigger a validator set change only if the the validator
-		// set has actually changed.
-		if new != Self::authorities() {
-			<Authorities<T>>::put(&new);
+		<Authorities<T>>::put(&new);
 
-			let next_id = Self::validator_set_id() + 1u64;
-			<ValidatorSetId<T>>::put(next_id);
+		let next_id = Self::validator_set_id() + 1u64;
+		<ValidatorSetId<T>>::put(next_id);
 
-			let log: DigestItem<T::Hash> = DigestItem::Consensus(
-				BEEFY_ENGINE_ID,
-				ConsensusLog::AuthoritiesChange(ValidatorSet {
-					validators: new,
-					id: next_id,
-				})
-				.encode(),
-			);
-			<frame_system::Pallet<T>>::deposit_log(log);
-		}
+		let log: DigestItem<T::Hash> = DigestItem::Consensus(
+			BEEFY_ENGINE_ID,
+			ConsensusLog::AuthoritiesChange(ValidatorSet {
+				validators: new,
+				id: next_id,
+			})
+			.encode(),
+		);
+		<frame_system::Pallet<T>>::deposit_log(log);
 
 		<NextAuthorities<T>>::put(&queued);
 	}
