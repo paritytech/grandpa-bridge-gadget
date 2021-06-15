@@ -26,6 +26,8 @@ pub(crate) struct Metrics {
 	pub beefy_votes_sent: Counter<U64>,
 	/// Most recent concluded voting round
 	pub beefy_round_concluded: Gauge<U64>,
+	/// Open (ongoing) voting rounds
+	pub beefy_rounds_open: Gauge<U64>,
 	/// Best block finalized by BEEFY
 	pub beefy_best_block: Gauge<U64>,
 	/// Next block BEEFY should vote on
@@ -47,6 +49,10 @@ impl Metrics {
 			)?,
 			beefy_round_concluded: register(
 				Gauge::new("beefy_round_concluded", "Voting round, that has been concluded")?,
+				registry,
+			)?,
+			beefy_rounds_open: register(
+				Gauge::new("beefy_rounds_open", "Number of ongoing voting rounds")?,
 				registry,
 			)?,
 			beefy_best_block: register(
@@ -86,6 +92,15 @@ macro_rules! metric_inc {
 	($self:ident, $m:ident) => {{
 		if let Some(metrics) = $self.metrics.as_ref() {
 			metrics.$m.inc();
+		}
+	}};
+}
+
+#[macro_export]
+macro_rules! metric_dec {
+	($self:ident, $m:ident) => {{
+		if let Some(metrics) = $self.metrics.as_ref() {
+			metrics.$m.dec();
 		}
 	}};
 }

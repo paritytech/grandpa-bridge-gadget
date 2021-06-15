@@ -49,7 +49,7 @@ use beefy_primitives::{
 use crate::{
 	error::{self},
 	gossip::{topic, BeefyGossipValidator},
-	metric_inc, metric_set,
+	metric_dec, metric_inc, metric_set,
 	metrics::Metrics,
 	notification, round, Client,
 };
@@ -250,6 +250,7 @@ where
 
 				self.rounds = round::Rounds::new(active.clone());
 
+				metric_inc!(self, beefy_rounds_open);
 				debug!(target: "beefy", "🥩 New Rounds for id: {:?}", active.id);
 
 				self.best_beefy_block = Some(*notification.header.number());
@@ -331,6 +332,7 @@ where
 				let signed_commitment = SignedCommitment { commitment, signatures };
 
 				metric_set!(self, beefy_round_concluded, round.1);
+				metric_dec!(self, beefy_rounds_open);
 
 				info!(target: "beefy", "🥩 Round #{} concluded, committed: {:?}.", round.1, signed_commitment);
 
