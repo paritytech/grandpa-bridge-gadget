@@ -188,24 +188,17 @@ where
 		let CompactSignedCommitment {
 			commitment,
 			signatures_from,
-			mut signatures_len,
+			signatures_len,
 			signatures_compact,
 		} = temporary_signatures;
 		let mut bits: Vec<u8> = vec![];
-		let last_block = signatures_len % CONTAINER_BIT_SIZE as u32;
-		for block in signatures_from {
-			let start_bit = if signatures_len > last_block {
-				0
-			} else {
-				CONTAINER_BIT_SIZE - last_block as usize
-			};
 
-			for bit in start_bit..CONTAINER_BIT_SIZE {
-				let bit_position = CONTAINER_BIT_SIZE - bit - 1;
-				bits.push(block >> bit_position & 1);
-				signatures_len -= 1;
+		for block in signatures_from {
+			for bit in 0..CONTAINER_BIT_SIZE {
+				bits.push((block >> (CONTAINER_BIT_SIZE - bit - 1)) & 1);
 			}
 		}
+		let bits = &bits[bits.len() - signatures_len as usize..];
 
 		let mut next_signature = signatures_compact.into_iter();
 		let signatures: Vec<Option<TSignature>> = bits
