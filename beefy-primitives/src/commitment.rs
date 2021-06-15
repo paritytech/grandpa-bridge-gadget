@@ -121,10 +121,6 @@ struct CompactSignedCommitment<TCommitment, TSignature> {
 
 impl<'a, TBlockNumber, TPayload, TSignature>
 	CompactSignedCommitment<&'a Commitment<TBlockNumber, TPayload>, &'a TSignature>
-where
-	TSignature: Encode,
-	TBlockNumber: Encode,
-	TPayload: Encode,
 {
 	/// Packs a `SignedCommitment` into the compressed `CompactSignedCommitment` format for efficient network transport.
 	fn pack(signed_commitment: &'a SignedCommitment<TBlockNumber, TPayload, TSignature>) -> Self {
@@ -161,26 +157,7 @@ where
 			signatures_compact,
 		}
 	}
-}
 
-impl<TBlockNumber, TPayload, TSignature> Encode for SignedCommitment<TBlockNumber, TPayload, TSignature>
-where
-	TSignature: Encode,
-	TBlockNumber: Encode,
-	TPayload: Encode,
-{
-	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
-		let temp = CompactSignedCommitment::pack(self);
-		temp.using_encoded(f)
-	}
-}
-
-impl<TBlockNumber, TPayload, TSignature> CompactSignedCommitment<Commitment<TBlockNumber, TPayload>, TSignature>
-where
-	TBlockNumber: Decode,
-	TPayload: Decode,
-	TSignature: Decode,
-{
 	/// Unpacks a `CompactSignedCommitment` into the uncompressed `SignedCommitment` form.
 	fn unpack(
 		temporary_signatures: CompactSignedCommitment<Commitment<TBlockNumber, TPayload>, TSignature>,
@@ -216,6 +193,18 @@ where
 			.collect();
 
 		SignedCommitment { commitment, signatures }
+	}
+}
+
+impl<TBlockNumber, TPayload, TSignature> Encode for SignedCommitment<TBlockNumber, TPayload, TSignature>
+where
+	TSignature: Encode,
+	TBlockNumber: Encode,
+	TPayload: Encode,
+{
+	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
+		let temp = CompactSignedCommitment::pack(self);
+		temp.using_encoded(f)
 	}
 }
 
