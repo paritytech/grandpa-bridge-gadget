@@ -230,7 +230,7 @@ impl pallet_grandpa::Config for Runtime {
 }
 
 impl pallet_beefy::Config for Runtime {
-	type AuthorityId = BeefyId;
+	type BeefyId = BeefyId;
 }
 
 parameter_types! {
