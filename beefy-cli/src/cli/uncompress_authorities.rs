@@ -15,7 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::cli::utils::{parse_hex, Authorities};
-use beefy_primitives::ecdsa::AuthorityId;
+use beefy_primitives::crypto::AuthorityId;
 use parity_scale_codec::Decode;
 use structopt::StructOpt;
 
@@ -57,10 +57,11 @@ impl UncompressAuthorities {
 }
 
 /// Convert BEEFY authority ids into uncompressed secp256k1 PublicKeys
-pub fn uncompress_beefy_ids(ids: Vec<AuthorityId>) -> anyhow::Result<Vec<secp256k1::PublicKey>> {
+pub fn uncompress_beefy_ids(ids: Vec<AuthorityId>) -> anyhow::Result<Vec<libsecp256k1::PublicKey>> {
 	let mut uncompressed = vec![];
 	for id in ids {
-		let public = secp256k1::PublicKey::parse_slice(&*id.as_ref(), Some(secp256k1::PublicKeyFormat::Compressed))?;
+		let public =
+			libsecp256k1::PublicKey::parse_slice(&*id.as_ref(), Some(libsecp256k1::PublicKeyFormat::Compressed))?;
 		println!("[{:?}] Uncompressed:\n\t {}", id, hex::encode(public.serialize()));
 		uncompressed.push(public);
 	}

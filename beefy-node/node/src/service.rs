@@ -26,12 +26,7 @@ type FullBackend = sc_service::TFullBackend<Block>;
 type FullSelectChain = sc_consensus::LongestChain<FullBackend, Block>;
 
 type OtherComponents = (
-	sc_consensus_aura::AuraBlockImport<
-		Block,
-		FullClient,
-		sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
-		AuraPair,
-	>,
+	sc_finality_grandpa::GrandpaBlockImport<FullBackend, Block, FullClient, FullSelectChain>,
 	sc_finality_grandpa::LinkHalf<Block, FullClient, FullSelectChain>,
 	Option<Telemetry>,
 );
@@ -58,7 +53,7 @@ pub fn new_partial(config: &Configuration) -> Result<ServiceComponents, ServiceE
 		.transpose()?;
 
 	let (client, backend, keystore_container, task_manager) = sc_service::new_full_parts::<Block, RuntimeApi, Executor>(
-		&config,
+		config,
 		telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
 	)?;
 
@@ -75,7 +70,7 @@ pub fn new_partial(config: &Configuration) -> Result<ServiceComponents, ServiceE
 		config.transaction_pool.clone(),
 		config.role.is_authority().into(),
 		config.prometheus_registry(),
-		task_manager.spawn_handle(),
+		task_manager.spawn_essential_handle(),
 		client.clone(),
 	);
 
@@ -86,14 +81,11 @@ pub fn new_partial(config: &Configuration) -> Result<ServiceComponents, ServiceE
 		telemetry.as_ref().map(|x| x.handle()),
 	)?;
 
-	let aura_block_import =
-		sc_consensus_aura::AuraBlockImport::<_, _, _, AuraPair>::new(grandpa_block_import.clone(), client.clone());
-
 	let slot_duration = sc_consensus_aura::slot_duration(&*client)?.slot_duration();
 
 	let import_queue = sc_consensus_aura::import_queue::<AuraPair, _, _, _, _, _, _>(ImportQueueParams {
-		block_import: aura_block_import.clone(),
-		justification_import: Some(Box::new(grandpa_block_import)),
+		block_import: grandpa_block_import.clone(),
+		justification_import: Some(Box::new(grandpa_block_import.clone())),
 		client: client.clone(),
 		create_inherent_data_providers: move |_, ()| async move {
 			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
@@ -120,7 +112,7 @@ pub fn new_partial(config: &Configuration) -> Result<ServiceComponents, ServiceE
 		keystore_container,
 		select_chain,
 		transaction_pool,
-		other: (aura_block_import, grandpa_link, telemetry),
+		other: (grandpa_block_import, grandpa_link, telemetry),
 	})
 }
 
@@ -144,16 +136,15 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 	config.network.extra_sets.push(beefy_gadget::beefy_peers_set_config());
 
-	let (network, network_status_sinks, system_rpc_tx, network_starter) =
-		sc_service::build_network(sc_service::BuildNetworkParams {
-			config: &config,
-			client: client.clone(),
-			transaction_pool: transaction_pool.clone(),
-			spawn_handle: task_manager.spawn_handle(),
-			import_queue,
-			on_demand: None,
-			block_announce_validator_builder: None,
-		})?;
+	let (network, system_rpc_tx, network_starter) = sc_service::build_network(sc_service::BuildNetworkParams {
+		config: &config,
+		client: client.clone(),
+		transaction_pool: transaction_pool.clone(),
+		spawn_handle: task_manager.spawn_handle(),
+		import_queue,
+		on_demand: None,
+		block_announce_validator_builder: None,
+	})?;
 
 	if config.offchain_worker.enabled {
 		sc_service::build_offchain_workers(&config, task_manager.spawn_handle(), client.clone(), network.clone());
@@ -200,7 +191,6 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		on_demand: None,
 		remote_blockchain: None,
 		backend: backend.clone(),
-		network_status_sinks,
 		system_rpc_tx,
 		config,
 		telemetry: telemetry.as_mut(),
@@ -220,7 +210,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		let slot_duration = sc_consensus_aura::slot_duration(&*client)?;
 		let raw_slot_duration = slot_duration.slot_duration();
 
-		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _>(StartAuraParams {
+		let aura = sc_consensus_aura::start_aura::<AuraPair, _, _, _, _, _, _, _, _, _, _, _>(StartAuraParams {
 			slot_duration,
 			client: client.clone(),
 			select_chain,
@@ -241,6 +231,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 			keystore: keystore_container.sync_keystore(),
 			can_author_with,
 			sync_oracle: network.clone(),
+			justification_sync_link: network.clone(),
 			block_proposal_slot_portion: SlotProportion::new(2f32 / 3f32),
 			telemetry: telemetry.as_ref().map(|x| x.handle()),
 		})?;
@@ -271,7 +262,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 	// Start the BEEFY bridge gadget.
 	task_manager.spawn_essential_handle().spawn_blocking(
 		"beefy-gadget",
-		beefy_gadget::start_beefy_gadget::<_, beefy_primitives::ecdsa::AuthorityPair, _, _, _>(beefy_params),
+		beefy_gadget::start_beefy_gadget::<_, _, _, _>(beefy_params),
 	);
 
 	let grandpa_config = sc_finality_grandpa::Config {
@@ -281,7 +272,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		name: Some(name),
 		observer_enabled: false,
 		keystore,
-		is_authority: role.is_authority(),
+		local_role: role,
 		telemetry: telemetry.as_ref().map(|x| x.handle()),
 	};
 
