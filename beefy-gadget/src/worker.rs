@@ -165,12 +165,16 @@ where
 	///
 	/// Such a failure is usually an indication that the BEEFT pallet has not been deployed (yet).
 	fn validator_set(&self, header: &B::Header) -> Option<ValidatorSet<Public>> {
-		if let Some(new) = find_authorities_change::<B, Public>(header) {
+		let new = if let Some(new) = find_authorities_change::<B, Public>(header) {
 			Some(new)
 		} else {
 			let at = BlockId::hash(header.hash());
 			self.client.runtime_api().validator_set(&at).ok()
-		}
+		};
+
+		trace!(target: "beefy", "🥩 active validator set: {:?}", new);
+
+		new
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {
