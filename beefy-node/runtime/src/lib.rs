@@ -12,7 +12,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use beefy_primitives::{ecdsa::AuthorityId as BeefyId, ValidatorSet};
+use beefy_primitives::{crypto::AuthorityId as BeefyId, ValidatorSet};
 use frame_system::limits;
 use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use sp_api::impl_runtime_apis;
@@ -457,7 +457,7 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl beefy_primitives::BeefyApi<Block, BeefyId> for Runtime {
+	impl beefy_primitives::BeefyApi<Block> for Runtime {
 		fn validator_set() -> ValidatorSet<BeefyId> {
 			Beefy::validator_set()
 		}
