@@ -214,6 +214,7 @@ where
 
 		if self.should_vote_on(*notification.header.number()) {
 			let authority_id = if let Some(id) = self.key_store.authority_id(self.rounds.validators().as_slice()) {
+				trace!(target: "beefy", "🥩 Local authority id: {:?}", id);
 				id
 			} else {
 				trace!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
