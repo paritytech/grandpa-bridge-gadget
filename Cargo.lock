@@ -442,13 +442,13 @@ dependencies = [
  "beefy-primitives",
  "env_logger 0.8.4",
  "hex",
+ "hex-literal",
  "libsecp256k1 0.5.0",
  "log",
  "parity-scale-codec",
  "sp-core",
  "sp-trie",
  "structopt",
- "trie-db",
 ]
 
 [[package]]
