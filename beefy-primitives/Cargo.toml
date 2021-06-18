@@ -9,16 +9,16 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 codec = { version = "2.0.0", package = "parity-scale-codec", default-features = false, features = ["derive"] }
 scale-info = { git = "https://github.com/paritytech/scale-info", branch = "aj-substrate", default-features = false, features = ["derive"] }
 
-sp-api = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-application-crypto = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
+sp-api = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "aj-metadata-vnext" }
+sp-application-crypto = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "aj-metadata-vnext" }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "aj-metadata-vnext" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "aj-metadata-vnext" }
+sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "aj-metadata-vnext" }
 
 [dev-dependencies]
 hex-literal = "0.3"
 
-sp-keystore = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-keystore = { git = "https://github.com/paritytech/substrate", branch = "aj-metadata-vnext" }
 
 [features]
 default = ["std"]
