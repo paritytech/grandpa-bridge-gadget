@@ -449,7 +449,6 @@ dependencies = [
  "sp-core",
  "sp-trie",
  "structopt",
- "trie-db",
 ]
 
 [[package]]
