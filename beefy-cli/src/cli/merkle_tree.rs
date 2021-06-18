@@ -110,7 +110,7 @@ impl ParaMerkleTree {
 	}
 }
 
-use sp_trie::TrieConfiguration;
+use sp_trie::{TrieConfiguration, TrieMut};
 
 type Proof = Vec<Vec<u8>>;
 type Layout = sp_trie::Layout<sp_core::KeccakHasher>;
@@ -124,11 +124,15 @@ fn generate_merkle_proof<T: Encode>(items: impl Iterator<Item = T>, leaf_index: 
 	let leaf = ordered_items
 		.get(leaf_index)
 		.cloned()
-		.ok_or_else(|| anyhow::format_err!("Leaf index out of boudns: {} vs {}", leaf_index, ordered_items.len(),))?;
+		.ok_or_else(|| anyhow::format_err!("Leaf index out of bounds: {} vs {}", leaf_index, ordered_items.len(),))?;
 	let mut db = sp_trie::MemoryDB::<sp_core::KeccakHasher>::default();
-	let mut cb = trie_db::TrieBuilder::new(&mut db);
-	trie_db::trie_visit::<Layout, _, _, _, _>(ordered_items.into_iter(), &mut cb);
-	let root = cb.root.unwrap_or_default();
+	let mut root = sp_trie::empty_trie_root::<Layout>();
+	{
+		let mut trie = sp_trie::TrieDBMut::<Layout>::new(&mut db, &mut root);
+		for (k, v) in ordered_items {
+			trie.insert(&k, &v).unwrap();
+		}
+	}
 	let proof: Proof = sp_trie::generate_trie_proof::<Layout, _, _, _>(&db, root, vec![&leaf.0])?;
 
 	println!();
@@ -144,6 +148,8 @@ fn generate_merkle_proof<T: Encode>(items: impl Iterator<Item = T>, leaf_index: 
 fn verify_merkle_proof(root: H256, proof: Vec<u8>, leaf_index: usize, leaf_value: Vec<u8>) -> anyhow::Result<()> {
 	let proof: Proof = Decode::decode(&mut &*proof)?;
 	let items = vec![(Layout::encode_index(leaf_index as u32), Some(leaf_value))];
+
+	println!("Proof: {:?}", proof.iter().map(|x| hex::encode(x)).collect::<Vec<_>>());
 
 	sp_trie::verify_trie_proof::<Layout, _, _, _>(&root, &*proof, items.iter())?;
 
