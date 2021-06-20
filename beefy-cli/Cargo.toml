@@ -15,6 +15,6 @@ log = "0.4"
 parity-scale-codec = "2.1"
 structopt = "0.3.21"
 
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.5" }
-sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.5" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.6" }
+sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.6" }
 trie-db = "0.22"
