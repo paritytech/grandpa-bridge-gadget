@@ -35,7 +35,7 @@ use beefy_primitives::{
 use crate::keystore::BeefyKeystore;
 
 // Limit BEEFY gossip by keeping only a bound number of voting rounds alive.
-const MAX_LIVE_GOSSIP_ROUNDS: usize = 3;
+const MAX_LIVE_GOSSIP_ROUNDS: usize = 5;
 
 /// Gossip engine messages topic
 pub(crate) fn topic<B: Block>() -> B::Hash
@@ -72,6 +72,9 @@ where
 		}
 	}
 
+	/// Note a live voting round
+	///
+	/// This should be called, if we cast a vote for `round`.
 	pub(crate) fn note_round(&self, round: NumberFor<B>) {
 		trace!(target: "beefy", "🥩 About to note round #{}", round);
 
@@ -88,12 +91,21 @@ where
 		}
 	}
 
+	/// Scratch a live voting round.
+	///
+	/// This should be called after `round` has been concluded.
+	pub(crate) fn scratch_round(&self, round: NumberFor<B>) {
+		trace!(target: "beefy", "🥩 About to scratch round #{}", round);
+
+		let mut live_rounds = self.live_rounds.write();
+
+		if let Ok(idx) = live_rounds.binary_search(&round) {
+			live_rounds.remove(idx);
+		}
+	}
+
 	fn is_live(live_rounds: &[NumberFor<B>], round: NumberFor<B>) -> bool {
-		let live = live_rounds.binary_search(&round).is_ok();
-
-		trace!(target: "beefy", "🥩 Round #{} is live: {}", round, live);
-
-		live
+		live_rounds.binary_search(&round).is_ok()
 	}
 }
 
@@ -122,12 +134,16 @@ where
 	fn message_expired<'a>(&'a self) -> Box<dyn FnMut(B::Hash, &[u8]) -> bool + 'a> {
 		let live_rounds = self.live_rounds.read();
 		Box::new(move |_topic, mut data| {
-			let message = match VoteMessage::<MmrRootHash, NumberFor<B>, Public, Signature>::decode(&mut data) {
+			let msg = match VoteMessage::<MmrRootHash, NumberFor<B>, Public, Signature>::decode(&mut data) {
 				Ok(vote) => vote,
 				Err(_) => return true,
 			};
 
-			!BeefyGossipValidator::<B>::is_live(&live_rounds, message.commitment.block_number)
+			let expired = !BeefyGossipValidator::<B>::is_live(&live_rounds, msg.commitment.block_number);
+
+			trace!(target: "beefy", "🥩 Message for round #{} expired: {}", msg.commitment.block_number, expired);
+
+			expired
 		})
 	}
 
@@ -135,12 +151,16 @@ where
 	fn message_allowed<'a>(&'a self) -> Box<dyn FnMut(&PeerId, MessageIntent, &B::Hash, &[u8]) -> bool + 'a> {
 		let live_rounds = self.live_rounds.read();
 		Box::new(move |_who, _intent, _topic, mut data| {
-			let message = match VoteMessage::<MmrRootHash, NumberFor<B>, Public, Signature>::decode(&mut data) {
+			let msg = match VoteMessage::<MmrRootHash, NumberFor<B>, Public, Signature>::decode(&mut data) {
 				Ok(vote) => vote,
 				Err(_) => return true,
 			};
 
-			BeefyGossipValidator::<B>::is_live(&live_rounds, message.commitment.block_number)
+			let allowed = BeefyGossipValidator::<B>::is_live(&live_rounds, msg.commitment.block_number);
+
+			trace!(target: "beefy", "🥩 Message for round #{} allowed: {}", msg.commitment.block_number, allowed);
+
+			allowed
 		})
 	}
 }

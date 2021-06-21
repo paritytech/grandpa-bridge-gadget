@@ -109,10 +109,38 @@ In case your BEEFY keys are using the wrong cryptographic scheme, you will see a
 
 ## Running BEEFY
 
-Currently the easiest way to see BEEFY in action is to run a single dev node like so:
+Currently the easiest way to run BEEFY is to use a 3-node local testnet using `beefy-node`. We will call those nodes `Alice`, `Bob` and
+`Charlie`. Each node will use the built-in development account with the same name, i.e. node `Alice` will use the `Alice` development
+account and so on. Each of the three accounts has been configured as an initial authority at genesis. So, we are using three validators
+for our testnet.
+
+`Alice` is our bootnode is is started like so:
 
 ```
-$ RUST_LOG=beefy=trace ./target/debug/beefy-node --tmp --dev --alice --validator
+$ RUST_LOG=beefy=trace ./target/debug/beefy-node --tmp --alice -d /tmp/alice
 ```
 
-Expect additional (more useful) deployment options to be added soon.
+`Bob` is started like so:
+
+```
+RUST_LOG=beefy=trace ./target/debug/beefy-node --tmp --bob --port 30334 --bootnodes '/ip4/127.0.0.1/tcp/30333/p2p/ALICE_BOOTNODE_ID_HERE'
+```
+
+`Charlie` is started like so:
+
+```
+RUST_LOG=beefy=trace ./target/debug/beefy-node --tmp --charlie --port 30334 --bootnodes '/ip4/127.0.0.1/tcp/30333/p2p/ALICE_BOOTNODE_ID_HERE'
+```
+
+Note that `Alice` is using a persistent DB located under `/tmp/alice`. Instead, `Bob` and `Charlie` are using an ephemeral DB, as indicated by the `--tmp` CLI option. The reason for this is the `ALICE_BOOTNODE_ID_HERE` placeholder.
+
+Once we start our `Alice` bootnode, a so called `local node id` will be generated. This local node id is derived from the public key of the `Alice` account. This local node id has to be used instead of the `ALICE_BOOTNODE_ID_HERE` placeholder with the `Bob` and `Charlie` nodes.
+Since `Alice` is using a persistent DB, once we restart `Alice`, the **same** local node id will be used, basically the one that was persisted
+to the DB. This allows us to stop and restart our development testnet without having to copy and paste the local node id again at each restart
+of `Alice`.
+
+The log entry for the `Alice` local node id will look something like:
+
+```
+2021-06-21 09:03:37.257  INFO main sub-libp2p: 🏷 Local node identity is: 12D3KooWRyuPfN5r81CZvjvLutM4v2NsaYwwXcnkXY8exsUhFs5i
+```
