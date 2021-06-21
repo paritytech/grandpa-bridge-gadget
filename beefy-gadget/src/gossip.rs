@@ -35,7 +35,7 @@ use beefy_primitives::{
 use crate::keystore::BeefyKeystore;
 
 // Limit BEEFY gossip by keeping only a bound number of voting rounds alive.
-const MAX_LIVE_GOSSIP_ROUNDS: usize = 5;
+const MAX_LIVE_GOSSIP_ROUNDS: usize = 3;
 
 /// Gossip engine messages topic
 pub(crate) fn topic<B: Block>() -> B::Hash
