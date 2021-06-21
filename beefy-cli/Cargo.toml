@@ -17,4 +17,7 @@ structopt = "0.3.21"
 
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-trie = { git = "https://github.com/paritytech/substrate", branch = "master" }
-trie-db = "0.22"
+
+[dev-dependencies]
+hex-literal = "0.3"
+

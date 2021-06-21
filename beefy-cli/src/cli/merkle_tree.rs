@@ -56,7 +56,7 @@ impl BeefyMerkleTree {
 			} => {
 				let uncompressed = uncompress_beefy_ids(authorities.0)?;
 				let uncompressed_raw = uncompressed.into_iter().map(|k| k.serialize());
-				generate_merkle_proof(uncompressed_raw, leaf_index)
+				print_generated_merkle_proof(uncompressed_raw, leaf_index)
 			}
 			Self::VerifyProof {
 				root,
@@ -98,7 +98,7 @@ impl ParaMerkleTree {
 		match self {
 			Self::GenerateProof { heads, leaf_index } => {
 				let raw_heads = heads.into_iter().map(|x| x.0);
-				generate_merkle_proof(raw_heads, leaf_index)
+				print_generated_merkle_proof(raw_heads, leaf_index)
 			}
 			Self::VerifyProof {
 				root,
@@ -110,12 +110,16 @@ impl ParaMerkleTree {
 	}
 }
 
-use sp_trie::TrieConfiguration;
+use sp_trie::{TrieConfiguration, TrieMut};
 
 type Proof = Vec<Vec<u8>>;
 type Layout = sp_trie::Layout<sp_core::KeccakHasher>;
+type Leaf = (Vec<u8>, Vec<u8>);
 
-fn generate_merkle_proof<T: Encode>(items: impl Iterator<Item = T>, leaf_index: usize) -> anyhow::Result<()> {
+fn generate_merkle_proof<T: Encode>(
+	items: impl Iterator<Item = T>,
+	leaf_index: usize,
+) -> anyhow::Result<(H256, Proof, Leaf)> {
 	let ordered_items = items
 		.map(|x| Encode::encode(&x))
 		.enumerate()
@@ -124,13 +128,22 @@ fn generate_merkle_proof<T: Encode>(items: impl Iterator<Item = T>, leaf_index: 
 	let leaf = ordered_items
 		.get(leaf_index)
 		.cloned()
-		.ok_or_else(|| anyhow::format_err!("Leaf index out of boudns: {} vs {}", leaf_index, ordered_items.len(),))?;
+		.ok_or_else(|| anyhow::format_err!("Leaf index out of bounds: {} vs {}", leaf_index, ordered_items.len(),))?;
 	let mut db = sp_trie::MemoryDB::<sp_core::KeccakHasher>::default();
-	let mut cb = trie_db::TrieBuilder::new(&mut db);
-	trie_db::trie_visit::<Layout, _, _, _, _>(ordered_items.into_iter(), &mut cb);
-	let root = cb.root.unwrap_or_default();
+	let mut root = sp_trie::empty_trie_root::<Layout>();
+	{
+		let mut trie = sp_trie::TrieDBMut::<Layout>::new(&mut db, &mut root);
+		for (k, v) in ordered_items {
+			trie.insert(&k, &v).unwrap();
+		}
+	}
 	let proof: Proof = sp_trie::generate_trie_proof::<Layout, _, _, _>(&db, root, vec![&leaf.0])?;
 
+	Ok((root, proof, leaf))
+}
+
+fn print_generated_merkle_proof<T: Encode>(items: impl Iterator<Item = T>, leaf_index: usize) -> anyhow::Result<()> {
+	let (root, proof, leaf) = generate_merkle_proof(items, leaf_index)?;
 	println!();
 	println!("Root: {:?}", root);
 	println!("SCALE-encoded proof: 0x{}", hex::encode(proof.encode()));
@@ -150,4 +163,30 @@ fn verify_merkle_proof(root: H256, proof: Vec<u8>, leaf_index: usize, leaf_value
 	println!("\nProof is correct.\n");
 
 	Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use hex_literal::hex;
+	use sp_core::crypto::UncheckedInto;
+
+	#[test]
+	fn generate_proof_should_be_verified_correctly() {
+		// given
+		let authorities = Authorities(vec![
+			hex!("039346ec0021405ec103c2baac8feff9d6fb75851318fb03781edf29f05f2ffeb7").unchecked_into(),
+			hex!("03fe6b333420b90689158643ccad94e62d707de1a80726d53aa04657fec14afd3e").unchecked_into(),
+			hex!("03fe6b333420b90689158643ccad94e62d707de1a80726d53aa04657fec14afd3e").unchecked_into(),
+		]);
+		let uncompressed = uncompress_beefy_ids(authorities.0).unwrap();
+		let items = uncompressed.into_iter().map(|k| k.serialize());
+		let leaf_index = 0;
+
+		// when
+		let (root, proof, leaf) = generate_merkle_proof(items, leaf_index).unwrap();
+
+		// then
+		verify_merkle_proof(root, proof.encode(), leaf_index, leaf.1).unwrap();
+	}
 }
