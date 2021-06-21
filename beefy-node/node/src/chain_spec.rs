@@ -56,7 +56,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 				// Initial PoA authorities
 				vec![
 					authority_keys_from_seed("Alice"),
-					authority_keys_from_seed("Boc"),
+					authority_keys_from_seed("Bob"),
 					authority_keys_from_seed("Charlie"),
 				],
 				// Sudo account
