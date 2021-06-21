@@ -287,8 +287,6 @@ where
 
 				info!(target: "beefy", "🥩 Round #{} concluded, committed: {:?}.", round.1, signed_commitment);
 
-				self.gossip_validator.scratch_round(round.1);
-
 				if self
 					.backend
 					.append_justification(

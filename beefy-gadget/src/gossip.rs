@@ -91,19 +91,6 @@ where
 		}
 	}
 
-	/// Scratch a live voting round.
-	///
-	/// This should be called after `round` has been concluded.
-	pub(crate) fn scratch_round(&self, round: NumberFor<B>) {
-		trace!(target: "beefy", "🥩 About to scratch round #{}", round);
-
-		let mut live_rounds = self.live_rounds.write();
-
-		if let Ok(idx) = live_rounds.binary_search(&round) {
-			live_rounds.remove(idx);
-		}
-	}
-
 	fn is_live(live_rounds: &[NumberFor<B>], round: NumberFor<B>) -> bool {
 		live_rounds.binary_search(&round).is_ok()
 	}
