@@ -68,19 +68,29 @@ where
 		}
 	}
 
+	/// Note a voting round.
+	///
+	/// Noting `round` will keep `round` live.
+	///
+	/// We retain the [`MAX_LIVE_GOSSIP_ROUNDS`] most **recent** voting rounds as live.
+	/// As long as a voting round is live, it will be gossiped to peer nodes.
 	pub(crate) fn note_round(&self, round: NumberFor<B>) {
 		trace!(target: "beefy", "🥩 About to note round #{}", round);
 
-		let mut live_rounds = self.live_rounds.write();
+		let mut live = self.live_rounds.write();
 
-		// NOTE: ideally we'd use a VecDeque here, but currently binary search is only available on
-		// nightly for `VecDeque`.
-		while live_rounds.len() > MAX_LIVE_GOSSIP_ROUNDS {
-			let _ = live_rounds.remove(0);
+		// we want to keep `MAX_LIVE_GOSSIP_ROUNDS` most recent rounds.
+		if (live.len() == MAX_LIVE_GOSSIP_ROUNDS) && (live[0] > round) {
+			return;
 		}
 
-		if let Some(idx) = live_rounds.binary_search(&round).err() {
-			live_rounds.insert(idx, round);
+		// we want to keep `MAX_LIVE_GOSSIP_ROUNDS` *after* noting `round`
+		while live.len() > (MAX_LIVE_GOSSIP_ROUNDS - 1) {
+			let _ = live.remove(0);
+		}
+
+		if let Some(idx) = live.binary_search(&round).err() {
+			live.insert(idx, round);
 		}
 	}
 
@@ -100,7 +110,7 @@ where
 	fn validate(
 		&self,
 		_context: &mut dyn ValidatorContext<B>,
-		sender: &sc_network::PeerId,
+		sender: &PeerId,
 		mut data: &[u8],
 	) -> ValidationResult<B::Hash> {
 		if let Ok(msg) = VoteMessage::<MmrRootHash, NumberFor<B>, Public, Signature>::decode(&mut data) {
@@ -138,5 +148,68 @@ where
 
 			GossipValidator::<B>::is_live(&live_rounds, message.commitment.block_number)
 		})
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::GossipValidator;
+	use sc_network_test::Block;
+
+	#[test]
+	fn note_round_works() {
+		let gv = GossipValidator::<Block>::new();
+
+		gv.note_round(1u64);
+
+		let live = gv.live_rounds.read();
+		assert!(GossipValidator::<Block>::is_live(&live, 1u64));
+
+		drop(live);
+
+		gv.note_round(3u64);
+		gv.note_round(7u64);
+		gv.note_round(10u64);
+
+		let live = gv.live_rounds.read();
+
+		assert_eq!(live.len(), 3);
+
+		assert!(!GossipValidator::<Block>::is_live(&live, 1u64));
+		assert!(GossipValidator::<Block>::is_live(&live, 3u64));
+		assert!(GossipValidator::<Block>::is_live(&live, 7u64));
+		assert!(GossipValidator::<Block>::is_live(&live, 10u64));
+	}
+
+	#[test]
+	fn keeps_most_recent_max_rounds() {
+		let gv = GossipValidator::<Block>::new();
+
+		gv.note_round(3u64);
+		gv.note_round(7u64);
+		gv.note_round(10u64);
+		gv.note_round(1u64);
+
+		let live = gv.live_rounds.read();
+
+		assert_eq!(live.len(), 3);
+
+		assert!(GossipValidator::<Block>::is_live(&live, 3u64));
+		assert!(!GossipValidator::<Block>::is_live(&live, 1u64));
+
+		drop(live);
+
+		gv.note_round(23u64);
+		gv.note_round(15u64);
+		gv.note_round(20u64);
+		gv.note_round(2u64);
+
+		let live = gv.live_rounds.read();
+
+		assert_eq!(live.len(), 3);
+
+		assert!(GossipValidator::<Block>::is_live(&live, 15u64));
+		assert!(GossipValidator::<Block>::is_live(&live, 20u64));
+		assert!(GossipValidator::<Block>::is_live(&live, 23u64));
 	}
 }
