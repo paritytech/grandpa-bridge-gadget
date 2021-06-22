@@ -117,30 +117,20 @@ for our testnet.
 `Alice` is our bootnode is is started like so:
 
 ```
-$ RUST_LOG=beefy=trace ./target/debug/beefy-node --alice -d /tmp/alice
+$ RUST_LOG=beefy=trace ./target/debug/beefy-node --tmp --alice
 ```
 
 `Bob` is started like so:
 
 ```
-RUST_LOG=beefy=trace ./target/debug/beefy-node --bob --port 30334 -d/ tmp/bob --bootnodes '/ip4/127.0.0.1/tcp/30333/p2p/ALICE_BOOTNODE_ID_HERE'
+RUST_LOG=beefy=trace ./target/debug/beefy-node --tmp --bob
 ```
 
 `Charlie` is started like so:
 
 ```
-RUST_LOG=beefy=trace ./target/debug/beefy-node --charlie --port 30334 -d /tmp/charlie --bootnodes '/ip4/127.0.0.1/tcp/30333/p2p/ALICE_BOOTNODE_ID_HERE'
+RUST_LOG=beefy=trace ./target/debug/beefy-node --tmp --charlie
 ```
 
-Note that all nodes are using a persistent DB located under `/tmp/xxx`. For `Bob` and `Charlie` this is not strictly necessary, however. The reason for this is the `ALICE_BOOTNODE_ID_HERE` placeholder.
-
-Once we start our `Alice` bootnode, a so called `local node id` will be generated. This local node id is derived from the public key of the `Alice` account. This local node id has to be used instead of the `ALICE_BOOTNODE_ID_HERE` placeholder with the `Bob` and `Charlie` nodes.
-Since `Alice` is using a persistent DB, once we restart `Alice`, the **same** local node id will be used, basically the one that was persisted
-to the DB. This allows us to stop and restart our development testnet without having to copy and paste the local node id again at each restart
-of `Alice`.
-
-The log entry for the `Alice` local node id will look something like:
-
-```
-2021-06-21 09:03:37.257  INFO main sub-libp2p: 🏷 Local node identity is: 12D3KooWRyuPfN5r81CZvjvLutM4v2NsaYwwXcnkXY8exsUhFs5i
-```
+Note that the examples above use an ephemeral DB due to the `--tmp` CLI option. If you want a persistent DB, use `--/tmp/[node-name]`
+instead. Replace `node-name` with the actual node name (e.g. `alice`) in order to assure separate dirctories for the DB.

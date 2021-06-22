@@ -74,7 +74,7 @@ where
 
 	/// Note a live voting round
 	///
-	/// This should be called, if we cast a vote for `round`.
+	/// This should be called, in order to keep tabs on `round`.
 	pub(crate) fn note_round(&self, round: NumberFor<B>) {
 		trace!(target: "beefy", "🥩 About to note round #{}", round);
 
