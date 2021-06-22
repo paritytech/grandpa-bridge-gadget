@@ -14,16 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-/// The maximum number of live gossip rounds allowed, i.e. we will expire messages older than this.
 use codec::{Decode, Encode};
 use log::{debug, trace};
 use parking_lot::RwLock;
 
 use sc_network::PeerId;
-use sc_network_gossip::{
-	MessageIntent, ValidationResult as GossipValidationResult, Validator as GossipValidator,
-	ValidatorContext as GossipValidatorContext,
-};
+use sc_network_gossip::{MessageIntent, ValidationResult, Validator, ValidatorContext};
 
 use sp_runtime::traits::{Block, Hash, Header, NumberFor};
 
@@ -53,7 +49,7 @@ where
 /// rejected/expired.
 ///
 ///All messaging is handled in a single BEEFY global topic.
-pub(crate) struct BeefyGossipValidator<B>
+pub(crate) struct GossipValidator<B>
 where
 	B: Block,
 {
@@ -61,12 +57,12 @@ where
 	live_rounds: RwLock<Vec<NumberFor<B>>>,
 }
 
-impl<B> BeefyGossipValidator<B>
+impl<B> GossipValidator<B>
 where
 	B: Block,
 {
-	pub fn new() -> BeefyGossipValidator<B> {
-		BeefyGossipValidator {
+	pub fn new() -> GossipValidator<B> {
+		GossipValidator {
 			topic: topic::<B>(),
 			live_rounds: RwLock::new(Vec::new()),
 		}
@@ -97,26 +93,26 @@ where
 	}
 }
 
-impl<B> GossipValidator<B> for BeefyGossipValidator<B>
+impl<B> Validator<B> for GossipValidator<B>
 where
 	B: Block,
 {
 	fn validate(
 		&self,
-		_context: &mut dyn GossipValidatorContext<B>,
+		_context: &mut dyn ValidatorContext<B>,
 		sender: &sc_network::PeerId,
 		mut data: &[u8],
-	) -> GossipValidationResult<B::Hash> {
+	) -> ValidationResult<B::Hash> {
 		if let Ok(msg) = VoteMessage::<MmrRootHash, NumberFor<B>, Public, Signature>::decode(&mut data) {
 			if BeefyKeystore::verify(&msg.id, &msg.signature, &msg.commitment.encode()) {
-				return GossipValidationResult::ProcessAndKeep(self.topic);
+				return ValidationResult::ProcessAndKeep(self.topic);
 			} else {
 				// TODO: report peer
 				debug!(target: "beefy", "🥩 Bad signature on message: {:?}, from: {:?}", msg, sender);
 			}
 		}
 
-		GossipValidationResult::Discard
+		ValidationResult::Discard
 	}
 
 	fn message_expired<'a>(&'a self) -> Box<dyn FnMut(B::Hash, &[u8]) -> bool + 'a> {
@@ -127,7 +123,7 @@ where
 				Err(_) => return true,
 			};
 
-			!BeefyGossipValidator::<B>::is_live(&live_rounds, message.commitment.block_number)
+			!GossipValidator::<B>::is_live(&live_rounds, message.commitment.block_number)
 		})
 	}
 
@@ -140,7 +136,7 @@ where
 				Err(_) => return true,
 			};
 
-			BeefyGossipValidator::<B>::is_live(&live_rounds, message.commitment.block_number)
+			GossipValidator::<B>::is_live(&live_rounds, message.commitment.block_number)
 		})
 	}
 }
