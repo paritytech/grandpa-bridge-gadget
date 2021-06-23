@@ -149,7 +149,7 @@ where
 
 #[cfg(test)]
 mod tests {
-	use super::GossipValidator;
+	use super::{GossipValidator, MAX_LIVE_GOSSIP_ROUNDS};
 	use sc_network_test::Block;
 
 	#[test]
@@ -169,7 +169,7 @@ mod tests {
 
 		let live = gv.live_rounds.read();
 
-		assert_eq!(live.len(), 3);
+		assert_eq!(live.len(), MAX_LIVE_GOSSIP_ROUNDS);
 
 		assert!(!GossipValidator::<Block>::is_live(&live, 1u64));
 		assert!(GossipValidator::<Block>::is_live(&live, 3u64));
@@ -188,7 +188,7 @@ mod tests {
 
 		let live = gv.live_rounds.read();
 
-		assert_eq!(live.len(), 3);
+		assert_eq!(live.len(), MAX_LIVE_GOSSIP_ROUNDS);
 
 		assert!(GossipValidator::<Block>::is_live(&live, 3u64));
 		assert!(!GossipValidator::<Block>::is_live(&live, 1u64));
@@ -202,7 +202,7 @@ mod tests {
 
 		let live = gv.live_rounds.read();
 
-		assert_eq!(live.len(), 3);
+		assert_eq!(live.len(), MAX_LIVE_GOSSIP_ROUNDS);
 
 		assert!(GossipValidator::<Block>::is_live(&live, 15u64));
 		assert!(GossipValidator::<Block>::is_live(&live, 20u64));
