@@ -129,7 +129,11 @@ where
 				Err(_) => return true,
 			};
 
-			!GossipValidator::<B>::is_live(&live_rounds, msg.commitment.block_number)
+			let expired = !GossipValidator::<B>::is_live(&live_rounds, msg.commitment.block_number);
+
+			trace!(target: "beefy", "🥩 Message for round #{} expired: {}", msg.commitment.block_number, expired);
+
+			expired
 		})
 	}
 
@@ -142,7 +146,11 @@ where
 				Err(_) => return true,
 			};
 
-			GossipValidator::<B>::is_live(&live_rounds, msg.commitment.block_number)
+			let allowed = GossipValidator::<B>::is_live(&live_rounds, msg.commitment.block_number);
+
+			trace!(target: "beefy", "🥩 Message for round #{} allowed: {}", msg.commitment.block_number, allowed);
+
+			allowed
 		})
 	}
 }
