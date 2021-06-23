@@ -216,4 +216,30 @@ mod tests {
 		assert!(GossipValidator::<Block>::is_live(&live, 20u64));
 		assert!(GossipValidator::<Block>::is_live(&live, 23u64));
 	}
+
+	#[test]
+	fn note_same_round_twice() {
+		let gv = GossipValidator::<Block>::new();
+
+		gv.note_round(3u64);
+		gv.note_round(7u64);
+		gv.note_round(10u64);
+
+		let live = gv.live_rounds.read();
+
+		assert_eq!(live.len(), MAX_LIVE_GOSSIP_ROUNDS);
+
+		drop(live);
+
+		// note round #7 again -> will remove #3
+		gv.note_round(7u64);
+
+		let live = gv.live_rounds.read();
+
+		assert_eq!(live.len(), MAX_LIVE_GOSSIP_ROUNDS - 1);
+
+		assert!(!GossipValidator::<Block>::is_live(&live, 3u64));
+		assert!(GossipValidator::<Block>::is_live(&live, 7u64));
+		assert!(GossipValidator::<Block>::is_live(&live, 10u64));
+	}
 }
