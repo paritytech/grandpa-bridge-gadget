@@ -95,11 +95,7 @@ where
 	}
 
 	fn is_live(live_rounds: &[NumberFor<B>], round: NumberFor<B>) -> bool {
-		let live = live_rounds.binary_search(&round).is_ok();
-
-		trace!(target: "beefy", "🥩 Round #{} is live: {}", round, live);
-
-		live
+		live_rounds.binary_search(&round).is_ok()
 	}
 }
 
@@ -128,12 +124,12 @@ where
 	fn message_expired<'a>(&'a self) -> Box<dyn FnMut(B::Hash, &[u8]) -> bool + 'a> {
 		let live_rounds = self.live_rounds.read();
 		Box::new(move |_topic, mut data| {
-			let message = match VoteMessage::<MmrRootHash, NumberFor<B>, Public, Signature>::decode(&mut data) {
+			let msg = match VoteMessage::<MmrRootHash, NumberFor<B>, Public, Signature>::decode(&mut data) {
 				Ok(vote) => vote,
 				Err(_) => return true,
 			};
 
-			!GossipValidator::<B>::is_live(&live_rounds, message.commitment.block_number)
+			!GossipValidator::<B>::is_live(&live_rounds, msg.commitment.block_number)
 		})
 	}
 
@@ -141,12 +137,12 @@ where
 	fn message_allowed<'a>(&'a self) -> Box<dyn FnMut(&PeerId, MessageIntent, &B::Hash, &[u8]) -> bool + 'a> {
 		let live_rounds = self.live_rounds.read();
 		Box::new(move |_who, _intent, _topic, mut data| {
-			let message = match VoteMessage::<MmrRootHash, NumberFor<B>, Public, Signature>::decode(&mut data) {
+			let msg = match VoteMessage::<MmrRootHash, NumberFor<B>, Public, Signature>::decode(&mut data) {
 				Ok(vote) => vote,
 				Err(_) => return true,
 			};
 
-			GossipValidator::<B>::is_live(&live_rounds, message.commitment.block_number)
+			GossipValidator::<B>::is_live(&live_rounds, msg.commitment.block_number)
 		})
 	}
 }
