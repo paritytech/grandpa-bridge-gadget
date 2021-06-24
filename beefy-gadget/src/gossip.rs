@@ -84,13 +84,12 @@ where
 			return;
 		}
 
-		// we want to keep `MAX_LIVE_GOSSIP_ROUNDS` *after* noting `round`
-		while live.len() > (MAX_LIVE_GOSSIP_ROUNDS - 1) {
-			let _ = live.remove(0);
-		}
-
 		if let Some(idx) = live.binary_search(&round).err() {
 			live.insert(idx, round);
+		}
+
+		if live.len() > MAX_LIVE_GOSSIP_ROUNDS {
+			let _ = live.remove(0);
 		}
 	}
 
@@ -231,14 +230,14 @@ mod tests {
 
 		drop(live);
 
-		// note round #7 again -> will remove #3
+		// note round #7 again -> should not change anything
 		gv.note_round(7u64);
 
 		let live = gv.live_rounds.read();
 
-		assert_eq!(live.len(), MAX_LIVE_GOSSIP_ROUNDS - 1);
+		assert_eq!(live.len(), MAX_LIVE_GOSSIP_ROUNDS);
 
-		assert!(!GossipValidator::<Block>::is_live(&live, 3u64));
+		assert!(GossipValidator::<Block>::is_live(&live, 3u64));
 		assert!(GossipValidator::<Block>::is_live(&live, 7u64));
 		assert!(GossipValidator::<Block>::is_live(&live, 10u64));
 	}
