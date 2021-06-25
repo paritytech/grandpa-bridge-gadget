@@ -79,11 +79,6 @@ where
 
 		let mut live = self.live_rounds.write();
 
-		// we want to keep `MAX_LIVE_GOSSIP_ROUNDS` most recent rounds.
-		if (live.len() == MAX_LIVE_GOSSIP_ROUNDS) && (live[0] > round) {
-			return;
-		}
-
 		if let Some(idx) = live.binary_search(&round).err() {
 			live.insert(idx, round);
 		}
