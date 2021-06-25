@@ -584,6 +584,7 @@ dependencies = [
 name = "beefy-test"
 version = "0.1.0"
 dependencies = [
+ "beefy-primitives",
  "sp-core",
  "strum 0.21.0",
 ]
