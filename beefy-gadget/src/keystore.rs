@@ -11,7 +11,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use std::convert::TryInto;
+use std::convert::{From, TryInto};
 
 use sp_application_crypto::RuntimeAppPublic;
 use sp_core::keccak_256;
@@ -23,6 +23,19 @@ use beefy_primitives::{
 };
 
 use crate::error;
+
+// Keystore newtype helper
+//
+// Return wrapped keystore instance or an error in case there is no keystore.
+macro_rules! keystore {
+	($self:expr) => {
+		if let Some(store) = $self.0.clone() {
+			store
+		} else {
+			return Err(error::Error::Keystore("no Keystore".to_string()));
+		}
+	};
+}
 
 /// A BEEFY specific keystore implemented as a `Newtype`. This is basically a
 /// wrapper around [`sp_keystore::SyncCryptoStore`] and allows to customize
@@ -74,6 +87,19 @@ impl BeefyKeystore {
 			.map_err(|_| error::Error::Signature(format!("invalid signature {:?} for key {:?}", sig, public)))?;
 
 		Ok(sig)
+	}
+
+	/// Returns a vector of [`beefy_primitives::crypto::Public`] keys which are currently supported (i.e. found
+	/// in the keystore).
+	pub fn public_keys(&self) -> Result<Vec<Public>, error::Error> {
+		let store = keystore!(self);
+
+		let pk: Vec<Public> = SyncCryptoStore::ecdsa_public_keys(&*store, KEY_TYPE)
+			.iter()
+			.map(|k| Public::from(k.clone()))
+			.collect();
+
+		Ok(pk)
 	}
 
 	/// Use the `public` key to verify that `sig` is a valid signature for `message`.
@@ -202,5 +228,36 @@ mod tests {
 		// `msg and `sig` don't match
 		let msg = b"you are just involved";
 		assert!(!BeefyKeystore::verify(&pair.public(), &sig, msg));
+	}
+
+	#[test]
+	fn public_keys_works() {
+		const TEST_TYPE: sp_application_crypto::KeyTypeId = sp_application_crypto::KeyTypeId(*b"test");
+
+		let store: SyncCryptoStorePtr = KeyStore::new().into();
+
+		let alice = crypto::Pair::from_string("//Alice", None).unwrap();
+		let bob = crypto::Pair::from_string("//Bob", None).unwrap();
+		let dave = crypto::Pair::from_string("//Dave", None).unwrap();
+		let eve = crypto::Pair::from_string("//Eve", None).unwrap();
+
+		// test keys
+		let res = SyncCryptoStore::insert_unknown(&*store, TEST_TYPE, "//Alice", alice.public().as_ref()).unwrap();
+		assert_eq!((), res);
+		let res = SyncCryptoStore::insert_unknown(&*store, TEST_TYPE, "//Bob", bob.public().as_ref()).unwrap();
+		assert_eq!((), res);
+
+		// BEEFY keys
+		let res = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, "//Dave", dave.public().as_ref()).unwrap();
+		assert_eq!((), res);
+		let res = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, "//EVE", eve.public().as_ref()).unwrap();
+		assert_eq!((), res);
+
+		let store: BeefyKeystore = Some(store).into();
+
+		let keys = store.public_keys().ok().unwrap();
+
+		assert_eq!(keys[0], dave.public());
+		assert_eq!(keys[1], eve.public());
 	}
 }
