@@ -47,6 +47,31 @@ pub trait Hasher {
 	fn hash(data: &[u8]) -> Hash;
 }
 
+#[cfg(feature = "keccak")]
+mod keccak256 {
+	use tiny_keccak::{Hasher as _, Keccak};
+
+	/// Keccak256 hasher implementation.
+	pub struct Keccak256;
+	impl Keccak256 {
+		/// Hash given data.
+		pub fn hash(data: &[u8]) -> super::Hash {
+			<Keccak256 as super::Hasher>::hash(data)
+		}
+	}
+	impl super::Hasher for Keccak256 {
+		fn hash(data: &[u8]) -> super::Hash {
+			let mut keccak = Keccak::v256();
+			keccak.update(data);
+			let mut output = [0_u8; 32];
+			keccak.finalize(&mut output);
+			output
+		}
+	}
+}
+#[cfg(feature = "keccak")]
+pub use keccak256::Keccak256;
+
 /// Construct a root hash of a Binary Merkle Tree created from given leaves.
 ///
 /// See crate-level docs for details about Merkle Tree construction.
@@ -229,18 +254,6 @@ where
 mod tests {
 	use super::*;
 	use hex_literal::hex;
-	use tiny_keccak::{Hasher as _, Keccak};
-
-	struct Keccak256;
-	impl Hasher for Keccak256 {
-		fn hash(data: &[u8]) -> Hash {
-			let mut keccak = Keccak::v256();
-			keccak.update(data);
-			let mut output = [0_u8; 32];
-			keccak.finalize(&mut output);
-			output
-		}
-	}
 
 	#[test]
 	fn should_generate_empty_root() {

@@ -15,9 +15,10 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::cli::{
-	uncompress_authorities::uncompress_beefy_ids,
+	uncompress_authorities::{uncompress_beefy_ids, uncompressed_to_eth},
 	utils::{Authorities, Bytes},
 };
+use beefy_merkle_root::Keccak256;
 use parity_scale_codec::{Decode, Encode};
 use sp_core::H256;
 use structopt::StructOpt;
@@ -55,8 +56,8 @@ impl BeefyMerkleTree {
 				leaf_index,
 			} => {
 				let uncompressed = uncompress_beefy_ids(authorities.0)?;
-				let uncompressed_raw = uncompressed.into_iter().map(|k| k.serialize());
-				print_generated_merkle_proof(uncompressed_raw, leaf_index)
+				let eth_addresses = uncompressed_to_eth(uncompressed);
+				print_generated_merkle_proof(eth_addresses, leaf_index)
 			}
 			Self::VerifyProof {
 				root,
@@ -78,7 +79,7 @@ pub enum ParaMerkleTree {
 		/// Leaf index to generate the proof for.
 		leaf_index: usize,
 		/// A list of raw `HeadData`.
-		heads: Vec<Bytes>,
+		heads: Vec<Bytes>, // TODO [ToDr] Add ParaId
 	},
 	/// Verify a merkle proof given root hash and the proof content.
 	VerifyProof {
@@ -180,7 +181,7 @@ mod tests {
 			hex!("03fe6b333420b90689158643ccad94e62d707de1a80726d53aa04657fec14afd3e").unchecked_into(),
 		]);
 		let uncompressed = uncompress_beefy_ids(authorities.0).unwrap();
-		let items = uncompressed.into_iter().map(|k| k.serialize());
+		let items = uncompressed_to_eth(uncompressed);
 		let leaf_index = 0;
 
 		// when
