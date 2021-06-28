@@ -489,6 +489,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "beefy-merkle-root"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "hex-literal",
+ "tiny-keccak",
+]
+
+[[package]]
 name = "beefy-node"
 version = "2.0.0"
 dependencies = [
