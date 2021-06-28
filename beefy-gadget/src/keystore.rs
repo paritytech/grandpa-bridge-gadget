@@ -89,6 +89,7 @@ impl BeefyKeystore {
 		Ok(sig)
 	}
 
+	#[allow(dead_code)]
 	/// Returns a vector of [`beefy_primitives::crypto::Public`] keys which are currently supported (i.e. found
 	/// in the keystore).
 	pub fn public_keys(&self) -> Result<Vec<Public>, error::Error> {
@@ -122,77 +123,83 @@ impl From<Option<SyncCryptoStorePtr>> for BeefyKeystore {
 
 #[cfg(test)]
 mod tests {
-	#![allow(clippy::unit_cmp)]
+	use std::sync::Arc;
 
-	use sp_core::{keccak_256, Pair};
-	use sp_keystore::{testing::KeyStore, SyncCryptoStore, SyncCryptoStorePtr};
+	use sc_keystore::LocalKeystore;
+	use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
 
 	use beefy_primitives::{crypto, KEY_TYPE};
+	use beefy_test::Keyring;
 
 	use super::BeefyKeystore;
 	use crate::error::Error;
 
+	fn keystore() -> SyncCryptoStorePtr {
+		Arc::new(LocalKeystore::in_memory())
+	}
+
 	#[test]
 	fn authority_id_works() {
-		let store: SyncCryptoStorePtr = KeyStore::new().into();
+		let store = keystore();
 
-		let alice = crypto::Pair::from_string("//Alice", None).unwrap();
-		let _ = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, "//Alice", alice.public().as_ref()).unwrap();
+		let alice: crypto::Public =
+			SyncCryptoStore::ecdsa_generate_new(&*store, KEY_TYPE, Some(&Keyring::Alice.to_seed()))
+				.ok()
+				.unwrap()
+				.into();
 
-		let bob = crypto::Pair::from_string("//Bob", None).unwrap();
-		let charlie = crypto::Pair::from_string("//Charlie", None).unwrap();
+		let bob = Keyring::Bob.public();
+		let charlie = Keyring::Charlie.public();
 
 		let store: BeefyKeystore = Some(store).into();
 
-		let mut keys = vec![bob.public(), charlie.public()];
+		let mut keys = vec![bob, charlie];
 
 		let id = store.authority_id(keys.as_slice());
 		assert!(id.is_none());
 
-		keys.push(alice.public());
+		keys.push(alice.clone());
 
 		let id = store.authority_id(keys.as_slice()).unwrap();
-		assert_eq!(id, alice.public());
+		assert_eq!(id, alice);
 	}
 
 	#[test]
 	fn sign_works() {
-		let store: SyncCryptoStorePtr = KeyStore::new().into();
+		let store = keystore();
 
-		let suri = "//Alice";
-		let pair = sp_core::ecdsa::Pair::from_string(suri, None).unwrap();
-
-		let res = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, suri, pair.public().as_ref()).unwrap();
-		assert_eq!((), res);
-
-		let beefy_store: BeefyKeystore = Some(store.clone()).into();
-
-		let msg = b"are you involved or commited?";
-		let sig1 = beefy_store.sign(&pair.public().into(), msg).unwrap();
-
-		let msg = keccak_256(b"are you involved or commited?");
-		let sig2 = SyncCryptoStore::ecdsa_sign_prehashed(&*store, KEY_TYPE, &pair.public(), &msg)
-			.unwrap()
-			.unwrap();
-
-		assert_eq!(sig1, sig2.into());
-	}
-
-	#[test]
-	fn sign_error() {
-		let store: SyncCryptoStorePtr = KeyStore::new().into();
-
-		let bob = crypto::Pair::from_string("//Bob", None).unwrap();
-		let res = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, "//Bob", bob.public().as_ref()).unwrap();
-		assert_eq!((), res);
-
-		let alice = crypto::Pair::from_string("//Alice", None).unwrap();
+		let alice: crypto::Public =
+			SyncCryptoStore::ecdsa_generate_new(&*store, KEY_TYPE, Some(&Keyring::Alice.to_seed()))
+				.ok()
+				.unwrap()
+				.into();
 
 		let store: BeefyKeystore = Some(store).into();
 
 		let msg = b"are you involved or commited?";
-		let sig = store.sign(&alice.public(), msg).err().unwrap();
+
+		let sig1 = store.sign(&alice, msg).unwrap();
+		let sig2 = Keyring::Alice.sign(msg);
+
+		assert_eq!(sig1, sig2);
+	}
+
+	#[test]
+	fn sign_error() {
+		let store = keystore();
+
+		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, KEY_TYPE, Some(&Keyring::Bob.to_seed()))
+			.ok()
+			.unwrap();
+
+		let store: BeefyKeystore = Some(store).into();
+
+		let alice = Keyring::Alice.public();
+
+		let msg = b"are you involved or commited?";
+		let sig = store.sign(&alice, msg).err().unwrap();
 		let err = Error::Signature("ecdsa_sign_prehashed() failed".to_string());
+
 		assert_eq!(sig, err);
 	}
 
@@ -200,64 +207,87 @@ mod tests {
 	fn sign_no_keystore() {
 		let store: BeefyKeystore = None.into();
 
-		let alice = crypto::Pair::from_string("//Alice", None).unwrap();
+		let alice = Keyring::Alice.public();
 		let msg = b"are you involved or commited";
 
-		let sig = store.sign(&alice.public(), msg).err().unwrap();
+		let sig = store.sign(&alice, msg).err().unwrap();
 		let err = Error::Keystore("no Keystore".to_string());
 		assert_eq!(sig, err);
 	}
 
 	#[test]
 	fn verify_works() {
-		let store: SyncCryptoStorePtr = KeyStore::new().into();
+		let store = keystore();
 
-		let suri = "//Alice";
-		let pair = crypto::Pair::from_string(suri, None).unwrap();
-
-		let res = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, suri, pair.public().as_ref()).unwrap();
-		assert_eq!((), res);
+		let alice: crypto::Public =
+			SyncCryptoStore::ecdsa_generate_new(&*store, KEY_TYPE, Some(&Keyring::Alice.to_seed()))
+				.ok()
+				.unwrap()
+				.into();
 
 		let store: BeefyKeystore = Some(store).into();
 
 		// `msg` and `sig` match
 		let msg = b"are you involved or commited?";
-		let sig = store.sign(&pair.public(), msg).unwrap();
-		assert!(BeefyKeystore::verify(&pair.public(), &sig, msg));
+		let sig = store.sign(&alice, msg).unwrap();
+		assert!(BeefyKeystore::verify(&alice, &sig, msg));
 
 		// `msg and `sig` don't match
 		let msg = b"you are just involved";
-		assert!(!BeefyKeystore::verify(&pair.public(), &sig, msg));
+		assert!(!BeefyKeystore::verify(&alice, &sig, msg));
 	}
 
+	// Note that we use keys with and without a seed for this test.
 	#[test]
 	fn public_keys_works() {
 		const TEST_TYPE: sp_application_crypto::KeyTypeId = sp_application_crypto::KeyTypeId(*b"test");
 
-		let store: SyncCryptoStorePtr = KeyStore::new().into();
-
-		let alice = crypto::Pair::from_string("//Alice", None).unwrap();
-		let bob = crypto::Pair::from_string("//Bob", None).unwrap();
-		let dave = crypto::Pair::from_string("//Dave", None).unwrap();
-		let eve = crypto::Pair::from_string("//Eve", None).unwrap();
+		let store = keystore();
 
 		// test keys
-		let res = SyncCryptoStore::insert_unknown(&*store, TEST_TYPE, "//Alice", alice.public().as_ref()).unwrap();
-		assert_eq!((), res);
-		let res = SyncCryptoStore::insert_unknown(&*store, TEST_TYPE, "//Bob", bob.public().as_ref()).unwrap();
-		assert_eq!((), res);
+		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, TEST_TYPE, Some(&Keyring::Alice.to_seed()))
+			.ok()
+			.unwrap();
+
+		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, TEST_TYPE, Some(&Keyring::Bob.to_seed()))
+			.ok()
+			.unwrap();
+
+		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, TEST_TYPE, None)
+			.ok()
+			.unwrap();
+
+		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, TEST_TYPE, None)
+			.ok()
+			.unwrap();
 
 		// BEEFY keys
-		let res = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, "//Dave", dave.public().as_ref()).unwrap();
-		assert_eq!((), res);
-		let res = SyncCryptoStore::insert_unknown(&*store, KEY_TYPE, "//EVE", eve.public().as_ref()).unwrap();
-		assert_eq!((), res);
+		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, KEY_TYPE, Some(&Keyring::Dave.to_seed()))
+			.ok()
+			.unwrap();
+
+		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, KEY_TYPE, Some(&Keyring::Eve.to_seed()))
+			.ok()
+			.unwrap();
+
+		let key1: crypto::Public = SyncCryptoStore::ecdsa_generate_new(&*store, KEY_TYPE, None)
+			.ok()
+			.unwrap()
+			.into();
+
+		let key2: crypto::Public = SyncCryptoStore::ecdsa_generate_new(&*store, KEY_TYPE, None)
+			.ok()
+			.unwrap()
+			.into();
 
 		let store: BeefyKeystore = Some(store).into();
 
 		let keys = store.public_keys().ok().unwrap();
 
-		assert_eq!(keys[0], dave.public());
-		assert_eq!(keys[1], eve.public());
+		assert!(keys.len() == 4);
+		assert!(keys.contains(&Keyring::Dave.public()));
+		assert!(keys.contains(&Keyring::Eve.public()));
+		assert!(keys.contains(&key1));
+		assert!(keys.contains(&key2));
 	}
 }
