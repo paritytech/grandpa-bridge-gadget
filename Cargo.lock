@@ -437,7 +437,6 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "sp-core",
- "sp-trie",
  "structopt",
 ]
 

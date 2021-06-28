@@ -17,7 +17,6 @@ parity-scale-codec = "2.1"
 structopt = "0.3.21"
 
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sp-trie = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 [dev-dependencies]
 hex-literal = "0.3"

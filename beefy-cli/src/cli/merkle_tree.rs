@@ -41,10 +41,6 @@ pub enum BeefyMerkleTree {
 		root: H256,
 		/// Proof content.
 		proof: Bytes,
-		/// Index of the leaf the proof is for.
-		leaf_index: usize,
-		/// SCALE-encoded value of the leaf node (it's not part of the proof).
-		leaf_value: Bytes,
 	},
 }
 
@@ -59,12 +55,7 @@ impl BeefyMerkleTree {
 				let eth_addresses = uncompressed_to_eth(uncompressed);
 				print_generated_merkle_proof(eth_addresses, leaf_index)
 			}
-			Self::VerifyProof {
-				root,
-				proof,
-				leaf_index,
-				leaf_value,
-			} => verify_merkle_proof(root, proof.0, leaf_index, leaf_value.0),
+			Self::VerifyProof { root, proof } => verify_merkle_proof(root, proof.0),
 		}
 	}
 }
@@ -87,10 +78,6 @@ pub enum ParaMerkleTree {
 		root: H256,
 		/// Proof content.
 		proof: Bytes,
-		/// Index of the leaf the proof is for.
-		leaf_index: usize,
-		/// SCALE-encoded value of the leaf node (it's not part of the proof).
-		leaf_value: Bytes,
 	},
 }
 
@@ -101,67 +88,55 @@ impl ParaMerkleTree {
 				let raw_heads = heads.into_iter().map(|x| x.0);
 				print_generated_merkle_proof(raw_heads, leaf_index)
 			}
-			Self::VerifyProof {
-				root,
-				proof,
-				leaf_index,
-				leaf_value,
-			} => verify_merkle_proof(root, proof.0, leaf_index, leaf_value.0),
+			Self::VerifyProof { root, proof } => verify_merkle_proof(root, proof.0),
 		}
 	}
 }
 
-use sp_trie::{TrieConfiguration, TrieMut};
+type Proof = Vec<H256>;
+type Leaf = Vec<u8>;
 
-type Proof = Vec<Vec<u8>>;
-type Layout = sp_trie::Layout<sp_core::KeccakHasher>;
-type Leaf = (Vec<u8>, Vec<u8>);
-
-fn generate_merkle_proof<T: Encode>(
+fn generate_merkle_proof<T: AsRef<[u8]>>(
 	items: impl Iterator<Item = T>,
 	leaf_index: usize,
 ) -> anyhow::Result<(H256, Proof, Leaf)> {
-	let ordered_items = items
-		.map(|x| Encode::encode(&x))
-		.enumerate()
-		.map(|(i, v)| (Layout::encode_index(i as u32), v))
-		.collect::<Vec<(Vec<u8>, Vec<u8>)>>();
-	let leaf = ordered_items
+	let items = items.collect::<Vec<_>>();
+	let leaf = items
 		.get(leaf_index)
-		.cloned()
-		.ok_or_else(|| anyhow::format_err!("Leaf index out of bounds: {} vs {}", leaf_index, ordered_items.len(),))?;
-	let mut db = sp_trie::MemoryDB::<sp_core::KeccakHasher>::default();
-	let mut root = sp_trie::empty_trie_root::<Layout>();
-	{
-		let mut trie = sp_trie::TrieDBMut::<Layout>::new(&mut db, &mut root);
-		for (k, v) in ordered_items {
-			trie.insert(&k, &v).unwrap();
-		}
-	}
-	let proof: Proof = sp_trie::generate_trie_proof::<Layout, _, _, _>(&db, root, vec![&leaf.0])?;
+		.map(|x| x.as_ref().to_vec())
+		.ok_or_else(|| anyhow::format_err!("Leaf index out of bounds: {} vs {}", leaf_index, items.len(),))?;
 
-	Ok((root, proof, leaf))
+	let (root, proof) = beefy_merkle_root::merkle_proof::<Keccak256, _, _>(items, leaf_index);
+	let proof = proof.into_iter().map(Into::into).collect();
+
+	Ok((root.into(), proof, leaf))
 }
 
-fn print_generated_merkle_proof<T: Encode>(items: impl Iterator<Item = T>, leaf_index: usize) -> anyhow::Result<()> {
+fn print_generated_merkle_proof<T: AsRef<[u8]>>(
+	items: impl Iterator<Item = T>,
+	leaf_index: usize,
+) -> anyhow::Result<()> {
 	let (root, proof, leaf) = generate_merkle_proof(items, leaf_index)?;
 	println!();
 	println!("Root: {:?}", root);
 	println!("SCALE-encoded proof: 0x{}", hex::encode(proof.encode()));
-	println!("\nLeaf key: 0x{}", hex::encode(&leaf.0));
-	println!("SCALE-encoded leaf value: 0x{}", hex::encode(&leaf.1));
+	println!("SCALE-encoded leaf value: 0x{}", hex::encode(&leaf));
 	println!();
 
 	Ok(())
 }
 
-fn verify_merkle_proof(root: H256, proof: Vec<u8>, leaf_index: usize, leaf_value: Vec<u8>) -> anyhow::Result<()> {
+fn verify_merkle_proof(root: H256, proof: Vec<u8>) -> anyhow::Result<()> {
 	let proof: Proof = Decode::decode(&mut &*proof)?;
-	let items = vec![(Layout::encode_index(leaf_index as u32), Some(leaf_value))];
+	let convert = |c: H256| c.to_fixed_bytes();
+	let root = convert(root);
+	let proof = proof.into_iter().map(convert).collect::<Vec<_>>();
 
-	sp_trie::verify_trie_proof::<Layout, _, _, _>(&root, &*proof, items.iter())?;
-
-	println!("\nProof is correct.\n");
+	if beefy_merkle_root::verify_proof::<Keccak256, _>(&root, proof) {
+		println!("\n✅ Proof is correct.\n");
+	} else {
+		println!("\n❌ Proof is INCORRECT.\n");
+	}
 
 	Ok(())
 }
@@ -185,9 +160,9 @@ mod tests {
 		let leaf_index = 0;
 
 		// when
-		let (root, proof, leaf) = generate_merkle_proof(items, leaf_index).unwrap();
+		let (root, proof, _leaf) = generate_merkle_proof(items, leaf_index).unwrap();
 
 		// then
-		verify_merkle_proof(root, proof.encode(), leaf_index, leaf.1).unwrap();
+		verify_merkle_proof(root, proof.encode()).unwrap();
 	}
 }
