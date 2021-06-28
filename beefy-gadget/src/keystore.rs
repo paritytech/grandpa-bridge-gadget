@@ -67,11 +67,7 @@ impl BeefyKeystore {
 	///
 	/// Return the message signature or an error in case of failure.
 	pub fn sign(&self, public: &Public, message: &[u8]) -> Result<Signature, error::Error> {
-		let store = if let Some(store) = self.0.clone() {
-			store
-		} else {
-			return Err(error::Error::Keystore("no Keystore".to_string()));
-		};
+		let store = keystore!(self);
 
 		let msg = keccak_256(message);
 		let public = public.as_ref();
