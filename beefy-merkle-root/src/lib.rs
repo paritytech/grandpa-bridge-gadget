@@ -17,23 +17,51 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
 
+//! This crate implements a simple binary Merkle Tree utilities required for inter-op with Ethereum
+//! bridge & Solidity contract.
+//!
+//! The implementation is optimised for usage within Substrate Runtime and supports no-std
+//! compilation targets.
+//!
+//! Merkle Tree is constructed from arbitrary-length leaves, that are initially hashed using the
+//! same [Hasher] as the inner nodes.
+//! Inner nodes are created by concatenating child hashes and hashing again. The implementation
+//! does not perform any sorting of the input data (leaves) nor when inner nodes are created.
+//!
+//! If the number of leaves is not even, last leave (hash of) is promoted to the upper layer.
+
 #[cfg(not(feature = "std"))]
 use core::vec::Vec;
 
-pub type Output = [u8; 32];
+/// Supported hashing output size.
+///
+/// The size is restricted to 32 bytes to allow for a more optimised implementation.
+pub type Hash = [u8; 32];
+
+/// Generic hasher trait.
+///
+/// Implement the function to support custom way of hashing data.
+/// The implementation must return a [Hash] type, so only 32-byte output hashes are supported.
 pub trait Hasher {
-	fn hash(data: &[u8]) -> Output;
+	/// Hash given arbitrary-length piece of data.
+	fn hash(data: &[u8]) -> Hash;
 }
 
-pub fn merkle_root<H, I, T>(leaves: I) -> Output
+/// Construct a root hash of a Binary Merkle Tree created from given leaves.
+///
+/// See crate-level docs for details about Merkle Tree construction.
+///
+/// In case an empty list of leaves is passed the function returns a 0-filled hash.
+pub fn merkle_root<H, I, T>(leaves: I) -> Hash
 where
 	H: Hasher,
+	// TODO [ToDr] Clone only for debug?
 	I: IntoIterator<Item = T> + Clone,
 	T: AsRef<[u8]>,
 {
 	#[cfg(feature = "debug")]
 	println!(
-		"Leaves: {:?}",
+		"[merkle_root] Leaves: {:?}",
 		leaves
 			.clone()
 			.into_iter()
@@ -41,16 +69,19 @@ where
 			.map(|x| hex::encode(&x))
 			.collect::<Vec<_>>()
 	);
-	let mut iter = leaves.into_iter().map(|l| H::hash(l.as_ref()));
+	let iter = leaves.into_iter().map(|l| H::hash(l.as_ref()));
 	let mut next = match merkelize_row::<H, _>(iter) {
 		Ok(root) => return root,
-		Err(next) if next.is_empty() => return Output::default(),
+		Err(next) if next.is_empty() => return Hash::default(),
 		Err(next) => next,
 	};
 
 	loop {
 		#[cfg(feature = "debug")]
-		println!("Layer: {:?}", next.iter().map(|x| hex::encode(x)).collect::<Vec<_>>());
+		println!(
+			"[merkle_root] Layer: {:?}",
+			next.iter().map(|x| hex::encode(x)).collect::<Vec<_>>()
+		);
 		next = match merkelize_row::<H, _>(next.into_iter()) {
 			Ok(root) => return root,
 			Err(next) => next,
@@ -58,31 +89,152 @@ where
 	}
 }
 
-fn merkelize_row<H, I>(mut iter: I) -> Result<Output, Vec<Output>>
+/// Construct a Merkle Proof for leaves given by indices.
+///
+/// The function constructs a (partial) Merkle Tree first and stores all elements required
+/// to prove requested item (leaf) given the root hash.
+///
+/// Both the Proof and the Root Hash is returned.
+///
+/// # Panic
+///
+/// The function will panic if given [`leaf_index`] is greater than the number of leaves.
+pub fn merkle_proof<H, I, T>(leaves: I, leaf_index: usize) -> (Hash, Vec<Hash>)
 where
 	H: Hasher,
-	I: Iterator<Item = Output>,
+	// TODO [ToDr] Clone only for debug?
+	I: IntoIterator<Item = T> + Clone,
+	T: AsRef<[u8]>,
+{
+	let is_even = leaf_index % 2 == 0;
+	let mut proof = Vec::new();
+	#[cfg(feature = "debug")]
+	println!(
+		"[merkle_proof] Leaves: {:?}",
+		leaves
+			.clone()
+			.into_iter()
+			.map(|l| H::hash(l.as_ref()))
+			.map(|x| hex::encode(&x))
+			.collect::<Vec<_>>()
+	);
+	let iter = leaves.into_iter().enumerate().map(|(idx, l)| {
+		let hash = H::hash(l.as_ref());
+		// make sure to store hash of the leaf itself and adjacent node.
+		if idx + 1 == leaf_index && !is_even {
+			proof.push(hash);
+		}
+		if idx == leaf_index {
+			proof.push(hash);
+		}
+		if idx == leaf_index + 1 && is_even {
+			proof.push(hash);
+		}
+		hash
+	});
+
+	let result = merkelize_row::<H, _>(iter);
+	assert!(!proof.is_empty(), "`leaf_index` is incorrect");
+
+	let mut next = match result {
+		Ok(root) => return (root, proof),
+		Err(next) if next.is_empty() => return (Hash::default(), proof),
+		Err(next) => next,
+	};
+
+	let mut index = leaf_index;
+	loop {
+		index = index / 2;
+		index = if index % 2 == 0 { index + 1 } else { index - 1 };
+		if next.len() > index {
+			proof.push(next[index]);
+		}
+		#[cfg(feature = "debug")]
+		println!(
+			"[merkle_proof] Layer: {:?}",
+			next.iter().map(|x| hex::encode(x)).collect::<Vec<_>>()
+		);
+		#[cfg(feature = "debug")]
+		println!(
+			"[merkle_proof] Proof: {:?}",
+			proof.iter().map(|x| hex::encode(x)).collect::<Vec<_>>()
+		);
+		next = match merkelize_row::<H, _>(next.into_iter()) {
+			Ok(root) => return (root, proof),
+			Err(next) => next,
+		};
+	}
+}
+
+/// Verify Merkle Proof correctness versus given root hash.
+///
+/// The proof is expected to contain leaf hash as the first element
+/// and all adjacent nodes required to eventually by process of
+/// concatenating and hashing end up with given root hash.
+///
+/// The proof must not contain the root hash.
+pub fn verify_proof<H, P>(root: &Hash, proof: P) -> bool
+where
+	H: Hasher,
+	P: IntoIterator<Item = Hash>,
+{
+	let mut combined = [0_u8; 64];
+	let computed = proof.into_iter().reduce(|a, b| {
+		if a < b {
+			combined[0..32].copy_from_slice(&a);
+			combined[32..64].copy_from_slice(&b);
+		} else {
+			combined[0..32].copy_from_slice(&b);
+			combined[32..64].copy_from_slice(&a);
+		}
+		let hash = H::hash(&combined);
+		#[cfg(feature = "debug")]
+		println!(
+			"[verify_proof]: (a, b) {:?}, {:?} => {:?} ({:?}) hash",
+			hex::encode(a),
+			hex::encode(b),
+			hex::encode(hash),
+			hex::encode(combined)
+		);
+		hash
+	});
+
+	Some(root) == computed.as_ref()
+}
+
+/// Processes a single row (layer) of a tree by taking pairs of elements,
+/// concatenating them, hashing and placing into resulting vector.
+///
+/// In case only one element is provided it is returned via `Ok` result, in any other case (also an
+/// empty iterator) an `Err` with the inner nodes of upper layer is returned.
+fn merkelize_row<H, I>(mut iter: I) -> Result<Hash, Vec<Hash>>
+where
+	H: Hasher,
+	I: Iterator<Item = Hash>,
 {
 	// TODO [ToDr] allocate externally.
 	let mut next = Vec::with_capacity(iter.size_hint().0);
 	let mut combined = [0_u8; 64];
+	// TODO [ToDr] use chunks_exact?
 	loop {
 		let a = iter.next();
 		let b = iter.next();
 
 		match (a, b) {
 			(Some(a), Some(b)) => {
-				combined[0..32].copy_from_slice(&a);
-				combined[32..64].copy_from_slice(&b);
-				// TODO sort?
+				if a < b {
+					combined[0..32].copy_from_slice(&a);
+					combined[32..64].copy_from_slice(&b);
+				} else {
+					combined[0..32].copy_from_slice(&b);
+					combined[32..64].copy_from_slice(&a);
+				}
 
 				next.push(H::hash(&combined));
 			}
 			// Odd number of items. Promote the item to the upper layer.
 			(Some(a), None) if !next.is_empty() => {
 				next.push(a);
-				// combined[0..32].copy_from_slice(&a);
-				// combined[32..64].copy_from_slice(&a);
 			}
 			// Last item = root.
 			(Some(a), None) => {
@@ -96,25 +248,6 @@ where
 	}
 }
 
-pub fn merkle_proof<H, I, T>(leaves: I) -> ()
-// impl Iterator<Item = Box<[u8]>>
-where
-	H: Hasher,
-	I: IntoIterator<Item = T>,
-	T: AsRef<[u8]>,
-{
-	unimplemented!()
-}
-
-pub fn verify_proof<H, P, T>(root: &Output, proof: P) -> bool
-where
-	H: Hasher,
-	P: IntoIterator<Item = T>,
-	T: AsRef<[u8]>,
-{
-	unimplemented!()
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -123,7 +256,7 @@ mod tests {
 
 	struct Keccak256;
 	impl Hasher for Keccak256 {
-		fn hash(data: &[u8]) -> Output {
+		fn hash(data: &[u8]) -> Hash {
 			let mut keccak = Keccak::v256();
 			keccak.update(data);
 			let mut output = [0_u8; 32];
@@ -187,12 +320,12 @@ mod tests {
 		};
 
 		test(
-			"aff1208e69c9e8be9b584b07ebac4e48a1ee9d15ce3afe20b77a4d29e4175aa3",
+			"5842148bc6ebeb52af882a317c765fccd3ae80589b21a9b8cbf21abb630e46a7",
 			vec!["a", "b", "c"],
 		);
 
 		test(
-			"b8912f7269068901f231a965adfefbc10f0eedcfa61852b103efd54dac7db3d7",
+			"7b84bec68b13c39798c6c50e9e40a0b268e3c1634db8f4cb97314eb243d4c514",
 			vec!["a", "b", "a"],
 		);
 
@@ -202,8 +335,53 @@ mod tests {
 		);
 
 		test(
-			"fb3b3be94be9e983ba5e094c9c51a7d96a4fa2e5d8e891df00ca89ba05bb1239",
+			"cc50382cfd3c9a617741e9a85efee8752b8feb95a2cbecd6365fb21366ce0c8c",
 			vec!["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
 		);
+	}
+
+	#[test]
+	fn should_generate_and_verify_proof() {
+		// given
+		let data = vec!["a", "b", "c"];
+
+		// when
+		let (root0, proof0) = merkle_proof::<Keccak256, _, _>(data.clone(), 0);
+		let (root1, proof1) = merkle_proof::<Keccak256, _, _>(data.clone(), 1);
+		let (root2, proof2) = merkle_proof::<Keccak256, _, _>(data.clone(), 2);
+
+		// then
+		assert_eq!(hex::encode(root0), hex::encode(root1));
+		assert_eq!(hex::encode(root2), hex::encode(root1));
+
+		assert!(verify_proof::<Keccak256, _>(&root0, proof0.clone()));
+		assert!(verify_proof::<Keccak256, _>(&root1, proof1));
+		assert!(verify_proof::<Keccak256, _>(&root2, proof2));
+
+		assert!(!verify_proof::<Keccak256, _>(
+			&hex!("fb3b3be94be9e983ba5e094c9c51a7d96a4fa2e5d8e891df00ca89ba05bb1239"),
+			proof0.clone()
+		));
+
+		assert!(!verify_proof::<Keccak256, _>(&root0, vec![]));
+	}
+
+	#[test]
+	fn should_generate_and_verify_proof_complex() {
+		// given
+		let data = vec!["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
+
+		for _ in 0..data.len() {
+			// when
+			let (root, proof) = merkle_proof::<Keccak256, _, _>(data.clone(), 0);
+			// then
+			assert!(verify_proof::<Keccak256, _>(&root, proof));
+		}
+	}
+
+	#[test]
+	#[should_panic]
+	fn should_panic_on_invalid_leaf_index() {
+		merkle_proof::<Keccak256, _, _>(vec!["a"], 5);
 	}
 }
