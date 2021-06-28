@@ -84,16 +84,22 @@ where
 	T: AsRef<[u8]>,
 {
 	let iter = leaves.into_iter().map(|l| H::hash(l.as_ref()));
-	let mut next = match merkelize_row::<H, _>(iter) {
+	let upper = Vec::with_capacity(iter.size_hint().0);
+	let mut next = match merkelize_row::<H, _>(iter, upper) {
 		Ok(root) => return root,
 		Err(next) if next.is_empty() => return Hash::default(),
 		Err(next) => next,
 	};
 
+	let mut upper = Vec::with_capacity(next.len());
 	loop {
-		next = match merkelize_row::<H, _>(next.into_iter()) {
+		match merkelize_row::<H, _>(next.drain(..), upper) {
 			Ok(root) => return root,
-			Err(next) => next,
+			Err(t) => {
+				// swap collections to avoid allocations
+				upper = next;
+				next = t;
+			}
 		};
 	}
 }
@@ -131,7 +137,9 @@ where
 		hash
 	});
 
-	let result = merkelize_row::<H, _>(iter);
+	let next = Vec::with_capacity(iter.size_hint().0);
+	let result = merkelize_row::<H, _>(iter, next);
+
 	assert!(!proof.is_empty(), "`leaf_index` is incorrect");
 
 	let mut next = match result {
@@ -140,6 +148,7 @@ where
 		Err(next) => next,
 	};
 
+	let mut upper = Vec::with_capacity(next.len());
 	let mut index = leaf_index;
 	loop {
 		index = index / 2;
@@ -147,10 +156,14 @@ where
 		if next.len() > index {
 			proof.push(next[index]);
 		}
-		next = match merkelize_row::<H, _>(next.into_iter()) {
+
+		match merkelize_row::<H, _>(next.drain(..), upper) {
 			Ok(root) => return (root, proof),
-			Err(next) => next,
-		};
+			Err(n) => {
+				upper = next;
+				next = n;
+			}
+		}
 	}
 }
 
@@ -195,18 +208,16 @@ where
 ///
 /// In case only one element is provided it is returned via `Ok` result, in any other case (also an
 /// empty iterator) an `Err` with the inner nodes of upper layer is returned.
-fn merkelize_row<H, I>(mut iter: I) -> Result<Hash, Vec<Hash>>
+fn merkelize_row<H, I>(mut iter: I, mut next: Vec<Hash>) -> Result<Hash, Vec<Hash>>
 where
 	H: Hasher,
 	I: Iterator<Item = Hash>,
 {
 	#[cfg(feature = "debug")]
 	log::debug!("[merkelize_row]");
+	next.clear();
 
-	// TODO [ToDr] allocate externally.
-	let mut next = Vec::with_capacity(iter.size_hint().0);
 	let mut combined = [0_u8; 64];
-	// TODO [ToDr] use chunks_exact?
 	loop {
 		let a = iter.next();
 		let b = iter.next();
