@@ -9,3 +9,5 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 strum = { version = "0.21", features = ["derive"] }
 
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
+
+beefy-primitives = { path = "../beefy-primitives" }
