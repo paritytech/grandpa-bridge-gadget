@@ -55,20 +55,9 @@ pub trait Hasher {
 pub fn merkle_root<H, I, T>(leaves: I) -> Hash
 where
 	H: Hasher,
-	// TODO [ToDr] Clone only for debug?
-	I: IntoIterator<Item = T> + Clone,
+	I: IntoIterator<Item = T>,
 	T: AsRef<[u8]>,
 {
-	#[cfg(feature = "debug")]
-	println!(
-		"[merkle_root] Leaves: {:?}",
-		leaves
-			.clone()
-			.into_iter()
-			.map(|l| H::hash(l.as_ref()))
-			.map(|x| hex::encode(&x))
-			.collect::<Vec<_>>()
-	);
 	let iter = leaves.into_iter().map(|l| H::hash(l.as_ref()));
 	let mut next = match merkelize_row::<H, _>(iter) {
 		Ok(root) => return root,
@@ -77,11 +66,6 @@ where
 	};
 
 	loop {
-		#[cfg(feature = "debug")]
-		println!(
-			"[merkle_root] Layer: {:?}",
-			next.iter().map(|x| hex::encode(x)).collect::<Vec<_>>()
-		);
 		next = match merkelize_row::<H, _>(next.into_iter()) {
 			Ok(root) => return root,
 			Err(next) => next,
@@ -102,22 +86,11 @@ where
 pub fn merkle_proof<H, I, T>(leaves: I, leaf_index: usize) -> (Hash, Vec<Hash>)
 where
 	H: Hasher,
-	// TODO [ToDr] Clone only for debug?
-	I: IntoIterator<Item = T> + Clone,
+	I: IntoIterator<Item = T>,
 	T: AsRef<[u8]>,
 {
 	let is_even = leaf_index % 2 == 0;
 	let mut proof = Vec::new();
-	#[cfg(feature = "debug")]
-	println!(
-		"[merkle_proof] Leaves: {:?}",
-		leaves
-			.clone()
-			.into_iter()
-			.map(|l| H::hash(l.as_ref()))
-			.map(|x| hex::encode(&x))
-			.collect::<Vec<_>>()
-	);
 	let iter = leaves.into_iter().enumerate().map(|(idx, l)| {
 		let hash = H::hash(l.as_ref());
 		// make sure to store hash of the leaf itself and adjacent node.
@@ -149,16 +122,6 @@ where
 		if next.len() > index {
 			proof.push(next[index]);
 		}
-		#[cfg(feature = "debug")]
-		println!(
-			"[merkle_proof] Layer: {:?}",
-			next.iter().map(|x| hex::encode(x)).collect::<Vec<_>>()
-		);
-		#[cfg(feature = "debug")]
-		println!(
-			"[merkle_proof] Proof: {:?}",
-			proof.iter().map(|x| hex::encode(x)).collect::<Vec<_>>()
-		);
 		next = match merkelize_row::<H, _>(next.into_iter()) {
 			Ok(root) => return (root, proof),
 			Err(next) => next,
@@ -189,7 +152,7 @@ where
 		}
 		let hash = H::hash(&combined);
 		#[cfg(feature = "debug")]
-		println!(
+		log::debug!(
 			"[verify_proof]: (a, b) {:?}, {:?} => {:?} ({:?}) hash",
 			hex::encode(a),
 			hex::encode(b),
@@ -212,6 +175,9 @@ where
 	H: Hasher,
 	I: Iterator<Item = Hash>,
 {
+	#[cfg(feature = "debug")]
+	log::debug!("[merkelize_row]");
+
 	// TODO [ToDr] allocate externally.
 	let mut next = Vec::with_capacity(iter.size_hint().0);
 	let mut combined = [0_u8; 64];
@@ -219,6 +185,12 @@ where
 	loop {
 		let a = iter.next();
 		let b = iter.next();
+		#[cfg(feature = "debug")]
+		log::debug!(
+			"  {:?}\n  {:?}",
+			a.as_ref().map(hex::encode),
+			b.as_ref().map(hex::encode)
+		);
 
 		match (a, b) {
 			(Some(a), Some(b)) => {
@@ -242,6 +214,11 @@ where
 			}
 			// Finish up, no more items.
 			_ => {
+				#[cfg(feature = "debug")]
+				log::debug!(
+					"[merkelize_row] Next: {:?}",
+					next.iter().map(hex::encode).collect::<Vec<_>>()
+				);
 				return Err(next);
 			}
 		}
@@ -268,6 +245,7 @@ mod tests {
 	#[test]
 	fn should_generate_empty_root() {
 		// given
+		let _ = env_logger::try_init();
 		let data: Vec<[u8; 1]> = Default::default();
 
 		// when
@@ -283,6 +261,7 @@ mod tests {
 	#[test]
 	fn should_generate_single_root() {
 		// given
+		let _ = env_logger::try_init();
 		let data = vec![hex!("E04CC55ebEE1cBCE552f250e85c57B70B2E2625b")];
 
 		// when
@@ -298,6 +277,7 @@ mod tests {
 	#[test]
 	fn should_generate_root_pow_2() {
 		// given
+		let _ = env_logger::try_init();
 		let data = vec![
 			hex!("E04CC55ebEE1cBCE552f250e85c57B70B2E2625b"),
 			hex!("25451A4de12dcCc2D166922fA938E900fCc4ED24"),
@@ -315,6 +295,7 @@ mod tests {
 
 	#[test]
 	fn should_generate_root_complex() {
+		let _ = env_logger::try_init();
 		let test = |root, data| {
 			assert_eq!(hex::encode(&merkle_root::<Keccak256, _, _>(data)), root);
 		};
@@ -343,6 +324,7 @@ mod tests {
 	#[test]
 	fn should_generate_and_verify_proof() {
 		// given
+		let _ = env_logger::try_init();
 		let data = vec!["a", "b", "c"];
 
 		// when
@@ -369,6 +351,7 @@ mod tests {
 	#[test]
 	fn should_generate_and_verify_proof_complex() {
 		// given
+		let _ = env_logger::try_init();
 		let data = vec!["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
 
 		for _ in 0..data.len() {
@@ -382,6 +365,7 @@ mod tests {
 	#[test]
 	#[should_panic]
 	fn should_panic_on_invalid_leaf_index() {
+		let _ = env_logger::try_init();
 		merkle_proof::<Keccak256, _, _>(vec!["a"], 5);
 	}
 }

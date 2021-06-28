@@ -492,8 +492,10 @@ dependencies = [
 name = "beefy-merkle-root"
 version = "0.1.0"
 dependencies = [
+ "env_logger 0.8.4",
  "hex",
  "hex-literal",
+ "log",
  "tiny-keccak",
 ]
 
