@@ -378,9 +378,9 @@ mod tests {
 		let _ = env_logger::try_init();
 		let data = vec!["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
 
-		for _ in 0..data.len() {
+		for l in 0..data.len() {
 			// when
-			let (root, proof) = merkle_proof::<Keccak256, _, _>(data.clone(), 0);
+			let (root, proof) = merkle_proof::<Keccak256, _, _>(data.clone(), l);
 			// then
 			assert!(verify_proof::<Keccak256, _>(&root, proof));
 		}
@@ -391,17 +391,36 @@ mod tests {
 		// given
 		let _ = env_logger::try_init();
 		let mut data = vec![];
-		for _ in 0..16 {
+		for i in 1..16 {
 			for c in 'a'..'z' {
-				data.push(c.to_string());
-
-				for _ in 0..data.len() {
-					// when
-					let (root, proof) = merkle_proof::<Keccak256, _, _>(data.clone(), 0);
-					// then
-					assert!(verify_proof::<Keccak256, _>(&root, proof));
+				if c as usize % i != 0 {
+					data.push(c.to_string());
 				}
 			}
+
+			for l in 0..data.len() {
+				// when
+				let (root, proof) = merkle_proof::<Keccak256, _, _>(data.clone(), l);
+				// then
+				assert!(verify_proof::<Keccak256, _>(&root, proof));
+			}
+		}
+	}
+
+	#[test]
+	fn should_generate_and_verify_proof_large_tree() {
+		// given
+		let _ = env_logger::try_init();
+		let mut data = vec![];
+		for i in 0..6000 {
+			data.push(format!("{}", i));
+		}
+
+		for l in (0..data.len()).step_by(13) {
+			// when
+			let (root, proof) = merkle_proof::<Keccak256, _, _>(data.clone(), l);
+			// then
+			assert!(verify_proof::<Keccak256, _>(&root, proof));
 		}
 	}
 
