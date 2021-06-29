@@ -387,6 +387,25 @@ mod tests {
 	}
 
 	#[test]
+	fn should_generate_and_verify_proof_large() {
+		// given
+		let _ = env_logger::try_init();
+		let mut data = vec![];
+		for _ in 0..16 {
+			for c in 'a'..'z' {
+				data.push(c.to_string());
+
+				for _ in 0..data.len() {
+					// when
+					let (root, proof) = merkle_proof::<Keccak256, _, _>(data.clone(), 0);
+					// then
+					assert!(verify_proof::<Keccak256, _>(&root, proof));
+				}
+			}
+		}
+	}
+
+	#[test]
 	#[should_panic]
 	fn should_panic_on_invalid_leaf_index() {
 		let _ = env_logger::try_init();
