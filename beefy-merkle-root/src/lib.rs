@@ -124,7 +124,7 @@ where
 	let mut proof = Vec::new();
 	let iter = leaves.into_iter().enumerate().map(|(idx, l)| {
 		let hash = H::hash(l.as_ref());
-		// make sure to store hash of the leaf itself and adjacent node.
+		// make sure to store hash of the leaf itself and adjacent node (if any)
 		if idx + 1 == leaf_index && !is_even {
 			proof.push(hash);
 		}
@@ -151,7 +151,7 @@ where
 	let mut upper = Vec::with_capacity(next.len());
 	let mut index = leaf_index;
 	loop {
-		index = index / 2;
+		index /= 2;
 		index = if index % 2 == 0 { index + 1 } else { index - 1 };
 		if next.len() > index {
 			proof.push(next[index]);
