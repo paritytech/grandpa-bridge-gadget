@@ -366,7 +366,7 @@ mod tests {
 
 		assert!(!verify_proof::<Keccak256, _>(
 			&hex!("fb3b3be94be9e983ba5e094c9c51a7d96a4fa2e5d8e891df00ca89ba05bb1239"),
-			proof0.clone()
+			proof0
 		));
 
 		assert!(!verify_proof::<Keccak256, _>(&root0, vec![]));
