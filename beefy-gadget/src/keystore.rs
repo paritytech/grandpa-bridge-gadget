@@ -24,19 +24,6 @@ use beefy_primitives::{
 
 use crate::error;
 
-// Keystore newtype helper
-//
-// Return wrapped keystore instance or an error in case there is no keystore.
-macro_rules! keystore {
-	($self:expr) => {
-		if let Some(store) = $self.0.clone() {
-			store
-		} else {
-			return Err(error::Error::Keystore("no Keystore".to_string()));
-		}
-	};
-}
-
 /// A BEEFY specific keystore implemented as a `Newtype`. This is basically a
 /// wrapper around [`sp_keystore::SyncCryptoStore`] and allows to customize
 /// common cryptographic functionality.
@@ -67,7 +54,10 @@ impl BeefyKeystore {
 	///
 	/// Return the message signature or an error in case of failure.
 	pub fn sign(&self, public: &Public, message: &[u8]) -> Result<Signature, error::Error> {
-		let store = keystore!(self);
+		let store = self
+			.0
+			.clone()
+			.ok_or_else(|| error::Error::Keystore("no Keystore".into()))?;
 
 		let msg = keccak_256(message);
 		let public = public.as_ref();
@@ -89,7 +79,10 @@ impl BeefyKeystore {
 	/// Returns a vector of [`beefy_primitives::crypto::Public`] keys which are currently supported (i.e. found
 	/// in the keystore).
 	pub fn public_keys(&self) -> Result<Vec<Public>, error::Error> {
-		let store = keystore!(self);
+		let store = self
+			.0
+			.clone()
+			.ok_or_else(|| error::Error::Keystore("no Keystore".into()))?;
 
 		let pk: Vec<Public> = SyncCryptoStore::ecdsa_public_keys(&*store, KEY_TYPE)
 			.iter()
@@ -240,41 +233,26 @@ mod tests {
 
 		let store = keystore();
 
+		let add_key =
+			|key_type, seed: Option<&str>| SyncCryptoStore::ecdsa_generate_new(&*store, key_type, seed).unwrap();
+
 		// test keys
-		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, TEST_TYPE, Some(&Keyring::Alice.to_seed()))
-			.ok()
-			.unwrap();
+		let _ = add_key(TEST_TYPE, Some(Keyring::Alice.to_seed().as_str()));
 
-		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, TEST_TYPE, Some(&Keyring::Bob.to_seed()))
-			.ok()
-			.unwrap();
+		let _ = add_key(TEST_TYPE, Some(Keyring::Bob.to_seed().as_str()));
 
-		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, TEST_TYPE, None)
-			.ok()
-			.unwrap();
+		let _ = add_key(TEST_TYPE, None);
 
-		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, TEST_TYPE, None)
-			.ok()
-			.unwrap();
+		let _ = add_key(TEST_TYPE, None);
 
 		// BEEFY keys
-		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, KEY_TYPE, Some(&Keyring::Dave.to_seed()))
-			.ok()
-			.unwrap();
+		let _ = add_key(KEY_TYPE, Some(Keyring::Dave.to_seed().as_str()));
 
-		let _ = SyncCryptoStore::ecdsa_generate_new(&*store, KEY_TYPE, Some(&Keyring::Eve.to_seed()))
-			.ok()
-			.unwrap();
+		let _ = add_key(KEY_TYPE, Some(Keyring::Eve.to_seed().as_str()));
 
-		let key1: crypto::Public = SyncCryptoStore::ecdsa_generate_new(&*store, KEY_TYPE, None)
-			.ok()
-			.unwrap()
-			.into();
+		let key1: crypto::Public = add_key(KEY_TYPE, None).into();
 
-		let key2: crypto::Public = SyncCryptoStore::ecdsa_generate_new(&*store, KEY_TYPE, None)
-			.ok()
-			.unwrap()
-			.into();
+		let key2: crypto::Public = add_key(KEY_TYPE, None).into();
 
 		let store: BeefyKeystore = Some(store).into();
 
