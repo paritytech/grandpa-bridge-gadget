@@ -238,20 +238,16 @@ mod tests {
 
 		// test keys
 		let _ = add_key(TEST_TYPE, Some(Keyring::Alice.to_seed().as_str()));
-
 		let _ = add_key(TEST_TYPE, Some(Keyring::Bob.to_seed().as_str()));
 
 		let _ = add_key(TEST_TYPE, None);
-
 		let _ = add_key(TEST_TYPE, None);
 
 		// BEEFY keys
 		let _ = add_key(KEY_TYPE, Some(Keyring::Dave.to_seed().as_str()));
-
 		let _ = add_key(KEY_TYPE, Some(Keyring::Eve.to_seed().as_str()));
 
 		let key1: crypto::Public = add_key(KEY_TYPE, None).into();
-
 		let key2: crypto::Public = add_key(KEY_TYPE, None).into();
 
 		let store: BeefyKeystore = Some(store).into();
