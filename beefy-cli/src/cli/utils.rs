@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use beefy_primitives::ecdsa::AuthorityId;
+use beefy_primitives::crypto::AuthorityId;
 use parity_scale_codec::Decode;
 
 /// Parse hex string to a vector of bytes.

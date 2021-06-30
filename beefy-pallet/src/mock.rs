@@ -31,7 +31,7 @@ use sp_runtime::{
 
 use crate as pallet_beefy;
 
-pub use beefy_primitives::{ecdsa::AuthorityId as BeefyId, ConsensusLog, BEEFY_ENGINE_ID};
+pub use beefy_primitives::{crypto::AuthorityId as BeefyId, ConsensusLog, BEEFY_ENGINE_ID};
 
 impl_opaque_keys! {
 	pub struct MockSessionKeys {
@@ -86,7 +86,7 @@ impl frame_system::Config for Test {
 }
 
 impl pallet_beefy::Config for Test {
-	type AuthorityId = BeefyId;
+	type BeefyId = BeefyId;
 }
 
 parameter_types! {

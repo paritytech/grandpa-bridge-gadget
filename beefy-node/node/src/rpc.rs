@@ -17,12 +17,11 @@ use sp_runtime::traits::Block as BlockT;
 use sp_transaction_pool::TransactionPool;
 
 use beefy_gadget::notification::BeefySignedCommitmentStream;
-use beefy_primitives::ecdsa::AuthoritySignature as BeefySignature;
 
 /// Extra dependencies for BEEFY
 pub struct BeefyDeps<B: BlockT> {
 	/// Receives notifications about signed commitments from BEEFY.
-	pub signed_commitment_stream: BeefySignedCommitmentStream<B, BeefySignature>,
+	pub signed_commitment_stream: BeefySignedCommitmentStream<B>,
 	/// Executor to drive the subscription manager in the BEEFY RPC handler.
 	pub subscription_executor: SubscriptionTaskExecutor,
 }

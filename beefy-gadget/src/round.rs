@@ -14,26 +14,29 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, hash::Hash};
 
-use beefy_primitives::{ValidatorSet, ValidatorSetId};
+use log::trace;
 
-struct RoundTracker<Id, Signature> {
-	votes: Vec<(Id, Signature)>,
+use beefy_primitives::{
+	crypto::{Public, Signature},
+	ValidatorSet, ValidatorSetId,
+};
+use sp_arithmetic::traits::AtLeast32BitUnsigned;
+use sp_runtime::traits::MaybeDisplay;
+
+struct RoundTracker {
+	votes: Vec<(Public, Signature)>,
 }
 
-impl<Id, Signature> Default for RoundTracker<Id, Signature> {
+impl Default for RoundTracker {
 	fn default() -> Self {
 		RoundTracker { votes: Vec::new() }
 	}
 }
 
-impl<Id, Signature> RoundTracker<Id, Signature>
-where
-	Id: PartialEq,
-	Signature: PartialEq,
-{
-	fn add_vote(&mut self, vote: (Id, Signature)) -> bool {
+impl RoundTracker {
+	fn add_vote(&mut self, vote: (Public, Signature)) -> bool {
 		// this needs to handle equivocations in the future
 		if self.votes.contains(&vote) {
 			return false;
@@ -53,17 +56,17 @@ fn threshold(authorities: usize) -> usize {
 	authorities - faulty
 }
 
-pub(crate) struct Rounds<Hash, Number, Id, Signature> {
-	rounds: BTreeMap<(Hash, Number), RoundTracker<Id, Signature>>,
-	validator_set: ValidatorSet<Id>,
+pub(crate) struct Rounds<Hash, Number> {
+	rounds: BTreeMap<(Hash, Number), RoundTracker>,
+	validator_set: ValidatorSet<Public>,
 }
 
-impl<Hash, Number, Id, Signature> Rounds<Hash, Number, Id, Signature>
+impl<H, N> Rounds<H, N>
 where
-	Hash: Ord,
-	Number: Ord,
+	H: Ord + Hash,
+	N: Ord + AtLeast32BitUnsigned + MaybeDisplay,
 {
-	pub(crate) fn new(validator_set: ValidatorSet<Id>) -> Self {
+	pub(crate) fn new(validator_set: ValidatorSet<Public>) -> Self {
 		Rounds {
 			rounds: BTreeMap::new(),
 			validator_set,
@@ -71,33 +74,38 @@ where
 	}
 }
 
-impl<Hash, Number, Id, Signature> Rounds<Hash, Number, Id, Signature>
+impl<H, N> Rounds<H, N>
 where
-	Hash: Ord,
-	Number: Ord,
-	Id: PartialEq + Clone,
-	Signature: Clone + PartialEq,
+	H: Ord + Hash,
+	N: Ord + AtLeast32BitUnsigned + MaybeDisplay,
 {
 	pub(crate) fn validator_set_id(&self) -> ValidatorSetId {
 		self.validator_set.id
 	}
 
-	pub(crate) fn validators(&self) -> Vec<Id> {
+	pub(crate) fn validators(&self) -> Vec<Public> {
 		self.validator_set.validators.clone()
 	}
 
-	pub(crate) fn add_vote(&mut self, round: (Hash, Number), vote: (Id, Signature)) -> bool {
+	pub(crate) fn add_vote(&mut self, round: (H, N), vote: (Public, Signature)) -> bool {
 		self.rounds.entry(round).or_default().add_vote(vote)
 	}
 
-	pub(crate) fn is_done(&self, round: &(Hash, Number)) -> bool {
-		self.rounds
+	pub(crate) fn is_done(&self, round: &(H, N)) -> bool {
+		let done = self
+			.rounds
 			.get(round)
 			.map(|tracker| tracker.is_done(threshold(self.validator_set.validators.len())))
-			.unwrap_or(false)
+			.unwrap_or(false);
+
+		trace!(target: "beefy", "🥩 Round #{} done: {}", round.1, done);
+
+		done
 	}
 
-	pub(crate) fn drop(&mut self, round: &(Hash, Number)) -> Option<Vec<Option<Signature>>> {
+	pub(crate) fn drop(&mut self, round: &(H, N)) -> Option<Vec<Option<Signature>>> {
+		trace!(target: "beefy", "🥩 About to drop round #{}", round.1);
+
 		let signatures = self.rounds.remove(round)?.votes;
 
 		Some(
