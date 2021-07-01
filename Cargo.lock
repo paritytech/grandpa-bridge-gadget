@@ -571,7 +571,7 @@ version = "0.1.0"
 dependencies = [
  "hex-literal",
  "parity-scale-codec",
- "scale-info",
+ "scale-info 0.9.0",
  "sp-api",
  "sp-application-crypto",
  "sp-core",
@@ -4119,7 +4119,7 @@ dependencies = [
  "frame-system",
  "pallet-session",
  "parity-scale-codec",
- "scale-info",
+ "scale-info 0.6.0",
  "serde",
  "sp-core",
  "sp-io",
@@ -6284,13 +6284,38 @@ dependencies = [
  "cfg-if 1.0.0",
  "derive_more",
  "parity-scale-codec",
- "scale-info-derive",
+ "scale-info-derive 0.4.0",
+]
+
+[[package]]
+name = "scale-info"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc96e61bb609c3ff7fd758e3b3b78a0d07797b942bdd88140c9078ccf7df700b"
+dependencies = [
+ "bitvec",
+ "cfg-if 1.0.0",
+ "derive_more",
+ "parity-scale-codec",
+ "scale-info-derive 0.6.0",
 ]
 
 [[package]]
 name = "scale-info-derive"
 version = "0.4.0"
 source = "git+https://github.com/paritytech/scale-info?branch=aj-substrate#8301a87aeec738e153bea32fc8f9c58f703b256a"
+dependencies = [
+ "proc-macro-crate 1.0.0",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "scale-info-derive"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "777bae32436ada4e11677dc898a8a3f82f7792942022b0b127ba62049d36d26f"
 dependencies = [
  "proc-macro-crate 1.0.0",
  "proc-macro2",
