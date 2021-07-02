@@ -125,7 +125,7 @@ where
 		mut data: &[u8],
 	) -> ValidationResult<B::Hash> {
 		if let Ok(msg) = VoteMessage::<MmrRootHash, NumberFor<B>, Public, Signature>::decode(&mut data) {
-			let msg_hash = twox_64(&data);
+			let msg_hash = twox_64(data);
 			let round = msg.commitment.block_number;
 
 			// Verify general usefulness of the message.
