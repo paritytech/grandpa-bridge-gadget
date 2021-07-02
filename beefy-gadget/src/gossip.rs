@@ -86,6 +86,7 @@ where
 
 		let mut live = self.known_votes.write();
 
+		#[allow(clippy::map_entry)]
 		if !live.contains_key(&round) {
 			live.insert(round, Default::default());
 		}
@@ -99,7 +100,7 @@ where
 	}
 
 	fn add_known(known_votes: &mut KnownVotes<B>, round: &NumberFor<B>, hash: MessageHash) {
-		known_votes.get_mut(&round).map(|known| known.insert(hash));
+		known_votes.get_mut(round).map(|known| known.insert(hash));
 	}
 
 	fn is_live(known_votes: &KnownVotes<B>, round: &NumberFor<B>) -> bool {
@@ -133,9 +134,11 @@ where
 			// Also we keep track of already received votes to avoid verifying duplicates.
 			{
 				let known_votes = self.known_votes.read();
+
 				if !GossipValidator::<B>::is_live(&known_votes, &round) {
 					return ValidationResult::Discard;
 				}
+
 				if GossipValidator::<B>::is_known(&known_votes, &round, &msg_hash) {
 					return ValidationResult::ProcessAndKeep(self.topic);
 				}
@@ -315,12 +318,15 @@ mod tests {
 		let gv = GossipValidator::<Block>::new();
 		let sender = sc_network::PeerId::random();
 		let mut context = TestContext;
+
 		let commitment = Commitment {
 			payload: MmrRootHash::default(),
 			block_number: 3_u64,
 			validator_set_id: 0,
 		};
+
 		let signature = sign_commitment(&Keyring::Alice, &commitment);
+
 		let vote = VoteMessage {
 			commitment,
 			id: Keyring::Alice.public(),
@@ -333,6 +339,7 @@ mod tests {
 
 		// first time the cache should be populated.
 		let res = gv.validate(&mut context, &sender, &vote.encode());
+
 		assert!(matches!(res, ValidationResult::ProcessAndKeep(_)));
 		assert_eq!(
 			gv.known_votes
@@ -344,17 +351,20 @@ mod tests {
 
 		// second time we should hit the cache
 		let res = gv.validate(&mut context, &sender, &vote.encode());
+
 		assert!(matches!(res, ValidationResult::ProcessAndKeep(_)));
 
 		// next we should quickly reject if the round is not live.
 		gv.note_round(11_u64);
 		gv.note_round(12_u64);
+
 		assert!(!GossipValidator::<Block>::is_live(
 			&*gv.known_votes.read(),
 			&vote.commitment.block_number
 		));
 
 		let res = gv.validate(&mut context, &sender, &vote.encode());
+
 		assert!(matches!(res, ValidationResult::Discard));
 	}
 }
