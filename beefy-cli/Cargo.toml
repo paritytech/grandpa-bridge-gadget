@@ -12,7 +12,7 @@ env_logger = "0.8"
 hex = "0.4"
 libsecp256k1 = "0.5"
 log = "0.4"
-parity-scale-codec = "2.1"
+parity-scale-codec = "2.2"
 structopt = "0.3.21"
 
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
