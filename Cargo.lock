@@ -571,7 +571,7 @@ version = "0.1.0"
 dependencies = [
  "hex-literal",
  "parity-scale-codec",
- "scale-info 0.9.0",
+ "scale-info",
  "sp-api",
  "sp-application-crypto",
  "sp-core",
@@ -1658,7 +1658,8 @@ dependencies = [
 [[package]]
 name = "fixed-hash"
 version = "0.7.0"
-source = "git+https://github.com/paritytech/parity-common#7c2a9b28e266d0b0adbad4869e2559500fad4859"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfcf0ed7fe52a17a03854ec54a9f76d6d84508d1c0e66bc1793301c73fc8493c"
 dependencies = [
  "byteorder",
  "rand 0.8.4",
@@ -2548,7 +2549,8 @@ dependencies = [
 [[package]]
 name = "impl-codec"
 version = "0.5.0"
-source = "git+https://github.com/paritytech/parity-common#7c2a9b28e266d0b0adbad4869e2559500fad4859"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df170efa359aebdd5cb7fe78edcc67107748e4737bdca8a8fb40d15ea7a877ed"
 dependencies = [
  "parity-scale-codec",
 ]
@@ -2558,14 +2560,6 @@ name = "impl-serde"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b47ca4d2b6931707a55fce5cf66aff80e2178c8b63bbb4ecb5695cbc870ddf6f"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "impl-serde"
-version = "0.3.1"
-source = "git+https://github.com/paritytech/parity-common#7c2a9b28e266d0b0adbad4869e2559500fad4859"
 dependencies = [
  "serde",
 ]
@@ -3109,7 +3103,7 @@ dependencies = [
  "rand 0.7.3",
  "sha2 0.9.5",
  "smallvec 1.6.1",
- "uint 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "uint",
  "unsigned-varint 0.7.0",
  "void",
  "wasm-timer",
@@ -4119,7 +4113,7 @@ dependencies = [
  "frame-system",
  "pallet-session",
  "parity-scale-codec",
- "scale-info 0.6.0",
+ "scale-info",
  "serde",
  "sp-core",
  "sp-io",
@@ -4379,12 +4373,13 @@ dependencies = [
 [[package]]
 name = "parity-util-mem"
 version = "0.9.0"
-source = "git+https://github.com/paritytech/parity-common#7c2a9b28e266d0b0adbad4869e2559500fad4859"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "664a8c6b8e62d8f9f2f937e391982eb433ab285b4cd9545b342441e04a906e42"
 dependencies = [
  "cfg-if 1.0.0",
  "hashbrown",
  "impl-trait-for-tuples",
- "parity-util-mem-derive 0.1.0 (git+https://github.com/paritytech/parity-common)",
+ "parity-util-mem-derive",
  "parking_lot 0.11.1",
  "primitive-types",
  "smallvec 1.6.1",
@@ -4396,16 +4391,6 @@ name = "parity-util-mem-derive"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f557c32c6d268a07c921471619c0295f5efad3a0e76d4f97a05c091a51d110b2"
-dependencies = [
- "proc-macro2",
- "syn",
- "synstructure",
-]
-
-[[package]]
-name = "parity-util-mem-derive"
-version = "0.1.0"
-source = "git+https://github.com/paritytech/parity-common#7c2a9b28e266d0b0adbad4869e2559500fad4859"
 dependencies = [
  "proc-macro2",
  "syn",
@@ -4741,12 +4726,13 @@ checksum = "ac74c624d6b2d21f425f752262f42188365d7b8ff1aff74c82e45136510a4857"
 [[package]]
 name = "primitive-types"
 version = "0.9.0"
-source = "git+https://github.com/paritytech/parity-common#7c2a9b28e266d0b0adbad4869e2559500fad4859"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2415937401cb030a2a0a4d922483f945fa068f52a7dbb22ce0fe5f2b6f6adace"
 dependencies = [
  "fixed-hash",
  "impl-codec",
- "impl-serde 0.3.1 (git+https://github.com/paritytech/parity-common)",
- "uint 0.9.0 (git+https://github.com/paritytech/parity-common)",
+ "impl-serde",
+ "uint",
 ]
 
 [[package]]
@@ -6153,7 +6139,7 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "parity-util-mem",
- "parity-util-mem-derive 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parity-util-mem-derive",
  "parking_lot 0.11.1",
  "sc-client-api",
  "sp-core",
@@ -6277,18 +6263,6 @@ dependencies = [
 
 [[package]]
 name = "scale-info"
-version = "0.6.0"
-source = "git+https://github.com/paritytech/scale-info?branch=aj-substrate#8301a87aeec738e153bea32fc8f9c58f703b256a"
-dependencies = [
- "bitvec",
- "cfg-if 1.0.0",
- "derive_more",
- "parity-scale-codec",
- "scale-info-derive 0.4.0",
-]
-
-[[package]]
-name = "scale-info"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc96e61bb609c3ff7fd758e3b3b78a0d07797b942bdd88140c9078ccf7df700b"
@@ -6297,18 +6271,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "derive_more",
  "parity-scale-codec",
- "scale-info-derive 0.6.0",
-]
-
-[[package]]
-name = "scale-info-derive"
-version = "0.4.0"
-source = "git+https://github.com/paritytech/scale-info?branch=aj-substrate#8301a87aeec738e153bea32fc8f9c58f703b256a"
-dependencies = [
- "proc-macro-crate 1.0.0",
- "proc-macro2",
- "quote",
- "syn",
+ "scale-info-derive",
 ]
 
 [[package]]
@@ -6931,7 +6894,7 @@ dependencies = [
  "hash-db",
  "hash256-std-hasher",
  "hex",
- "impl-serde 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "impl-serde",
  "lazy_static",
  "libsecp256k1 0.3.5",
  "log",
@@ -7230,7 +7193,7 @@ name = "sp-storage"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=master#d03a91a181d0b22d00a6b9ba2a8007dc254779e3"
 dependencies = [
- "impl-serde 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "impl-serde",
  "parity-scale-codec",
  "ref-cast",
  "serde",
@@ -7348,7 +7311,7 @@ name = "sp-version"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/substrate?branch=master#d03a91a181d0b22d00a6b9ba2a8007dc254779e3"
 dependencies = [
- "impl-serde 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "impl-serde",
  "parity-scale-codec",
  "serde",
  "sp-runtime",
@@ -8214,17 +8177,6 @@ name = "uint"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e11fe9a9348741cf134085ad57c249508345fe16411b3d7fb4ff2da2f1d6382e"
-dependencies = [
- "byteorder",
- "crunchy",
- "hex",
- "static_assertions",
-]
-
-[[package]]
-name = "uint"
-version = "0.9.0"
-source = "git+https://github.com/paritytech/parity-common#7c2a9b28e266d0b0adbad4869e2559500fad4859"
 dependencies = [
  "byteorder",
  "crunchy",
