@@ -15,7 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use codec::{Decode, Encode};
-use log::{debug, trace};
+use log::{debug, trace, warn};
 use parking_lot::RwLock;
 use std::collections::BTreeMap;
 
@@ -82,7 +82,7 @@ where
 	/// We retain the [`MAX_LIVE_GOSSIP_ROUNDS`] most **recent** voting rounds as live.
 	/// As long as a voting round is live, it will be gossiped to peer nodes.
 	pub(crate) fn note_round(&self, round: NumberFor<B>) {
-		trace!(target: "beefy", "🥩 About to note round #{}", round);
+		debug!(target: "beefy", "🥩 About to note round #{}", round);
 
 		let mut live = self.known_votes.write();
 
@@ -149,7 +149,7 @@ where
 				return ValidationResult::ProcessAndKeep(self.topic);
 			} else {
 				// TODO: report peer
-				debug!(target: "beefy", "🥩 Bad signature on message: {:?}, from: {:?}", msg, sender);
+				warn!(target: "beefy", "🥩 Bad signature on message: {:?}, from: {:?}", msg, sender);
 			}
 		}
 
