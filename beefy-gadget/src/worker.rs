@@ -39,6 +39,7 @@ use beefy_primitives::{
 };
 
 use crate::{
+	error,
 	gossip::{topic, GossipValidator},
 	keystore::BeefyKeystore,
 	metric_inc, metric_set,
@@ -178,27 +179,24 @@ where
 	}
 
 	/// Verify `active` validator set for `block` against the key store
-	fn verify_validator_set(&self, block: &NumberFor<B>, mut active: ValidatorSet<Public>) {
+	///
+	/// The critical case is, if we do have a public key in the key store which is not
+	/// part of the active validator set.
+	///
+	/// Note that for a non-authority node there will be no keystore, and we will
+	/// return an error and don't check. The error can usually be ignored.
+	fn verify_validator_set(&self, block: &NumberFor<B>, mut active: ValidatorSet<Public>) -> Result<(), error::Error> {
 		let active: BTreeSet<Public> = active.validators.drain(..).collect();
 
-		let store: BTreeSet<Public> = self
-			.key_store
-			.public_keys()
-			.map_err(|e| {
-				warn!(target: "beefy", "🥩 key store error: {:?}", e);
-			})
-			.unwrap()
-			.drain(..)
-			.collect();
+		let store: BTreeSet<Public> = self.key_store.public_keys()?.drain(..).collect();
 
-		// the critical case is, if we do have a public key in the active validator set
-		// which is *not* in the key store. In that case we can't verify the vote from
-		// the validator associated with the missing public key.
-		let missing: Vec<_> = active.difference(&store).cloned().collect();
+		let missing: Vec<_> = store.difference(&active).cloned().collect();
 
 		if !missing.is_empty() {
-			error!(target: "beefy", "🥩 for block {:?} public key missing in keystore: {:?}", block, missing);
+			warn!(target: "beefy", "🥩 for block {:?} public key missing in validator set: {:?}", block, missing);
 		}
+
+		Ok(())
 	}
 
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {
@@ -225,7 +223,7 @@ where
 				}
 
 				// verify the new validator set
-				self.verify_validator_set(notification.header.number(), active.clone());
+				let _ = self.verify_validator_set(notification.header.number(), active.clone());
 
 				self.rounds = round::Rounds::new(active.clone());
 
@@ -274,12 +272,6 @@ where
 				id: authority_id,
 				signature,
 			};
-
-			// this is a temporary check in order to help diagnose some keystore related issues we do
-			// experiecne with testnet deployments.
-			if !BeefyKeystore::verify(&message.id, &message.signature, &message.commitment.encode()) {
-				warn!(target: "beefy", "🥩 Can't verify vote message {:?}", message);
-			}
 
 			let encoded_message = message.encode();
 
