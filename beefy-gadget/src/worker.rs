@@ -248,6 +248,12 @@ where
 				signature,
 			};
 
+			// this is a temporary check in order to help diagnose some keystore related issues we do
+			// experiecne with testnet deployments.
+			if !BeefyKeystore::verify(&message.id, &message.signature, &message.commitment.encode()) {
+				warn!(target: "beefy", "🥩 Can't verify vote message {:?}", message);
+			}
+
 			let encoded_message = message.encode();
 
 			metric_inc!(self, beefy_votes_sent);
