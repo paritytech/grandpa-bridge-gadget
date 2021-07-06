@@ -41,6 +41,8 @@ pub enum BeefyMerkleTree {
 		root: H256,
 		/// Proof content.
 		proof: Bytes,
+		/// Number of leaves in the original tree.
+		number_of_leaves: usize,
 		/// Index of the leaf the proof is for.
 		leaf_index: usize,
 		/// SCALE-encoded value of the leaf node (it's not part of the proof).
@@ -62,9 +64,10 @@ impl BeefyMerkleTree {
 			Self::VerifyProof {
 				root,
 				proof,
+				number_of_leaves,
 				leaf_index,
 				leaf_value,
-			} => verify_merkle_proof(root, proof.0, leaf_index, leaf_value.0),
+			} => verify_merkle_proof(root, proof.0, number_of_leaves, leaf_index, leaf_value.0),
 		}
 	}
 }
@@ -87,6 +90,8 @@ pub enum ParaMerkleTree {
 		root: H256,
 		/// Proof content.
 		proof: Bytes,
+		/// Number of leaves in the original tree.
+		number_of_leaves: usize,
 		/// Index of the leaf the proof is for.
 		leaf_index: usize,
 		/// SCALE-encoded value of the leaf node (it's not part of the proof).
@@ -104,9 +109,10 @@ impl ParaMerkleTree {
 			Self::VerifyProof {
 				root,
 				proof,
+				number_of_leaves,
 				leaf_index,
 				leaf_value,
-			} => verify_merkle_proof(root, proof.0, leaf_index, leaf_value.0),
+			} => verify_merkle_proof(root, proof.0, number_of_leaves, leaf_index, leaf_value.0),
 		}
 	}
 }
@@ -117,8 +123,9 @@ type Leaf = Vec<u8>;
 fn generate_merkle_proof<T: AsRef<[u8]>>(
 	items: impl Iterator<Item = T>,
 	leaf_index: usize,
-) -> anyhow::Result<(H256, Proof, Leaf)> {
+) -> anyhow::Result<(H256, Proof, Leaf, usize)> {
 	let items = items.collect::<Vec<_>>();
+	let number_of_leaves = items.len();
 	let leaf = items
 		.get(leaf_index)
 		.map(|x| x.as_ref().to_vec())
@@ -128,16 +135,18 @@ fn generate_merkle_proof<T: AsRef<[u8]>>(
 		beefy_merkle_root::merkle_proof::<Keccak256, _, _>(items, leaf_index);
 	let proof = proof.into_iter().map(Into::into).collect();
 
-	Ok((root.into(), proof, leaf))
+	Ok((root.into(), proof, leaf, number_of_leaves))
 }
 
 fn print_generated_merkle_proof<T: AsRef<[u8]>>(
 	items: impl Iterator<Item = T>,
 	leaf_index: usize,
 ) -> anyhow::Result<()> {
-	let (root, proof, leaf) = generate_merkle_proof(items, leaf_index)?;
+	let (root, proof, leaf, number_of_leaves) = generate_merkle_proof(items, leaf_index)?;
 	println!();
 	println!("Root: {:?}", root);
+	println!("Leaf index: {}", leaf_index);
+	println!("Number of leaves: {}", number_of_leaves);
 	println!("SCALE-encoded proof: 0x{}", hex::encode(proof.encode()));
 	println!("SCALE-encoded leaf value: 0x{}", hex::encode(&leaf));
 	println!();
@@ -145,13 +154,18 @@ fn print_generated_merkle_proof<T: AsRef<[u8]>>(
 	Ok(())
 }
 
-fn verify_merkle_proof(root: H256, proof: Vec<u8>, leaf_index: usize, leaf_value: Vec<u8>) -> anyhow::Result<()> {
+fn verify_merkle_proof(
+	root: H256,
+	proof: Vec<u8>,
+	number_of_leaves: usize,
+	leaf_index: usize,
+	leaf_value: Vec<u8>,
+) -> anyhow::Result<()> {
 	let proof: Proof = Decode::decode(&mut &*proof)?;
 	let convert = |c: H256| c.to_fixed_bytes();
 	let root = convert(root);
 	let proof = proof.into_iter().map(convert).collect::<Vec<_>>();
 
-	let number_of_leaves = 0;
 	if beefy_merkle_root::verify_proof::<Keccak256, _, _>(&root, proof, number_of_leaves, leaf_index, &leaf_value) {
 		println!("\n✅ Proof is correct.\n");
 	} else {
@@ -175,14 +189,15 @@ mod tests {
 			hex!("03fe6b333420b90689158643ccad94e62d707de1a80726d53aa04657fec14afd3e").unchecked_into(),
 			hex!("03fe6b333420b90689158643ccad94e62d707de1a80726d53aa04657fec14afd3e").unchecked_into(),
 		]);
+		let len = authorities.0.len();
 		let uncompressed = uncompress_beefy_ids(authorities.0).unwrap();
 		let items = uncompressed_to_eth(uncompressed);
 		let leaf_index = 0;
 
 		// when
-		let (root, proof, leaf) = generate_merkle_proof(items, leaf_index).unwrap();
+		let (root, proof, leaf, _) = generate_merkle_proof(items, leaf_index).unwrap();
 
 		// then
-		verify_merkle_proof(root, proof.encode(), leaf_index, leaf).unwrap();
+		verify_merkle_proof(root, proof.encode(), len, leaf_index, leaf).unwrap();
 	}
 }
