@@ -75,7 +75,6 @@ impl BeefyKeystore {
 		Ok(sig)
 	}
 
-	#[allow(dead_code)]
 	/// Returns a vector of [`beefy_primitives::crypto::Public`] keys which are currently supported (i.e. found
 	/// in the keystore).
 	pub fn public_keys(&self) -> Result<Vec<Public>, error::Error> {

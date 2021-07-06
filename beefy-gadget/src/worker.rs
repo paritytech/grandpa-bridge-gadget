@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use std::{fmt::Debug, marker::PhantomData, sync::Arc};
+use std::{collections::BTreeSet, fmt::Debug, marker::PhantomData, sync::Arc};
 
 use codec::{Codec, Decode, Encode};
 use futures::{future, FutureExt, StreamExt};
@@ -177,6 +177,30 @@ where
 		new
 	}
 
+	/// Verify `active` validator set for `block` against the key store
+	fn verify_validator_set(&self, block: &NumberFor<B>, mut active: ValidatorSet<Public>) {
+		let active: BTreeSet<Public> = active.validators.drain(..).collect();
+
+		let store: BTreeSet<Public> = self
+			.key_store
+			.public_keys()
+			.map_err(|e| {
+				warn!(target: "beefy", "🥩 key store error: {:?}", e);
+			})
+			.unwrap()
+			.drain(..)
+			.collect();
+
+		// the critical case is, if we do have a public key in the active validator set
+		// which is *not* in the key store. In that case we can't verify the vote from
+		// the validator associated with the missing public key.
+		let missing: Vec<_> = active.difference(&store).cloned().collect();
+
+		if !missing.is_empty() {
+			error!(target: "beefy", "🥩 for block {:?} public key missing in keystore: {:?}", block, missing);
+		}
+	}
+
 	fn handle_finality_notification(&mut self, notification: FinalityNotification<B>) {
 		trace!(target: "beefy", "🥩 Finality notification: {:?}", notification);
 
@@ -199,6 +223,9 @@ where
 				if active.id != self.last_signed_id + 1 && active.id != GENESIS_AUTHORITY_SET_ID {
 					metric_inc!(self, beefy_skipped_sessions);
 				}
+
+				// verify new validator
+				self.verify_validator_set(notification.header.number(), active.clone());
 
 				self.rounds = round::Rounds::new(active.clone());
 
