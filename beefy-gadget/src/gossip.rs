@@ -15,7 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use codec::{Decode, Encode};
-use log::{debug, trace, warn};
+use log::{debug, trace};
 use parking_lot::RwLock;
 use std::collections::BTreeMap;
 
