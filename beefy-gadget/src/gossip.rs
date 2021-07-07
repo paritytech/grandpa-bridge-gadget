@@ -149,7 +149,7 @@ where
 				return ValidationResult::ProcessAndKeep(self.topic);
 			} else {
 				// TODO: report peer
-				warn!(target: "beefy", "🥩 Bad signature on message: {:?}, from: {:?}", msg, sender);
+				debug!(target: "beefy", "🥩 Bad signature on message: {:?}, from: {:?}", msg, sender);
 			}
 		}
 
