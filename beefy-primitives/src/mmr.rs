@@ -68,7 +68,7 @@ impl MmrLeafVersion {
 		if major > 0b111 || minor > 0b11111 {
 			panic!("Version components are too big.");
 		}
-		let version = major << 5 + minor;
+		let version = (major << 5) + minor;
 		Self(version)
 	}
 
@@ -121,12 +121,12 @@ mod tests {
 	#[test]
 	#[should_panic]
 	fn should_panic_if_major_too_large() {
-		MmrLeafVersion::new(8, 0)
+		MmrLeafVersion::new(8, 0);
 	}
 
 	#[test]
 	#[should_panic]
 	fn should_panic_if_minor_too_large() {
-		MmrLeafVersion::new(0, 32)
+		MmrLeafVersion::new(0, 32);
 	}
 }
