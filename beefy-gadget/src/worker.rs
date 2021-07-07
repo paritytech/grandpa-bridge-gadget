@@ -258,14 +258,22 @@ where
 				block_number: notification.header.number(),
 				validator_set_id: self.rounds.validator_set_id(),
 			};
+			let encoded_commitment = commitment.encode();
 
-			let signature = match self.key_store.sign(&authority_id, commitment.encode().as_ref()) {
+			let signature = match self.key_store.sign(&authority_id, &*encoded_commitment) {
 				Ok(sig) => sig,
 				Err(err) => {
 					warn!(target: "beefy", "🥩 Error signing commitment: {:?}", err);
 					return;
 				}
 			};
+
+			trace!(
+				target: "beefy",
+				"🥩 Produced signature using {:?}, is_valid: {:?}",
+				authority_id,
+				BeefyKeystore::verify(&authority_id, &signature, &*encoded_commitment)
+			);
 
 			let message = VoteMessage {
 				commitment,
