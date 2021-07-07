@@ -49,13 +49,10 @@ impl BeefyKeystore {
 			.collect();
 
 		if public.len() > 1 {
-			warn!(target: "beefy", "🥩 Multiple private keys found for: {:?}", public);
-			return Some(public[0].clone());
-		} else if !public.is_empty() {
-			return Some(public[0].clone());
+			warn!(target: "beefy", "🥩 Multiple private keys found for: {:?} ({})", public, public.len());
 		}
 
-		None
+		public.get(0).cloned()
 	}
 
 	/// Sign `message` with the `public` key.

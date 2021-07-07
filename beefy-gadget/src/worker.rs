@@ -193,7 +193,7 @@ where
 		let missing: Vec<_> = store.difference(&active).cloned().collect();
 
 		if !missing.is_empty() {
-			warn!(target: "beefy", "🥩 for block {:?} public key missing in validator set: {:?}", block, missing);
+			debug!(target: "beefy", "🥩 for block {:?} public key missing in validator set: {:?}", block, missing);
 		}
 
 		Ok(())
@@ -242,7 +242,7 @@ where
 				debug!(target: "beefy", "🥩 Local authority id: {:?}", id);
 				id
 			} else {
-				warn!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
+				debug!(target: "beefy", "🥩 Missing validator id - can't vote for: {:?}", notification.header.hash());
 				return;
 			};
 
