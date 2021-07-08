@@ -132,7 +132,7 @@ pub struct MerkleProof<T> {
 	/// This is needed to detect a case where we have an odd number of leaves that "get promoted"
 	/// to upper layers.
 	pub number_of_leaves: usize,
-	/// Index of the leaf the proof is for.
+	/// Index of the leaf the proof is for (0-based).
 	pub leaf_index: usize,
 	/// Leaf content.
 	pub leaf: T,
@@ -187,6 +187,7 @@ where
 		hash
 	});
 
+	/// The struct collects a proof for single leaf.
 	struct ProofCollection {
 		proof: Vec<Hash>,
 		position: usize,
