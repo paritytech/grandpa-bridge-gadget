@@ -4132,6 +4132,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-beefy-mmr"
+version = "0.1.0"
+dependencies = [
+ "beefy-primitives",
+ "frame-support",
+ "frame-system",
+ "libsecp256k1 0.3.5",
+ "log",
+ "pallet-beefy",
+ "pallet-mmr",
+ "pallet-session",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-grandpa"
 version = "3.1.0"
 source = "git+https://github.com/paritytech/substrate?branch=master#ebf2391a0361e662944e3b5fef979e24b4d98494"

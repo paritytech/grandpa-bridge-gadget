@@ -12,5 +12,6 @@ members = [
 	"beefy-node/runtime",
 	"beefy-pallet",
 	"beefy-primitives",
-	"beefy-test",
+        "beefy-test",
+        "beefy-mmr-pallet",
 ]
