@@ -418,6 +418,7 @@ name = "beefy-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "beefy-merkle-tree",
  "beefy-primitives",
  "env_logger 0.8.4",
  "hex",
@@ -426,7 +427,6 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "sp-core",
- "sp-trie",
  "structopt",
 ]
 
@@ -478,6 +478,17 @@ dependencies = [
  "serde_json",
  "sp-core",
  "sp-runtime",
+]
+
+[[package]]
+name = "beefy-merkle-tree"
+version = "0.1.0"
+dependencies = [
+ "env_logger 0.8.4",
+ "hex",
+ "hex-literal",
+ "log",
+ "tiny-keccak",
 ]
 
 [[package]]

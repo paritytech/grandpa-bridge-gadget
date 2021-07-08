@@ -8,6 +8,7 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 [dependencies]
 anyhow = "1.0.40"
 beefy-primitives = { version = "0.1", path = "../beefy-primitives" }
+beefy-merkle-tree = { version = "0.1", path = "../beefy-merkle-tree" }
 env_logger = "0.8"
 hex = "0.4"
 libsecp256k1 = "0.5"
@@ -16,7 +17,6 @@ parity-scale-codec = "2.2"
 structopt = "0.3.21"
 
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sp-trie = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 [dev-dependencies]
 hex-literal = "0.3"
