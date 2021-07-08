@@ -73,7 +73,7 @@ pub fn uncompressed_to_eth(uncompressed: Vec<libsecp256k1::PublicKey>) -> impl I
 	uncompressed
 		.into_iter()
 		.map(|k| k.serialize())
-		.map(|uncompressed_raw| beefy_merkle_root::Keccak256::hash(&uncompressed_raw[1..])[12..].to_vec())
+		.map(|uncompressed_raw| beefy_merkle_tree::Keccak256::hash(&uncompressed_raw[1..])[12..].to_vec())
 }
 
 fn beefy_id_from_hex(id: &str) -> anyhow::Result<AuthorityId> {

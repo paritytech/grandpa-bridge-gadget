@@ -18,7 +18,7 @@ use crate::cli::{
 	uncompress_authorities::{uncompress_beefy_ids, uncompressed_to_eth},
 	utils::{Authorities, Bytes},
 };
-use beefy_merkle_root::Keccak256;
+use beefy_merkle_tree::Keccak256;
 use parity_scale_codec::{Decode, Encode};
 use sp_core::H256;
 use structopt::StructOpt;
@@ -131,8 +131,8 @@ fn generate_merkle_proof<T: AsRef<[u8]>>(
 		.map(|x| x.as_ref().to_vec())
 		.ok_or_else(|| anyhow::format_err!("Leaf index out of bounds: {} vs {}", leaf_index, items.len(),))?;
 
-	let beefy_merkle_root::MerkleProof { root, proof, .. } =
-		beefy_merkle_root::merkle_proof::<Keccak256, _, _>(items, leaf_index);
+	let beefy_merkle_tree::MerkleProof { root, proof, .. } =
+		beefy_merkle_tree::merkle_proof::<Keccak256, _, _>(items, leaf_index);
 	let proof = proof.into_iter().map(Into::into).collect();
 
 	Ok((root.into(), proof, leaf, number_of_leaves))
@@ -166,7 +166,7 @@ fn verify_merkle_proof(
 	let root = convert(root);
 	let proof = proof.into_iter().map(convert).collect::<Vec<_>>();
 
-	if beefy_merkle_root::verify_proof::<Keccak256, _, _>(&root, proof, number_of_leaves, leaf_index, &leaf_value) {
+	if beefy_merkle_tree::verify_proof::<Keccak256, _, _>(&root, proof, number_of_leaves, leaf_index, &leaf_value) {
 		println!("\n✅ Proof is correct.\n");
 	} else {
 		println!("\n❌ Proof is INCORRECT.\n");

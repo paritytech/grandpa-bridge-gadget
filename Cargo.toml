@@ -8,7 +8,7 @@ members = [
 	"beefy-cli",
 	"beefy-gadget",
 	"beefy-gadget/rpc",
-	"beefy-merkle-root",
+	"beefy-merkle-tree",
 	"beefy-node/node",
 	"beefy-node/runtime",
 	"beefy-pallet",

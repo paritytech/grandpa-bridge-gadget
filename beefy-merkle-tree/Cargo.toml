@@ -1,5 +1,5 @@
 [package]
-name = "beefy-merkle-root"
+name = "beefy-merkle-tree"
 version = "0.1.0"
 authors = ["Parity Technologies <admin@parity.io>"]
 edition = "2018"
