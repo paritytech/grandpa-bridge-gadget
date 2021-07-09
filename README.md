@@ -51,32 +51,34 @@ In addition to that the current status as well as a preliminary roadmap is prese
 What follows is an overview of how the project repository is laid out. The main components are the
 `beefy-gadget` which is a POC of the BEEFY round logic. `beefy-pallet` which is mainly a thin
 integration layer over the session pallet and keeps track of the current authorities.
-Finally the BEEFY `primitives` crate which contains most of the type definitions for the 
+Finally the BEEFY `primitives` crate which contains most of the type definitions for the
 BEEFY protocol.
 
 The `primitives` crate also contains a test [light_client](.primitives/tests/light_client/) which demonstrates how BEEFY would
 be utilized by a light client implementation.
 
 ```
-├── beefy-cli        // BEEFY utilities and testing aids
+├── beefy-cli         // BEEFY utilities and testing aids
 │  └── ...
-├── beefy-gadget     // The BEEFY gadget
+├── beefy-gadget      // The BEEFY gadget
 │  └── ...
-├── beefy-node       // A Substrate node running the BEEFY gadget
+├── beefy-merkle-tree // A Binary Merkle-Tree for Substrate runtime usage
 │  └──  ...
-├── beefy-pallet     // The BEEFY pallet.
+├── beefy-node        // A Substrate node running the BEEFY gadget
 │  └──  ...
-├── beefy-primitives // The BEEFY primitives crate includig a test light client
+├── beefy-pallet      // The BEEFY pallet.
 │  └──  ...
-├── beefy-test       // The BEEFY test support library
+├── beefy-primitives  // The BEEFY primitives crate includig a test light client
 │  └──  ...
-├── docs             // Documentation
+├── beefy-test        // The BEEFY test support library
+│  └──  ...
+├── docs              // Documentation
 │  └──  ...
  ```
 
 ## BEEFY Key
 
-The current cryptographic scheme used by BEEFY is `ecdsa`. This is **different** from other schemes like `sr25519` and `ed25519` which are commonly used in Substrate configurations for other pallets (BABE, GRANDPA, AuRa, etc). The most noticeable difference is that an `ecdsa` public key 
+The current cryptographic scheme used by BEEFY is `ecdsa`. This is **different** from other schemes like `sr25519` and `ed25519` which are commonly used in Substrate configurations for other pallets (BABE, GRANDPA, AuRa, etc). The most noticeable difference is that an `ecdsa` public key
 is `33` bytes long, instead of `32` bytes for a `sr25519` based public key. So, a BEEFY key [sticks out](https://github.com/paritytech/polkadot/blob/25951e45b1907853f120c752aaa01631a0b3e783/node/service/src/chain_spec.rs#L738) among the other public keys a bit.
 
 For other crypto (using the default Substrate configuration) the `AccountId` (32-bytes) matches the `PublicKey`, but note that it's not the case for BEEFY. As a consequence of this, you can **not** convert the `AccountId` raw bytes into a BEEFY `PublicKey`.
@@ -109,10 +111,28 @@ In case your BEEFY keys are using the wrong cryptographic scheme, you will see a
 
 ## Running BEEFY
 
-Currently the easiest way to see BEEFY in action is to run a single dev node like so:
+Currently the easiest way to run BEEFY is to use a 3-node local testnet using `beefy-node`. We will call those nodes `Alice`, `Bob` and
+`Charlie`. Each node will use the built-in development account with the same name, i.e. node `Alice` will use the `Alice` development
+account and so on. Each of the three accounts has been configured as an initial authority at genesis. So, we are using three validators
+for our testnet.
+
+`Alice` is our bootnode is is started like so:
 
 ```
-$ RUST_LOG=beefy=trace ./target/debug/beefy-node --tmp --dev --alice --validator
+$ RUST_LOG=beefy=trace ./target/debug/beefy-node --tmp --alice
 ```
 
-Expect additional (more useful) deployment options to be added soon.
+`Bob` is started like so:
+
+```
+RUST_LOG=beefy=trace ./target/debug/beefy-node --tmp --bob
+```
+
+`Charlie` is started like so:
+
+```
+RUST_LOG=beefy=trace ./target/debug/beefy-node --tmp --charlie
+```
+
+Note that the examples above use an ephemeral DB due to the `--tmp` CLI option. If you want a persistent DB, use `--/tmp/[node-name]`
+instead. Replace `node-name` with the actual node name (e.g. `alice`) in order to assure separate dirctories for the DB.

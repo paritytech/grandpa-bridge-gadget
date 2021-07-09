@@ -48,10 +48,10 @@ notice = "warn"
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.
 ignore = [
-    # `nalgebra` is a dep of `linregress 0.4.1` which in turn is a dep of
-    # `frame-benchmarking`. `linregress` needs to update it's `nalgebra`
-    # dep and publish a new release
-    "RUSTSEC-2021-0070"
+    # `prost-types` is a dependency of `prost-build` which in turn is a
+    # build dependency of `libp2p` and `sc_network`. Those two crates
+    # need to update their respective deps
+    "RUSTSEC-2021-0073"
 ]
 # Threshold for security vulnerabilities, any vulnerability with a CVSS score
 # lower than the range specified will be ignored. Note that ignored advisories
