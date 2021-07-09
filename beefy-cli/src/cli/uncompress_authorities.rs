@@ -68,6 +68,14 @@ pub fn uncompress_beefy_ids(ids: Vec<AuthorityId>) -> anyhow::Result<Vec<libsecp
 	Ok(uncompressed)
 }
 
+/// Convert uncompressed secp256k1 Public Keys to Ethereum Addresses.
+pub fn uncompressed_to_eth(uncompressed: Vec<libsecp256k1::PublicKey>) -> impl Iterator<Item = Vec<u8>> {
+	uncompressed
+		.into_iter()
+		.map(|k| k.serialize())
+		.map(|uncompressed_raw| beefy_merkle_tree::Keccak256::hash(&uncompressed_raw[1..])[12..].to_vec())
+}
+
 fn beefy_id_from_hex(id: &str) -> anyhow::Result<AuthorityId> {
 	let encoded = parse_hex(id)?;
 	let auth_id = AuthorityId::decode(&mut &*encoded)?;
