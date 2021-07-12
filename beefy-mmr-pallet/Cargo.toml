@@ -7,6 +7,7 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 description = "BEEFY + MMR runtime utilities"
 
 [dependencies]
+hex = { version = "0.4", optional = true }
 codec = { version = "2.0.0", package = "parity-scale-codec", default-features = false, features = ["derive"] }
 libsecp256k1 = { version = "0.3.5", default-features = false }
 log = { version = "0.4.13", default-features = false }
@@ -16,22 +17,25 @@ frame-support = { git = "https://github.com/paritytech/substrate", default-featu
 frame-system = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 pallet-mmr = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 pallet-session = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
+pallet-mmr-primitives = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
+sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 
 beefy-primitives = { path = "../beefy-primitives", default-features = false }
 pallet-beefy = { path = "../beefy-pallet", default-features = false }
 
-
 [dev-dependencies]
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-staking = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
+hex = "0.4"
+hex-literal = "0.3"
 
 [features]
 default = ["std"]
 std = [
+    "hex",
     "beefy-primitives/std",
     "codec/std",
     "frame-support/std",
@@ -39,6 +43,8 @@ std = [
     "libsecp256k1/std",
     "log/std",
     "pallet-beefy/std",
+    "pallet-mmr/std",
+    "pallet-mmr-primitives/std",
     "pallet-session/std",
     "serde",
     "sp-core/std",

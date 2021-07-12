@@ -16,11 +16,16 @@
 
 use std::vec;
 
-use beefy_primitives::ValidatorSet;
-use codec::Encode;
+use beefy_primitives::{
+	mmr::{BeefyNextAuthoritySet, MmrLeafVersion},
+	ValidatorSet,
+};
+use codec::{Decode, Encode};
+use hex_literal::hex;
 
 use sp_core::H256;
-use sp_runtime::DigestItem;
+use sp_io::TestExternalities;
+use sp_runtime::{traits::Keccak256, DigestItem};
 
 use frame_support::traits::OnInitialize;
 
@@ -29,113 +34,86 @@ use crate::mock::*;
 fn init_block(block: u64) {
 	System::set_block_number(block);
 	Session::on_initialize(block);
+	Mmr::on_initialize(block);
 }
 
 pub fn beefy_log(log: ConsensusLog<BeefyId>) -> DigestItem<H256> {
 	DigestItem::Consensus(BEEFY_ENGINE_ID, log.encode())
 }
 
-#[test]
-fn genesis_session_initializes_authorities() {
-	let want = vec![mock_beefy_id(1), mock_beefy_id(2), mock_beefy_id(3), mock_beefy_id(4)];
+fn offchain_key(pos: usize) -> Vec<u8> {
+	(<Test as pallet_mmr::Config>::INDEXING_PREFIX, pos as u64).encode()
+}
 
-	new_test_ext(vec![1, 2, 3, 4]).execute_with(|| {
-		let authorities = Beefy::authorities();
-
-		assert!(authorities.len() == 2);
-		assert_eq!(want[0], authorities[0]);
-		assert_eq!(want[1], authorities[1]);
-
-		assert!(Beefy::validator_set_id() == 0);
-
-		let next_authorities = Beefy::next_authorities();
-
-		assert!(next_authorities.len() == 2);
-		assert_eq!(want[0], next_authorities[0]);
-		assert_eq!(want[1], next_authorities[1]);
-	});
+fn read_mmr_leaf(ext: &mut TestExternalities, index: usize) -> MmrLeaf {
+	type Node = pallet_mmr_primitives::DataOrHash<Keccak256, MmrLeaf>;
+	ext.persist_offchain_overlay();
+	let offchain_db = ext.offchain_db();
+	offchain_db
+		.get(&offchain_key(index))
+		.map(|d| Node::decode(&mut &*d).unwrap())
+		.map(|n| match n {
+			Node::Data(d) => d,
+			_ => panic!("Unexpected MMR node."),
+		})
+		.unwrap()
 }
 
 #[test]
-fn session_change_updates_authorities() {
-	new_test_ext(vec![1, 2, 3, 4]).execute_with(|| {
+fn should_contain_mmr_digest() {
+	let mut ext = new_test_ext(vec![1, 2, 3, 4]);
+	ext.execute_with(|| {
 		init_block(1);
 
-		assert!(0 == Beefy::validator_set_id());
+		assert_eq!(
+			System::digest().logs,
+			vec![beefy_log(ConsensusLog::MmrRoot(
+				hex!("108e5ad4890955bc296b0ac4ef62c8ee251eade7c345073732a26bbac6ae80aa").into()
+			))]
+		);
 
-		// no change - no log
-		assert!(System::digest().logs.is_empty());
-
+		// unique every time
 		init_block(2);
 
-		assert!(1 == Beefy::validator_set_id());
-
-		let want = beefy_log(ConsensusLog::AuthoritiesChange(ValidatorSet {
-			validators: vec![mock_beefy_id(3), mock_beefy_id(4)],
-			id: 1,
-		}));
-
-		let log = System::digest().logs[0].clone();
-
-		assert_eq!(want, log);
+		assert_eq!(
+			System::digest().logs,
+			vec![
+				beefy_log(ConsensusLog::MmrRoot(
+					hex!("108e5ad4890955bc296b0ac4ef62c8ee251eade7c345073732a26bbac6ae80aa").into()
+				)),
+				beefy_log(ConsensusLog::AuthoritiesChange(ValidatorSet {
+					validators: vec![mock_beefy_id(3), mock_beefy_id(4),],
+					id: 1,
+				})),
+				beefy_log(ConsensusLog::MmrRoot(
+					hex!("e3d39d6b720e4a1694e73e4845c11fd420291894e8384173d35329552d74aeb5").into()
+				)),
+			]
+		);
 	});
 }
 
 #[test]
-fn session_change_updates_next_authorities() {
-	let want = vec![mock_beefy_id(1), mock_beefy_id(2), mock_beefy_id(3), mock_beefy_id(4)];
-
-	new_test_ext(vec![1, 2, 3, 4]).execute_with(|| {
+fn should_contain_valid_leaf_data() {
+	let mut ext = new_test_ext(vec![1, 2, 3, 4]);
+	ext.execute_with(|| {
 		init_block(1);
-
-		let next_authorities = Beefy::next_authorities();
-
-		assert!(next_authorities.len() == 2);
-		assert_eq!(want[0], next_authorities[0]);
-		assert_eq!(want[1], next_authorities[1]);
-
-		init_block(2);
-
-		let next_authorities = Beefy::next_authorities();
-
-		assert!(next_authorities.len() == 2);
-		assert_eq!(want[2], next_authorities[0]);
-		assert_eq!(want[3], next_authorities[1]);
 	});
-}
 
-#[test]
-fn validator_set_at_genesis() {
-	let want = vec![mock_beefy_id(1), mock_beefy_id(2)];
+	let mmr_leaf = read_mmr_leaf(&mut ext, 0);
 
-	new_test_ext(vec![1, 2, 3, 4]).execute_with(|| {
-		let vs = Beefy::validator_set();
-
-		assert_eq!(vs.id, 0u64);
-		assert_eq!(vs.validators[0], want[0]);
-		assert_eq!(vs.validators[1], want[1]);
-	});
-}
-
-#[test]
-fn validator_set_updates_work() {
-	let want = vec![mock_beefy_id(1), mock_beefy_id(2), mock_beefy_id(3), mock_beefy_id(4)];
-
-	new_test_ext(vec![1, 2, 3, 4]).execute_with(|| {
-		init_block(1);
-
-		let vs = Beefy::validator_set();
-
-		assert_eq!(vs.id, 0u64);
-		assert_eq!(want[0], vs.validators[0]);
-		assert_eq!(want[1], vs.validators[1]);
-
-		init_block(2);
-
-		let vs = Beefy::validator_set();
-
-		assert_eq!(vs.id, 1u64);
-		assert_eq!(want[2], vs.validators[0]);
-		assert_eq!(want[3], vs.validators[1]);
-	});
+	assert_eq!(
+		mmr_leaf,
+		MmrLeaf {
+			version: MmrLeafVersion::new(1, 5),
+			parent_number_and_hash: (0_u64, H256::repeat_byte(0x45)),
+			beefy_next_authority_set: BeefyNextAuthoritySet {
+				id: 1,
+				len: 2,
+				root: hex!("dacdb4dddef8f3bbfc4cbc893f670fe368c76179b05f7a406fd8cf7e35fec482").into(),
+			},
+			parachain_heads: hex!("18128e4279e142bf5a42dae8b53a66c4ab0d63a1a61d5270370d678fa92cc999").into(),
+			extended_data: (),
+		}
+	);
 }

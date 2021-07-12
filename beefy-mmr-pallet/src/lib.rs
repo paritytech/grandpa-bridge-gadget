@@ -16,18 +16,20 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use beefy_primitives::{
-	mmr::{BeefyNextAuthoritySet, MmrLeaf, MmrLeafVersion},
-	ValidatorSetId,
-};
-use codec::{Decode, Encode};
-use frame_support::RuntimeDebug;
+use beefy_primitives::mmr::{BeefyNextAuthoritySet, MmrLeaf, MmrLeafVersion};
+use codec::Encode;
+use frame_support::traits::Get;
 use pallet_mmr::primitives::LeafDataProvider;
 use sp_core::H256;
 use sp_runtime::traits::Convert;
 use sp_std::prelude::*;
 
 pub use pallet::*;
+
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
 
 /// A BEEFY consensus digest item with MMR root hash.
 pub struct DepositBeefyDigest<T>(sp_std::marker::PhantomData<T>);
@@ -65,17 +67,18 @@ impl Convert<beefy_primitives::crypto::AuthorityId, Vec<u8>> for UncompressBeefy
 }
 
 type MerkleRootOf<T> = <T as pallet_mmr::Config>::Hash;
+type ParaId = u32;
+type ParaHead = Vec<u8>;
 
 /// A type that is able to return current list of parachain heads that end up in the MMR leaf.
 pub trait ParachainHeadsProvider {
-	/// Return a list of encoded parachain heads.
-	fn encoded_heads() -> Vec<Vec<u8>>;
+	/// Return a list of tuples containing a `ParaId` and Parachain Header data (ParaHead).
+	fn parachain_heads() -> Vec<(ParaId, ParaHead)>;
 }
 
 /// A default implementation for runtimes without parachains.
 impl ParachainHeadsProvider for () {
-	// TODO [ToDr] Change to (ParaId, ParaHead)
-	fn encoded_heads() -> Vec<Vec<u8>> {
+	fn parachain_heads() -> Vec<(ParaId, ParaHead)> {
 		Default::default()
 	}
 }
@@ -103,6 +106,12 @@ pub mod pallet {
 	#[pallet::config]
 	#[pallet::disable_frame_system_supertrait_check]
 	pub trait Config: pallet_mmr::Config + pallet_beefy::Config {
+		/// Current leaf version.
+		///
+		/// Specifies the version number added to every leaf that get's appended to the MMR.
+		/// Read more in [`MmrLeafVersion`] docs about versioning leaves.
+		type LeafVersion: Get<MmrLeafVersion>;
+
 		/// Convert BEEFY AuthorityId to a form that would end up in the Merkle Tree.
 		///
 		/// For instance for ECDSA (secp256k1) we want to store uncompressed public keys (65 bytes)
@@ -135,7 +144,7 @@ where
 
 	fn leaf_data() -> Self::LeafData {
 		MmrLeaf {
-			version: MmrLeafVersion::new(0, 0),
+			version: T::LeafVersion::get(),
 			parent_number_and_hash: frame_system::Pallet::<T>::leaf_data(),
 			parachain_heads: Pallet::<T>::parachain_heads_merkle_root(),
 			beefy_next_authority_set: Pallet::<T>::update_beefy_next_authority_set(),
@@ -157,11 +166,12 @@ where
 	/// the merkle tree every block. Instead we should update the merkle root in [Self::on_initialize]
 	/// call of this pallet and update the merkle tree efficiently (use on-chain storage to persist inner nodes).
 	fn parachain_heads_merkle_root() -> MerkleRootOf<T> {
-		let para_heads = T::ParachainHeads::encoded_heads();
+		let mut para_heads = T::ParachainHeads::parachain_heads();
+		para_heads.sort();
+		let para_heads = para_heads.into_iter().map(|pair| pair.encode()).collect();
 		sp_io::trie::keccak_256_ordered_root(para_heads).into()
 	}
 
-TODO use beefy-merkle-root
 	/// Returns details of the next BEEFY authority set.
 	///
 	/// Details contain authority set id, authority set length and a merkle root,
