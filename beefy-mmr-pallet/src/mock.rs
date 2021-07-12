@@ -138,7 +138,7 @@ parameter_types! {
 impl pallet_beefy_mmr::Config for Test {
 	type LeafVersion = LeafVersion;
 
-	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::UncompressBeefyEcdsaKeys;
+	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyEcdsaToEthereum;
 
 	type ParachainHeads = DummyParaHeads;
 }

@@ -51,8 +51,8 @@ where
 }
 
 /// Convert BEEFY secp256k1 public keys into Ethereum addresses
-pub struct UncompressBeefyEcdsaKeys;
-impl Convert<beefy_primitives::crypto::AuthorityId, Vec<u8>> for UncompressBeefyEcdsaKeys {
+pub struct BeefyEcdsaToEthereum;
+impl Convert<beefy_primitives::crypto::AuthorityId, Vec<u8>> for BeefyEcdsaToEthereum {
 	fn convert(a: beefy_primitives::crypto::AuthorityId) -> Vec<u8> {
 		use sp_core::crypto::Public;
 		let compressed_key = a.as_slice();
@@ -62,6 +62,7 @@ impl Convert<beefy_primitives::crypto::AuthorityId, Vec<u8>> for UncompressBeefy
 			.map_err(|_| {
 				log::error!(target: "runtime::beefy", "Invalid BEEFY PublicKey format!");
 			})
+			.map(|uncompressed| sp_io::hashing::keccak_256(&uncompressed[1..])[12..].to_vec())
 			.unwrap_or_default()
 	}
 }

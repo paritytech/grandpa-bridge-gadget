@@ -29,6 +29,8 @@ pseudo-random finstion seeded by the block hash of the block exactly 100 blocks 
 Every time we say “Merkle root/merkelize” we mean `keccak256` ordered merkle trie
 (`keccak_256_ordered_root` function in Substrate).
 
+TODO update me
+
 ### BEEFY Substrate Pallet
 - Tracks a list of secp256k1 public keys on-chain (BEEFY frame runtime).
 - The pallet hooks up into the session lifecycle.
@@ -50,13 +52,13 @@ Every time we say “Merkle root/merkelize” we mean `keccak256` ordered merkle
     signal change).
   - Or assume there was no change and keep the previous one
 - “The things we vote on” is pluggable:
-  - We can either use the Digest which contains MMR root hash 
+  - We can either use the Digest which contains MMR root hash
   - Or we can retrieve this from Offchain DB (MMR root hash pushed via Indexing API)
 - Produce & gossip a vote on “the thing to be voted on” and start collecting signatures of others
   (we have to support multiple “things to be voted on” - the rounds happens concurrently)
   - We need to vote for every epoch change block (the ones that contain BEEFY Digest item)
   - If there is no such (pending) block, we vote roughly for
-    ``` 
+    ```
        // obviously block_to_sign_on has to be <= last_finalized_block.
        block_to_sign_on = last_block_with_signed_mmr_root
         + Max(

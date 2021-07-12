@@ -35,6 +35,8 @@ fn init_block(block: u64) {
 	System::set_block_number(block);
 	Session::on_initialize(block);
 	Mmr::on_initialize(block);
+	Beefy::on_initialize(block);
+	BeefyMmr::on_initialize(block);
 }
 
 pub fn beefy_log(log: ConsensusLog<BeefyId>) -> DigestItem<H256> {
@@ -68,7 +70,7 @@ fn should_contain_mmr_digest() {
 		assert_eq!(
 			System::digest().logs,
 			vec![beefy_log(ConsensusLog::MmrRoot(
-				hex!("108e5ad4890955bc296b0ac4ef62c8ee251eade7c345073732a26bbac6ae80aa").into()
+				hex!("0a6d11ac88671316de8909df166f422a24e5ea943e2887b0f55c2b061f90abed").into()
 			))]
 		);
 
@@ -79,14 +81,14 @@ fn should_contain_mmr_digest() {
 			System::digest().logs,
 			vec![
 				beefy_log(ConsensusLog::MmrRoot(
-					hex!("108e5ad4890955bc296b0ac4ef62c8ee251eade7c345073732a26bbac6ae80aa").into()
+					hex!("0a6d11ac88671316de8909df166f422a24e5ea943e2887b0f55c2b061f90abed").into()
 				)),
 				beefy_log(ConsensusLog::AuthoritiesChange(ValidatorSet {
 					validators: vec![mock_beefy_id(3), mock_beefy_id(4),],
 					id: 1,
 				})),
 				beefy_log(ConsensusLog::MmrRoot(
-					hex!("e3d39d6b720e4a1694e73e4845c11fd420291894e8384173d35329552d74aeb5").into()
+					hex!("6f21e1e32e343652e5421df6c4c31283b9a5ee0f5446e509d39174273f91551f").into()
 				)),
 			]
 		);
@@ -110,7 +112,7 @@ fn should_contain_valid_leaf_data() {
 			beefy_next_authority_set: BeefyNextAuthoritySet {
 				id: 1,
 				len: 2,
-				root: hex!("dacdb4dddef8f3bbfc4cbc893f670fe368c76179b05f7a406fd8cf7e35fec482").into(),
+				root: hex!("0fc8ae39791aa750af6f17ff95e7b5a07790c6458e0409c683bd2645f9aeeb52").into(),
 			},
 			parachain_heads: hex!("18128e4279e142bf5a42dae8b53a66c4ab0d63a1a61d5270370d678fa92cc999").into(),
 			extended_data: (),
