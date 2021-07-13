@@ -15,6 +15,22 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![warn(missing_docs)]
+
+//! A BEEFY+MMR pallet combo.
+//!
+//! While both BEEFY and Merkle Mountain Range (MMR) can be used separately,
+//! these tools were designed to work together in unison.
+//!
+//! The pallet provides a standardized MMR Leaf format that is can be used
+//! to bridge BEEFY+MMR-based networks (both standalone and polkadot-like).
+//!
+//! The MMR leaf contains:
+//! 1. Block number and parent block hash.
+//! 2. Merkle Tree Root Hash of next BEEFY validator set.
+//! 3. Merkle Tree Root Hash of current parachain heads state.
+//!
+//! and thanks to versioning can be easily updated in the future.
 
 use beefy_primitives::mmr::{BeefyNextAuthoritySet, MmrLeaf, MmrLeafVersion};
 use codec::Encode;
@@ -89,9 +105,12 @@ impl ParachainHeadsProvider for () {
 
 #[frame_support::pallet]
 pub mod pallet {
+	#![allow(missing_docs)]
+
 	use super::*;
 	use frame_support::pallet_prelude::*;
 
+	/// BEEFY-MMR pallet.
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
