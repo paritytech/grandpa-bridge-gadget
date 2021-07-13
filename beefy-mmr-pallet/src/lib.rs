@@ -20,8 +20,7 @@ use beefy_primitives::mmr::{BeefyNextAuthoritySet, MmrLeaf, MmrLeafVersion};
 use codec::Encode;
 use frame_support::traits::Get;
 use pallet_mmr::primitives::LeafDataProvider;
-use sp_core::H256;
-use sp_runtime::traits::Convert;
+use sp_runtime::traits::{Convert, Hash};
 use sp_std::prelude::*;
 
 pub use pallet::*;
@@ -56,13 +55,15 @@ impl Convert<beefy_primitives::crypto::AuthorityId, Vec<u8>> for BeefyEcdsaToEth
 	fn convert(a: beefy_primitives::crypto::AuthorityId) -> Vec<u8> {
 		use sp_core::crypto::Public;
 		let compressed_key = a.as_slice();
-		// TODO [ToDr] Temporary workaround until we have a better way to get uncompressed keys.
+
 		secp256k1::PublicKey::parse_slice(compressed_key, Some(secp256k1::PublicKeyFormat::Compressed))
+			// uncompress the key
 			.map(|pub_key| pub_key.serialize().to_vec())
+			// now convert to ETH address
+			.map(|uncompressed| sp_io::hashing::keccak_256(&uncompressed[1..])[12..].to_vec())
 			.map_err(|_| {
 				log::error!(target: "runtime::beefy", "Invalid BEEFY PublicKey format!");
 			})
-			.map(|uncompressed| sp_io::hashing::keccak_256(&uncompressed[1..])[12..].to_vec())
 			.unwrap_or_default()
 	}
 }
@@ -74,6 +75,8 @@ type ParaHead = Vec<u8>;
 /// A type that is able to return current list of parachain heads that end up in the MMR leaf.
 pub trait ParachainHeadsProvider {
 	/// Return a list of tuples containing a `ParaId` and Parachain Header data (ParaHead).
+	///
+	/// The returned data does not have to be sorted.
 	fn parachain_heads() -> Vec<(ParaId, ParaHead)>;
 }
 
@@ -83,16 +86,6 @@ impl ParachainHeadsProvider for () {
 		Default::default()
 	}
 }
-//
-// impl<T: Config + paras::Config> ParachainHeadsProvider for paras::Pallet<T> {
-// 	fn encoded_heads() -> Vec<Vec<u8>> {
-// 		paras::Pallet::<T>::parachains()
-// 			.into_iter()
-// 			.map(paras::Pallet::<T>::para_head)
-// 			.map(|maybe_para_head| maybe_para_head.encode())
-// 			.collect()
-// 	}
-// }
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -116,8 +109,9 @@ pub mod pallet {
 		/// Convert BEEFY AuthorityId to a form that would end up in the Merkle Tree.
 		///
 		/// For instance for ECDSA (secp256k1) we want to store uncompressed public keys (65 bytes)
-		/// to simplify using them on Ethereum chain, but the rest of the Substrate codebase
-		/// is storing them compressed (33 bytes) for efficiency reasons.
+		/// and later to Ethereum Addresses (160 bits) to simplify using them on Ethereum chain,
+		/// but the rest of the Substrate codebase is storing them compressed (33 bytes) for
+		/// efficiency reasons.
 		type BeefyAuthorityToMerkleLeaf: Convert<<Self as pallet_beefy::Config>::BeefyId, Vec<u8>>;
 
 		/// Retrieve a list of current parachain heads.
@@ -138,7 +132,7 @@ pub mod pallet {
 
 impl<T: Config> LeafDataProvider for Pallet<T>
 where
-	MerkleRootOf<T>: From<H256>,
+	MerkleRootOf<T>: From<beefy_merkle_tree::Hash> + Into<beefy_merkle_tree::Hash>,
 {
 	type LeafData =
 		MmrLeaf<<T as frame_system::Config>::BlockNumber, <T as frame_system::Config>::Hash, MerkleRootOf<T>>;
@@ -149,17 +143,26 @@ where
 			parent_number_and_hash: frame_system::Pallet::<T>::leaf_data(),
 			parachain_heads: Pallet::<T>::parachain_heads_merkle_root(),
 			beefy_next_authority_set: Pallet::<T>::update_beefy_next_authority_set(),
-			extended_data: (),
 		}
+	}
+}
+
+impl<T: Config> beefy_merkle_tree::Hasher for Pallet<T>
+where
+	MerkleRootOf<T>: Into<beefy_merkle_tree::Hash>,
+{
+	fn hash(data: &[u8]) -> beefy_merkle_tree::Hash {
+		<T as pallet_mmr::Config>::Hashing::hash(data).into()
 	}
 }
 
 impl<T: Config> Pallet<T>
 where
-	MerkleRootOf<T>: From<H256>,
-	<T as pallet_beefy::Config>::BeefyId: ,
+	MerkleRootOf<T>: From<beefy_merkle_tree::Hash> + Into<beefy_merkle_tree::Hash>,
 {
-	/// Returns latest root hash of a merkle tree constructed from all registered parachain headers.
+	/// Returns latest root hash of a merkle tree constructed from all active parachain headers.
+	///
+	/// The leafs are sorted by `ParaId` to allow more efficient lookups and non-existence proofs.
 	///
 	/// NOTE this does not include parathreads - only parachains are part of the merkle tree.
 	///
@@ -169,14 +172,15 @@ where
 	fn parachain_heads_merkle_root() -> MerkleRootOf<T> {
 		let mut para_heads = T::ParachainHeads::parachain_heads();
 		para_heads.sort();
-		let para_heads = para_heads.into_iter().map(|pair| pair.encode()).collect();
-		sp_io::trie::keccak_256_ordered_root(para_heads).into()
+		let para_heads = para_heads.into_iter().map(|pair| pair.encode());
+		beefy_merkle_tree::merkle_root::<Self, _, _>(para_heads).into()
 	}
 
 	/// Returns details of the next BEEFY authority set.
 	///
 	/// Details contain authority set id, authority set length and a merkle root,
-	/// constructed from uncompressed secp256k1 public keys of the next BEEFY authority set.
+	/// constructed from uncompressed secp256k1 public keys converted to Ethereum addresses
+	/// of the next BEEFY authority set.
 	///
 	/// This function will use a storage-cached entry in case the set didn't change, or compute and cache
 	/// new one in case it did.
@@ -188,12 +192,12 @@ where
 			return current_next;
 		}
 
-		let beefy_public_keys = pallet_beefy::Pallet::<T>::next_authorities()
+		let beefy_addresses = pallet_beefy::Pallet::<T>::next_authorities()
 			.into_iter()
 			.map(T::BeefyAuthorityToMerkleLeaf::convert)
 			.collect::<Vec<_>>();
-		let len = beefy_public_keys.len() as u32;
-		let root: MerkleRootOf<T> = sp_io::trie::keccak_256_ordered_root(beefy_public_keys).into();
+		let len = beefy_addresses.len() as u32;
+		let root = beefy_merkle_tree::merkle_root::<Self, _, _>(beefy_addresses).into();
 		let next_set = BeefyNextAuthoritySet { id, len, root };
 		// cache the result
 		BeefyNextAuthorities::<T>::put(&next_set);

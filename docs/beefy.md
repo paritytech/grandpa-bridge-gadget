@@ -26,10 +26,8 @@ pseudo-random finstion seeded by the block hash of the block exactly 100 blocks 
   - I think we can query the last 255 block hashes using solidity so this should be fine.
 
 ### General Notes
-Every time we say “Merkle root/merkelize” we mean `keccak256` ordered merkle trie
-(`keccak_256_ordered_root` function in Substrate).
-
-TODO update me
+Every time we say “Merkle root/merkelize” we mean `keccak256` binary merkle tree compatible with
+`merkletreejs` library (see `beefy-merkle-tree` crate).
 
 ### BEEFY Substrate Pallet
 - Tracks a list of secp256k1 public keys on-chain (BEEFY frame runtime).

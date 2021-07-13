@@ -4131,6 +4131,7 @@ dependencies = [
 name = "pallet-beefy-mmr"
 version = "0.1.0"
 dependencies = [
+ "beefy-merkle-tree",
  "beefy-primitives",
  "frame-support",
  "frame-system",

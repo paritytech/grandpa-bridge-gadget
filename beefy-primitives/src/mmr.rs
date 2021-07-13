@@ -29,7 +29,7 @@ use codec::{Decode, Encode};
 
 /// A standard leaf that gets added every block to the MMR constructed by Substrate's `pallet_mmr`.
 #[derive(Debug, PartialEq, Eq, Clone, Encode, Decode)]
-pub struct MmrLeaf<BlockNumber, Hash, MerkleRoot, ExtendedData = ()> {
+pub struct MmrLeaf<BlockNumber, Hash, MerkleRoot> {
 	/// Version of the leaf format.
 	///
 	/// Can be used to enable future format migrations and compatibility.
@@ -41,8 +41,6 @@ pub struct MmrLeaf<BlockNumber, Hash, MerkleRoot, ExtendedData = ()> {
 	pub beefy_next_authority_set: BeefyNextAuthoritySet<MerkleRoot>,
 	/// A merkle root of all registered parachain heads.
 	pub parachain_heads: MerkleRoot,
-	/// Any additional data that is not strictly required by BEEFY + MMR based bridges.
-	pub extended_data: ExtendedData,
 }
 
 /// A MMR leaf versioning scheme.

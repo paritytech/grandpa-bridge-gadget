@@ -23,6 +23,7 @@ sp-io = { git = "https://github.com/paritytech/substrate", default-features = fa
 sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 
+beefy-merkle-tree = { path = "../beefy-merkle-tree", default-features = false }
 beefy-primitives = { path = "../beefy-primitives", default-features = false }
 pallet-beefy = { path = "../beefy-pallet", default-features = false }
 
@@ -35,16 +36,17 @@ hex-literal = "0.3"
 [features]
 default = ["std"]
 std = [
-    "hex",
+    "beefy-merkle-tree/std",
     "beefy-primitives/std",
     "codec/std",
     "frame-support/std",
     "frame-system/std",
+    "hex",
     "libsecp256k1/std",
     "log/std",
     "pallet-beefy/std",
-    "pallet-mmr/std",
     "pallet-mmr-primitives/std",
+    "pallet-mmr/std",
     "pallet-session/std",
     "serde",
     "sp-core/std",
