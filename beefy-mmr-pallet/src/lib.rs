@@ -72,7 +72,7 @@ impl Convert<beefy_primitives::crypto::AuthorityId, Vec<u8>> for BeefyEcdsaToEth
 		use sp_core::crypto::Public;
 		let compressed_key = a.as_slice();
 
-		libsecp256k1::PublicKey::parse_slice(compressed_key, Some(libsecp256k1::PublicKeyFormat::Compressed))
+		secp256k1::PublicKey::parse_slice(compressed_key, Some(secp256k1::PublicKeyFormat::Compressed))
 			// uncompress the key
 			.map(|pub_key| pub_key.serialize().to_vec())
 			// now convert to ETH address
