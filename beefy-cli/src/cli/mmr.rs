@@ -15,6 +15,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::cli::utils::Bytes;
+use beefy_primitives::mmr::MmrLeaf;
 use parity_scale_codec::{Decode, Encode};
 use sp_core::H256;
 use structopt::StructOpt;
@@ -40,34 +41,20 @@ pub enum Mmr {
 	},
 }
 
-/// A MMR leaf structure (should be matching one in Polkadot repo).
-#[derive(Debug, Default, PartialEq, Eq, Clone, Encode, Decode)]
-pub struct MmrLeaf {
-	/// Current block parent number and hash.
-	pub parent_number_and_hash: (u32, H256),
-	/// A merkle root of all registered parachain heads.
-	pub parachain_heads: H256,
-	/// A merkle root of the next BEEFY authority set.
-	pub beefy_next_authority_set: BeefyNextAuthoritySet,
-}
-
-/// Details of the next BEEFY authority set.
-#[derive(Debug, Default, PartialEq, Eq, Clone, Encode, Decode)]
-pub struct BeefyNextAuthoritySet {
-	/// Id of the next set.
-	pub id: u64,
-	/// Number of validators in the set.
-	pub len: u32,
-	/// Merkle Root Hash build from BEEFY uncompressed AuthorityIds.
-	pub root: H256,
-}
-
 impl Mmr {
 	pub fn run(self) -> anyhow::Result<()> {
 		match self {
 			Self::DecodeLeaf { leaf } => {
-				let leaf: Vec<u8> = Decode::decode(&mut &*leaf.0)?;
-				let leaf: MmrLeaf = Decode::decode(&mut &*leaf)?;
+				// We support both `MmrLeaf` directly or a `DataOrHash::Data(MmrLeaf)` variant.
+				// Since `00` cannot be a beginnig of SCALE-encoded Vec, we do a dummy detection
+				// below.
+				let mut leaf_content = if leaf.0.get(0) == Some(&0) {
+					&leaf.0[1..]
+				} else {
+					&*leaf.0
+				};
+				let leaf: Vec<u8> = Decode::decode(&mut leaf_content)?;
+				let leaf: MmrLeaf<u32, H256, H256> = Decode::decode(&mut &*leaf)?;
 				println!("{:?}", leaf);
 			}
 			Self::StorageKey { prefix, pos } => {
