@@ -469,6 +469,7 @@ dependencies = [
  "sp-utils",
  "substrate-prometheus-endpoint",
  "thiserror",
+ "wasm-timer",
 ]
 
 [[package]]
