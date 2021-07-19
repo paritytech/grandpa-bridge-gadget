@@ -219,7 +219,7 @@ where
 			let round = msg.commitment.block_number;
 			let allowed = GossipValidator::<B>::is_live(&known_votes, &round);
 
-			trace!(target: "beefy", "🥩 Message for round #{} allowed: {}", round, allowed);
+			debug!(target: "beefy", "🥩 Message for round #{} allowed: {}", round, allowed);
 
 			allowed
 		})
