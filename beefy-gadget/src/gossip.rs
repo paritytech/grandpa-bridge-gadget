@@ -14,8 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use std::collections::BTreeMap;
-use std::time::Duration;
+use std::{collections::BTreeMap, time::Duration};
 
 use sc_network::PeerId;
 use sc_network_gossip::{MessageIntent, ValidationResult, Validator, ValidatorContext};
