@@ -28,7 +28,7 @@ use sp_api::BlockId;
 use sp_arithmetic::traits::AtLeast32Bit;
 use sp_runtime::{
 	generic::OpaqueDigestItemId,
-	traits::{Block, Header, NumberFor},
+	traits::{Block, Header, NumberFor, Zero},
 	SaturatedConversion,
 };
 
@@ -126,7 +126,7 @@ where
 			rounds: round::Rounds::new(ValidatorSet::empty()),
 			finality_notifications: client.finality_notification_stream(),
 			best_grandpa_block: client.info().finalized_number,
-			best_beefy_block: None,
+			best_beefy_block: Some(Zero::zero()),
 			last_signed_id: 0,
 			_backend: PhantomData,
 		}
@@ -212,7 +212,6 @@ where
 			// the currently active BEEFY voting round by starting a new one. This is
 			// temporary and needs to be replaced by proper round life cycle handling.
 			if active.id != self.rounds.validator_set_id()
-				|| (active.id == GENESIS_AUTHORITY_SET_ID && self.best_beefy_block.is_none())
 			{
 				debug!(target: "beefy", "🥩 New active validator set id: {:?}", active);
 				metric_set!(self, beefy_validator_set_id, active.id);
