@@ -105,13 +105,15 @@ impl<T: Config> Pallet<T> {
 	}
 
 	fn change_authorities(new: Vec<T::BeefyId>, queued: Vec<T::BeefyId>) {
+		// We will always increase the validator set if for now in order
+		// to assure forward progress with the BEEFY gadget
+		let next_id = Self::validator_set_id() + 1u64;
+		<ValidatorSetId<T>>::put(next_id);
+
 		// As in GRANDPA, we trigger a validator set change only if the the validator
 		// set has actually changed.
 		if new != Self::authorities() {
 			<Authorities<T>>::put(&new);
-
-			let next_id = Self::validator_set_id() + 1u64;
-			<ValidatorSetId<T>>::put(next_id);
 
 			let log: DigestItem<T::Hash> = DigestItem::Consensus(
 				BEEFY_ENGINE_ID,
