@@ -211,8 +211,7 @@ where
 			// TODO: (adoerr) Enacting a new authority set will also implicitly 'conclude'
 			// the currently active BEEFY voting round by starting a new one. This is
 			// temporary and needs to be replaced by proper round life cycle handling.
-			if active.id != self.rounds.validator_set_id()
-			{
+			if active.id != self.rounds.validator_set_id() {
 				debug!(target: "beefy", "🥩 New active validator set id: {:?}", active);
 				metric_set!(self, beefy_validator_set_id, active.id);
 
