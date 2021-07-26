@@ -13,22 +13,22 @@ libsecp256k1 = { version = "0.3.5", default-features = false }
 log = { version = "0.4.13", default-features = false }
 serde = { version = "1.0.126", optional = true }
 
-frame-support = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-frame-system = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-pallet-mmr = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-pallet-mmr-primitives = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-pallet-session = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
+frame-support = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "statemine_v2" }
+frame-system = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "statemine_v2" }
+pallet-mmr = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "statemine_v2" }
+pallet-mmr-primitives = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "statemine_v2" }
+pallet-session = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "statemine_v2" }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "statemine_v2" }
+sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "statemine_v2" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "statemine_v2" }
+sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "statemine_v2" }
 
 beefy-merkle-tree = { path = "../beefy-merkle-tree", default-features = false }
 beefy-primitives = { path = "../beefy-primitives", default-features = false }
 pallet-beefy = { path = "../beefy-pallet", default-features = false }
 
 [dev-dependencies]
-sp-staking = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-staking = { git = "https://github.com/paritytech/substrate.git", branch = "statemine_v2" }
 hex = "0.4"
 hex-literal = "0.3"
 
