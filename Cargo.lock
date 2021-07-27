@@ -600,8 +600,17 @@ name = "beefy-test"
 version = "0.1.0"
 dependencies = [
  "beefy-primitives",
+ "futures 0.3.16",
+ "sc-block-builder",
+ "sc-client-api",
+ "sc-consensus",
+ "sp-consensus",
  "sp-core",
+ "sp-runtime",
+ "sp-tracing",
  "strum 0.21.0",
+ "substrate-test-runtime",
+ "substrate-test-runtime-client",
 ]
 
 [[package]]
