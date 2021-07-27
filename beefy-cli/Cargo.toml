@@ -6,12 +6,12 @@ edition = "2018"
 license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 
 [dependencies]
-anyhow = "1.0.40"
+anyhow = "1.0.42"
 beefy-primitives = { version = "0.1", path = "../beefy-primitives" }
 beefy-merkle-tree = { version = "0.1", path = "../beefy-merkle-tree" }
-env_logger = "0.8"
+env_logger = "0.9"
 hex = "0.4"
-libsecp256k1 = "0.5"
+libsecp256k1 = "0.6"
 log = "0.4"
 parity-scale-codec = "2.2"
 structopt = "0.3.21"

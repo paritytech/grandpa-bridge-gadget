@@ -19,17 +19,18 @@
 
 use std::vec;
 
+use beefy_primitives::mmr::MmrLeafVersion;
 use frame_support::{construct_runtime, parameter_types, sp_io::TestExternalities, BasicExternalities};
-use sp_core::H256;
+use sp_core::{Hasher, H256};
 use sp_runtime::{
 	app_crypto::ecdsa::Public,
 	impl_opaque_keys,
 	testing::Header,
-	traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
+	traits::{BlakeTwo256, ConvertInto, IdentityLookup, Keccak256, OpaqueKeys},
 	Perbill,
 };
 
-use crate as pallet_beefy;
+use crate as pallet_beefy_mmr;
 
 pub use beefy_primitives::{crypto::AuthorityId as BeefyId, ConsensusLog, BEEFY_ENGINE_ID};
 
@@ -49,8 +50,10 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		Beefy: pallet_beefy::{Pallet, Call, Config<T>, Storage},
 		Session: pallet_session::{Pallet, Call, Storage, Event, Config<T>},
+		Mmr: pallet_mmr::{Pallet, Storage},
+		Beefy: pallet_beefy::{Pallet, Config<T>, Storage},
+		BeefyMmr: pallet_beefy_mmr::{Pallet, Storage},
 	}
 );
 
@@ -85,10 +88,6 @@ impl frame_system::Config for Test {
 	type OnSetCode = ();
 }
 
-impl pallet_beefy::Config for Test {
-	type BeefyId = BeefyId;
-}
-
 parameter_types! {
 	pub const Period: u64 = 1;
 	pub const Offset: u64 = 0;
@@ -108,8 +107,50 @@ impl pallet_session::Config for Test {
 	type WeightInfo = ();
 }
 
-pub struct MockSessionManager;
+pub type MmrLeaf = beefy_primitives::mmr::MmrLeaf<
+	<Test as frame_system::Config>::BlockNumber,
+	<Test as frame_system::Config>::Hash,
+	<Test as pallet_mmr::Config>::Hash,
+>;
 
+impl pallet_mmr::Config for Test {
+	const INDEXING_PREFIX: &'static [u8] = b"mmr";
+
+	type Hashing = Keccak256;
+
+	type Hash = <Keccak256 as Hasher>::Out;
+
+	type LeafData = BeefyMmr;
+
+	type OnNewRoot = pallet_beefy_mmr::DepositBeefyDigest<Test>;
+
+	type WeightInfo = ();
+}
+
+impl pallet_beefy::Config for Test {
+	type BeefyId = BeefyId;
+}
+
+parameter_types! {
+	pub LeafVersion: MmrLeafVersion = MmrLeafVersion::new(1, 5);
+}
+
+impl pallet_beefy_mmr::Config for Test {
+	type LeafVersion = LeafVersion;
+
+	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyEcdsaToEthereum;
+
+	type ParachainHeads = DummyParaHeads;
+}
+
+pub struct DummyParaHeads;
+impl pallet_beefy_mmr::ParachainHeadsProvider for DummyParaHeads {
+	fn parachain_heads() -> Vec<(pallet_beefy_mmr::ParaId, pallet_beefy_mmr::ParaHead)> {
+		vec![(15, vec![1, 2, 3]), (5, vec![4, 5, 6])]
+	}
+}
+
+pub struct MockSessionManager;
 impl pallet_session::SessionManager<u64> for MockSessionManager {
 	fn end_session(_: sp_staking::SessionIndex) {}
 	fn start_session(_: sp_staking::SessionIndex) {}

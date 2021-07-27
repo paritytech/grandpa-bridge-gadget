@@ -5,13 +5,14 @@ panic = "unwind"
 resolver = "2"
 
 members = [
-	"beefy-cli",
-	"beefy-gadget",
-	"beefy-gadget/rpc",
-	"beefy-merkle-tree",
-	"beefy-node/node",
-	"beefy-node/runtime",
-	"beefy-pallet",
-	"beefy-primitives",
-	"beefy-test",
+    "beefy-cli",
+    "beefy-gadget",
+    "beefy-gadget/rpc",
+    "beefy-merkle-tree",
+    "beefy-node/node",
+    "beefy-node/runtime",
+    "beefy-pallet",
+    "beefy-primitives",
+    "beefy-mmr-pallet",
+    "beefy-test",
 ]
