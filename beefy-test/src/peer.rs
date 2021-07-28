@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-#![allow(dead_code)]
-
 use std::{borrow::Cow, pin::Pin};
 
 use sc_block_builder::{BlockBuilder, BlockBuilderProvider};
@@ -53,6 +51,9 @@ pub struct PeerConfig {
 }
 
 /// A network peer
+///
+/// Note that all named fields are acutally used in order to add a new peer.
+#[allow(dead_code)]
 pub struct Peer<L, BI> {
 	pub(crate) link: L,
 	pub(crate) client: Client,

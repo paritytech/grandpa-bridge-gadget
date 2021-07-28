@@ -19,6 +19,7 @@ sc-network = { git = "https://github.com/paritytech/substrate.git", branch = "ma
 substrate-test-runtime-client = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
 substrate-test-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
 
+beefy-gadget = { path = "../beefy-gadget" }
 beefy-primitives = { path = "../beefy-primitives" }
 
 async-std = { version = "1.9" }

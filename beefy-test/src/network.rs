@@ -38,14 +38,16 @@ use sp_consensus::{
 
 use substrate_test_runtime_client::runtime::Block;
 
-use futures::{prelude::*, FutureExt};
-use futures_core::future::BoxFuture;
-use log::trace;
+use beefy_gadget::BEEFY_PROTOCOL_NAME;
 
 use crate::{
 	import::{AnyBlockImport, Finalizer, PassThroughVerifier, TrackingVerifier},
 	Client, Peer, PeerConfig,
 };
+
+use futures::{prelude::*, FutureExt};
+use futures_core::future::BoxFuture;
+use log::trace;
 
 pub trait NetworkProvider {
 	type Verifier: Verifier<Block> + Clone + 'static;
@@ -81,7 +83,6 @@ pub trait NetworkProvider {
 	where
 		M: FnOnce(&mut Vec<Peer<Self::Link, Self::BlockImport>>);
 
-	#[allow(dead_code)]
 	/// Add a peer with `config` peer configuration
 	fn add_peer(&mut self, config: PeerConfig) {
 		let client = Client::new();
@@ -99,7 +100,7 @@ pub trait NetworkProvider {
 			None,
 		));
 
-		let protocol_id = ProtocolId::from("falso-protocol-name");
+		let protocol_id = ProtocolId::from(BEEFY_PROTOCOL_NAME);
 
 		let block_request_protocol_config = {
 			let (handler, protocol_config) = BlockRequestHandler::new(&protocol_id, client.inner(), 50);
@@ -182,13 +183,13 @@ pub trait NetworkProvider {
 	fn poll(&mut self, cx: &mut Context) {
 		self.mutate_peers(|peers| {
 			for (i, peer) in peers.iter_mut().enumerate() {
-				trace!(target: "falso", "Polling peer {}: {}", i, peer.id());
+				trace!(target: "beefy-test", "Polling peer {}: {}", i, peer.id());
 
 				if let Poll::Ready(()) = peer.network.poll_unpin(cx) {
 					panic!("Network worker terminated unexpectedly")
 				}
 
-				trace!(target: "falso", "Done polling peer {}: {}", i, peer.id());
+				trace!(target: "beefy-test", "Done polling peer {}: {}", i, peer.id());
 
 				// process pending block import notifications
 				while let Poll::Ready(Some(imported)) = peer.block_import_stream.as_mut().poll_next(cx) {
@@ -261,7 +262,7 @@ pub trait NetworkProvider {
 
 // Return a network configuration for a new peer
 fn network_config(config: PeerConfig) -> NetworkConfiguration {
-	let mut net_cfg = NetworkConfiguration::new("falso-node", "falso-client", Default::default(), None);
+	let mut net_cfg = NetworkConfiguration::new("beefy-test-node", "beefy-test-client", Default::default(), None);
 
 	net_cfg.sync_mode = SyncMode::Full;
 	net_cfg.transport = TransportConfig::MemoryOnly;

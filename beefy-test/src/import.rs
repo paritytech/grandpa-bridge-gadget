@@ -32,10 +32,12 @@ use sp_runtime::{
 
 use substrate_test_runtime_client::{runtime, Backend};
 
-use futures::lock::Mutex as AsyncMutex;
-use parking_lot::Mutex;
+use beefy_primitives::BEEFY_ENGINE_ID;
 
 use crate::Client;
+
+use futures::lock::Mutex as AsyncMutex;
+use parking_lot::Mutex;
 
 pub trait AnyTransaction:
 	BlockImport<runtime::Block, Transaction = TransactionFor<Backend, runtime::Block>, Error = sp_consensus::Error>
@@ -126,7 +128,7 @@ where
 	) -> Result<(BlockImportParams<B, ()>, Option<Vec<(CacheKeyId, Vec<u8>)>>), String> {
 		let maybe_keys = header
 			.digest()
-			.log(|l| l.try_as_raw(OpaqueDigestItemId::Consensus(b"smpl")))
+			.log(|l| l.try_as_raw(OpaqueDigestItemId::Consensus(&BEEFY_ENGINE_ID)))
 			.map(|l| vec![(well_known_cache_keys::AUTHORITIES, l.to_vec())]);
 
 		let mut import = BlockImportParams::new(origin, header);

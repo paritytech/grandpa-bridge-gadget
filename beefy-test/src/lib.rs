@@ -22,4 +22,5 @@ mod peer;
 
 pub use client::Client;
 pub use keyring::Keyring;
+pub use network::{Network, NetworkProvider};
 pub use peer::{Peer, PeerConfig};
