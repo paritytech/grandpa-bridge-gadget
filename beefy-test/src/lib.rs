@@ -15,8 +15,11 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 mod client;
+mod import;
 mod keyring;
+mod network;
 mod peer;
 
 pub use client::Client;
 pub use keyring::Keyring;
+pub use peer::{Peer, PeerConfig};

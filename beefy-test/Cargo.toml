@@ -6,6 +6,7 @@ edition = "2018"
 license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 
 [dependencies]
+sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
@@ -20,16 +21,15 @@ substrate-test-runtime = { git = "https://github.com/paritytech/substrate.git", 
 
 beefy-primitives = { path = "../beefy-primitives" }
 
+async-std = { version = "1.9" }
+async-trait = { version = "0.1" }
 futures = { version = "0.3" }
+futures-core = { version = "0.3" }
 libp2p = { version = "0.38", default-features = false }
 log = { version = "0.4" }
+parking_lot = { version = "0.11" }
+rand = { version = "0.8" }
 strum = { version = "0.21", features = ["derive"] }
 
 [dev-dependencies]
-sp-consensus = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-tracing = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
-
-sc-client-api = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sc-block-builder = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
-

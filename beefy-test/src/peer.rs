@@ -18,18 +18,21 @@
 
 use std::{borrow::Cow, pin::Pin};
 
-use sc_block_builder::BlockBuilderProvider;
-use sc_client_api::{FinalityNotification, HeaderBackend};
+use sc_block_builder::{BlockBuilder, BlockBuilderProvider};
+use sc_client_api::{client::BlockImportNotification, FinalityNotification, HeaderBackend};
 use sc_consensus::LongestChain;
 use sc_network::{Multiaddr, NetworkWorker};
-use sp_consensus::BlockOrigin;
+use sp_consensus::{BlockImport, BlockOrigin};
 use sp_core::H256;
 use sp_runtime::{generic::BlockId, traits::Header};
 
 use substrate_test_runtime::{Block, Hash};
-use substrate_test_runtime_client::{Backend, ClientBlockImportExt};
+use substrate_test_runtime_client::{Backend, ClientBlockImportExt, TestClient};
 
-use crate::Client;
+use crate::{
+	import::{AnyBlockImport, TrackingVerifier},
+	Client,
+};
 
 use futures::{
 	executor::{self},
@@ -50,15 +53,23 @@ pub struct PeerConfig {
 }
 
 /// A network peer
-pub struct Peer {
+pub struct Peer<L, BI> {
+	pub(crate) link: L,
 	pub(crate) client: Client,
+	pub(crate) verifier: TrackingVerifier<Block>,
+	pub(crate) block_import: AnyBlockImport<BI>,
 	pub(crate) select_chain: Option<LongestChain<Backend, Block>>,
 	pub(crate) network: NetworkWorker<Block, Hash>,
+	pub(crate) block_import_stream: BoxStream<BlockImportNotification<Block>>,
 	pub(crate) finality_notification_stream: BoxStream<FinalityNotification<Block>>,
 	pub(crate) listen_addr: Multiaddr,
 }
 
-impl Peer {
+impl<L, BI> Peer<L, BI>
+where
+	BI: BlockImport<Block, Error = sp_consensus::Error> + Send + Sync,
+	BI::Transaction: Send,
+{
 	/// Return unique peer id
 	pub fn id(&self) -> PeerId {
 		*self.network.service().local_peer_id()
@@ -90,20 +101,25 @@ impl Peer {
 	pub fn add_block(&mut self) -> Hash {
 		let best = self.client.inner.info().best_hash;
 
-		self.blocks_at(BlockId::Hash(best), 1)
+		self.blocks_at(BlockId::Hash(best), 1, BlockOrigin::File, |b| b.build().unwrap().block)
 	}
 
 	/// Add `count` blocks at best block
 	///
 	/// Adding blocks will push them through the block import pipeline.
 	pub fn add_blocks(&mut self, count: usize) -> Hash {
-		let best = self.client.inner.info().best_hash;
+		let best = self.client.info().best_hash;
 
-		self.blocks_at(BlockId::Hash(best), count)
+		self.blocks_at(BlockId::Hash(best), count, BlockOrigin::File, |b| {
+			b.build().unwrap().block
+		})
 	}
 
-	fn blocks_at(&mut self, at: BlockId<Block>, count: usize) -> H256 {
-		let mut client = self.client.inner.clone();
+	fn blocks_at<F>(&mut self, at: BlockId<Block>, count: usize, _origin: BlockOrigin, mut _builder: F) -> H256
+	where
+		F: FnMut(BlockBuilder<Block, TestClient, Backend>) -> Block,
+	{
+		let mut client = self.client.inner();
 
 		let mut best: H256 = [0u8; 32].into();
 
@@ -132,5 +148,43 @@ impl Peer {
 		);
 
 		best
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::PeerConfig;
+
+	use crate::network::{Network, NetworkProvider};
+
+	#[test]
+	fn add_single_block() {
+		sp_tracing::try_init_simple();
+
+		let mut net = Network::new();
+
+		net.add_peer(PeerConfig::default());
+		net.peer(0).add_block();
+
+		let best = net.peer(0).client().info().best_number;
+
+		assert_eq!(1, best);
+	}
+
+	#[test]
+	fn add_multiple_blocks() {
+		sp_tracing::try_init_simple();
+
+		let mut net = Network::new();
+
+		net.add_peer(PeerConfig::default());
+
+		let hash = net.peer(0).add_blocks(5);
+
+		net.block_until_synced();
+
+		let best = net.peer(0).client().info().best_hash;
+
+		assert_eq!(hash, best);
 	}
 }
