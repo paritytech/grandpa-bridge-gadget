@@ -16,6 +16,7 @@
 
 mod client;
 mod keyring;
+mod peer;
 
 pub use client::Client;
 pub use keyring::Keyring;
