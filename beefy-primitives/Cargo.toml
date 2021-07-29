@@ -8,16 +8,16 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 [dependencies]
 codec = { version = "2.0.0", package = "parity-scale-codec", default-features = false, features = ["derive"] }
 
-sp-api = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-application-crypto = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
+sp-api = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "kiz-ocw-max-heap-pages" }
+sp-application-crypto = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "kiz-ocw-max-heap-pages" }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "kiz-ocw-max-heap-pages" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "kiz-ocw-max-heap-pages" }
+sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "kiz-ocw-max-heap-pages" }
 
 [dev-dependencies]
 hex-literal = "0.3"
 
-sp-keystore = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-keystore = { git = "https://github.com/paritytech/substrate", branch = "kiz-ocw-max-heap-pages" }
 
 [features]
 default = ["std"]

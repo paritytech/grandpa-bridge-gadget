@@ -18,10 +18,10 @@ jsonrpc-pubsub = "15.1.0"
 
 codec = { version = "2.0.0", package = "parity-scale-codec", features = ["derive"] }
 
-sc-rpc = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sc-rpc = { git = "https://github.com/paritytech/substrate", branch = "kiz-ocw-max-heap-pages" }
 
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "kiz-ocw-max-heap-pages" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "kiz-ocw-max-heap-pages" }
 
 beefy-gadget = { path = "../." }
 beefy-primitives = { path = "../../beefy-primitives" }
