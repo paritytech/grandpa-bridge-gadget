@@ -79,7 +79,7 @@ impl MmrLeafVersion {
 }
 
 /// Details of the next BEEFY authority set.
-#[derive(Debug, Default, PartialEq, Eq, Clone, Encode, Decode)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Encode, Decode, scale_info::TypeInfo)]
 pub struct BeefyNextAuthoritySet<MerkleRoot> {
 	/// Id of the next set.
 	///
