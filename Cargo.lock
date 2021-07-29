@@ -4161,6 +4161,7 @@ dependencies = [
  "pallet-mmr-primitives",
  "pallet-session",
  "parity-scale-codec",
+ "scale-info",
  "serde",
  "sp-core",
  "sp-io",
