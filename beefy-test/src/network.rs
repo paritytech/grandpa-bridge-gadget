@@ -49,11 +49,15 @@ use futures::{prelude::*, FutureExt};
 use futures_core::future::BoxFuture;
 use log::trace;
 
+/// An implementation of this trait will provide a test network.
 pub trait NetworkProvider {
+	/// Associated [`sp_consensus::import_queue::Verfier`]
 	type Verifier: Verifier<Block> + Clone + 'static;
 
+	/// Associated [`sp_consensus::import::BlockImport`]
 	type BlockImport: BlockImport<Block, Error = sp_consensus::Error> + Clone + Send + Sync + 'static;
 
+	/// Associated [`sp_consensus::import_queue::Link`]
 	type Link: Default;
 
 	/// Implement this function to return a mock network customized for your needs.

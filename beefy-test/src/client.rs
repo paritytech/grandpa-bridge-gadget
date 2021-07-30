@@ -27,6 +27,7 @@ use substrate_test_runtime_client::{Backend, TestClient, TestClientBuilder, Test
 
 use crate::import::AnyBlockImport;
 
+/// A test client.
 #[derive(Clone)]
 pub struct Client {
 	pub(crate) inner: Arc<TestClient>,
@@ -35,6 +36,7 @@ pub struct Client {
 }
 
 impl Client {
+	/// Return a new test client.
 	pub fn new() -> Client {
 		let backend = Arc::new(Backend::new_test(std::u32::MAX, std::u64::MAX));
 		let builder = TestClientBuilder::with_backend(backend);
