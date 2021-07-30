@@ -14,6 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-mod keyring;
+#![warn(missing_docs)]
 
+//! `BEEFY` test utilities.
+
+mod client;
+mod import;
+mod keyring;
+mod network;
+mod peer;
+
+pub use client::Client;
 pub use keyring::Keyring;
+pub use network::{Network, NetworkProvider};
+pub use peer::{Peer, PeerConfig};

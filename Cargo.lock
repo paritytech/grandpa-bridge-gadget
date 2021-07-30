@@ -599,9 +599,28 @@ dependencies = [
 name = "beefy-test"
 version = "0.1.0"
 dependencies = [
+ "async-std",
+ "async-trait",
+ "beefy-gadget",
  "beefy-primitives",
+ "futures 0.3.16",
+ "futures-core",
+ "libp2p 0.38.0",
+ "log",
+ "parking_lot 0.11.1",
+ "rand 0.8.4",
+ "sc-block-builder",
+ "sc-client-api",
+ "sc-consensus",
+ "sc-network",
+ "sp-blockchain",
+ "sp-consensus",
  "sp-core",
+ "sp-runtime",
+ "sp-tracing",
  "strum 0.21.0",
+ "substrate-test-runtime",
+ "substrate-test-runtime-client",
 ]
 
 [[package]]
@@ -3011,6 +3030,26 @@ dependencies = [
  "libp2p-wasm-ext",
  "libp2p-websocket",
  "libp2p-yamux",
+ "parity-multiaddr",
+ "parking_lot 0.11.1",
+ "pin-project 1.0.8",
+ "smallvec 1.6.1",
+ "wasm-timer",
+]
+
+[[package]]
+name = "libp2p"
+version = "0.38.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebbb17eece4aec5bb970880c73825c16ca59ca05a4e41803751e68c7e5f0c618"
+dependencies = [
+ "atomic",
+ "bytes 1.0.1",
+ "futures 0.3.16",
+ "lazy_static",
+ "libp2p-core",
+ "libp2p-swarm",
+ "libp2p-swarm-derive",
  "parity-multiaddr",
  "parking_lot 0.11.1",
  "pin-project 1.0.8",
@@ -5526,7 +5565,7 @@ dependencies = [
  "fdlimit",
  "futures 0.3.16",
  "hex",
- "libp2p",
+ "libp2p 0.37.1",
  "log",
  "names",
  "parity-scale-codec",
@@ -5961,7 +6000,7 @@ dependencies = [
  "futures-timer 3.0.2",
  "hex",
  "ip_network",
- "libp2p",
+ "libp2p 0.37.1",
  "linked-hash-map",
  "linked_hash_set",
  "log",
@@ -6000,7 +6039,7 @@ source = "git+https://github.com/paritytech/substrate?branch=master#e0d13b58e128
 dependencies = [
  "futures 0.3.16",
  "futures-timer 3.0.2",
- "libp2p",
+ "libp2p 0.37.1",
  "log",
  "lru",
  "sc-network",
@@ -6019,7 +6058,7 @@ dependencies = [
  "async-trait",
  "futures 0.3.16",
  "futures-timer 3.0.2",
- "libp2p",
+ "libp2p 0.37.1",
  "log",
  "parking_lot 0.11.1",
  "rand 0.7.3",
@@ -6073,7 +6112,7 @@ version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=master#e0d13b58e1281514866e93a04a7232c05f79da45"
 dependencies = [
  "futures 0.3.16",
- "libp2p",
+ "libp2p 0.37.1",
  "log",
  "serde_json",
  "sp-utils",
@@ -6256,7 +6295,7 @@ source = "git+https://github.com/paritytech/substrate?branch=master#e0d13b58e128
 dependencies = [
  "chrono",
  "futures 0.3.16",
- "libp2p",
+ "libp2p 0.37.1",
  "log",
  "parking_lot 0.11.1",
  "pin-project 1.0.8",
@@ -6821,7 +6860,7 @@ dependencies = [
  "async-trait",
  "futures 0.3.16",
  "futures-timer 3.0.2",
- "libp2p",
+ "libp2p 0.37.1",
  "log",
  "parity-scale-codec",
  "parking_lot 0.11.1",
