@@ -120,7 +120,7 @@ where
 	where
 		F: FnMut(BlockBuilder<Block, TestClient, Backend>) -> Block,
 	{
-		let mut client = self.client.inner();
+		let mut client = self.client.as_inner();
 
 		let mut best: H256 = [0u8; 32].into();
 

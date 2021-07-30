@@ -75,7 +75,7 @@ impl Client {
 	}
 
 	/// Return a clone of the inner test client
-	pub fn inner(&self) -> Arc<TestClient> {
+	pub fn as_inner(&self) -> Arc<TestClient> {
 		self.inner.clone()
 	}
 

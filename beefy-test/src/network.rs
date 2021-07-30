@@ -107,19 +107,19 @@ pub trait NetworkProvider {
 		let protocol_id = ProtocolId::from(BEEFY_PROTOCOL_NAME);
 
 		let block_request_protocol_config = {
-			let (handler, protocol_config) = BlockRequestHandler::new(&protocol_id, client.inner(), 50);
+			let (handler, protocol_config) = BlockRequestHandler::new(&protocol_id, client.as_inner(), 50);
 			self.spawn_task(handler.run().boxed());
 			protocol_config
 		};
 
 		let state_request_protocol_config = {
-			let (handler, protocol_config) = StateRequestHandler::new(&protocol_id, client.inner(), 50);
+			let (handler, protocol_config) = StateRequestHandler::new(&protocol_id, client.as_inner(), 50);
 			self.spawn_task(handler.run().boxed());
 			protocol_config
 		};
 
 		let light_client_request_protocol_config = {
-			let (handler, protocol_config) = LightClientRequestHandler::new(&protocol_id, client.inner());
+			let (handler, protocol_config) = LightClientRequestHandler::new(&protocol_id, client.as_inner());
 			self.spawn_task(handler.run().boxed());
 			protocol_config
 		};
@@ -137,7 +137,7 @@ pub trait NetworkProvider {
 				async_std::task::spawn(tsk);
 			}),
 			network_config: net_cfg.clone(),
-			chain: client.inner(),
+			chain: client.as_inner(),
 			on_demand: None,
 			transaction_pool: Arc::new(EmptyTransactionPool),
 			protocol_id,
@@ -156,9 +156,9 @@ pub trait NetworkProvider {
 					.add_known_address(*network.service().local_peer_id(), net_cfg.listen_addresses[0].clone());
 			}
 
-			let block_import_stream = Box::pin(client.inner().import_notification_stream().fuse());
+			let block_import_stream = Box::pin(client.as_inner().import_notification_stream().fuse());
 
-			let finality_notification_stream = Box::pin(client.inner().finality_notification_stream().fuse());
+			let finality_notification_stream = Box::pin(client.as_inner().finality_notification_stream().fuse());
 
 			peers.push(Peer {
 				link,
