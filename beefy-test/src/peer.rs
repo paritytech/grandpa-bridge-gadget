@@ -18,9 +18,9 @@ use std::{borrow::Cow, pin::Pin};
 
 use sc_block_builder::{BlockBuilder, BlockBuilderProvider};
 use sc_client_api::{client::BlockImportNotification, FinalityNotification, HeaderBackend};
-use sc_consensus::LongestChain;
+use sc_consensus::{BlockImport, LongestChain};
 use sc_network::{Multiaddr, NetworkWorker};
-use sp_consensus::{BlockImport, BlockOrigin};
+use sp_consensus::BlockOrigin;
 use sp_core::H256;
 use sp_runtime::{generic::BlockId, traits::Header};
 

@@ -20,6 +20,10 @@ use std::{
 };
 
 use sc_client_api::BlockchainEvents;
+use sc_consensus::{
+	block_import::BlockImport,
+	import_queue::{BasicQueue, BoxJustificationImport, Verifier},
+};
 use sc_network::{
 	block_request_handler::BlockRequestHandler,
 	config::{
@@ -30,11 +34,7 @@ use sc_network::{
 	state_request_handler::StateRequestHandler,
 	NetworkWorker,
 };
-use sp_consensus::{
-	block_import::BlockImport,
-	block_validation::DefaultBlockAnnounceValidator,
-	import_queue::{BasicQueue, BoxJustificationImport, Verifier},
-};
+use sp_consensus::block_validation::DefaultBlockAnnounceValidator;
 
 use substrate_test_runtime_client::runtime::Block;
 
