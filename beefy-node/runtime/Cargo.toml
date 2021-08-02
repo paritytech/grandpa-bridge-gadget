@@ -22,7 +22,7 @@ version = "2.0.0"
 
 [dependencies]
 hex-literal = { optional = true, version = "0.3" }
-serde = { features = ["derive"], optional = true, version = "1.0.126" }
+serde = { features = ["derive"], optional = true, version = "1.0.127" }
 
 # local dependencies
 beefy-primitives = { path = "../../beefy-primitives", default-features = false }
