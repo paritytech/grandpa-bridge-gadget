@@ -35,7 +35,7 @@ type ServiceComponents = sc_service::PartialComponents<
 	FullClient,
 	FullBackend,
 	FullSelectChain,
-	sp_consensus::DefaultImportQueue<Block, FullClient>,
+	sc_consensus::DefaultImportQueue<Block, FullClient>,
 	sc_transaction_pool::FullPool<Block, FullClient>,
 	OtherComponents,
 >;

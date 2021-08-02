@@ -26,7 +26,6 @@ async-std = { version = "1.9" }
 async-trait = { version = "0.1" }
 futures = { version = "0.3" }
 futures-core = { version = "0.3" }
-libp2p = { version = "0.38", default-features = false }
 log = { version = "0.4" }
 parking_lot = { version = "0.11" }
 rand = { version = "0.8" }

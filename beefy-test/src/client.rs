@@ -17,9 +17,9 @@
 use std::{collections::HashMap, sync::Arc};
 
 use sc_client_api::backend::Finalizer;
-use sc_consensus::LongestChain;
+use sc_consensus::{BlockCheckParams, BlockImport, BlockImportParams, ImportResult, LongestChain};
 use sp_blockchain::Info;
-use sp_consensus::{import_queue::CacheKeyId, BlockCheckParams, BlockImport, BlockImportParams, ImportResult};
+use sp_consensus::CacheKeyId;
 use sp_runtime::{generic::BlockId, Justification};
 
 use substrate_test_runtime::Block;
@@ -117,7 +117,7 @@ impl BlockImport<Block> for Client {
 mod tests {
 	use super::Client;
 
-	use sp_consensus::block_import::BlockOrigin;
+	use sp_consensus::BlockOrigin;
 	use sp_runtime::{ConsensusEngineId, Justification, Justifications};
 
 	use sc_block_builder::BlockBuilderProvider;
