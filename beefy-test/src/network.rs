@@ -147,6 +147,7 @@ pub trait NetworkProvider {
 			block_request_protocol_config,
 			state_request_protocol_config,
 			light_client_request_protocol_config,
+			warp_sync: None,
 		})
 		.unwrap();
 
