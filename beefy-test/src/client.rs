@@ -79,6 +79,11 @@ impl Client {
 		self.inner.clone()
 	}
 
+	/// Return a clone of the client [`substrate_test_runtime_client::Backend`]
+	pub fn as_backend(&self) -> Arc<Backend> {
+		self.backend.clone()
+	}
+
 	/// Return client blockchain info
 	pub fn info(&self) -> Info<Block> {
 		self.inner.chain_info()
