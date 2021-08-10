@@ -22,7 +22,6 @@ substrate-test-runtime = { git = "https://github.com/paritytech/substrate.git", 
 beefy-gadget = { path = "../beefy-gadget" }
 beefy-primitives = { path = "../beefy-primitives" }
 
-async-std = { version = "1.9" }
 async-trait = { version = "0.1" }
 futures = { version = "0.3" }
 futures-core = { version = "0.3" }
@@ -30,6 +29,7 @@ log = { version = "0.4" }
 parking_lot = { version = "0.11" }
 rand = { version = "0.8" }
 strum = { version = "0.21", features = ["derive"] }
+tokio = { version = "1.9", features = ["full"] }
 
 [dev-dependencies]
 sp-tracing = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
