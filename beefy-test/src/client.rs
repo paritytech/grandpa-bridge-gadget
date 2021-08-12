@@ -130,10 +130,8 @@ mod tests {
 
 	use substrate_test_runtime_client::prelude::*;
 
-	use futures::executor::{self};
-
-	#[test]
-	fn import() {
+	#[tokio::test]
+	async fn import() {
 		sp_tracing::try_init_simple();
 
 		let mut client = Client::new();
@@ -146,7 +144,7 @@ mod tests {
 			.unwrap()
 			.block;
 
-		executor::block_on(client.inner.import(BlockOrigin::File, block)).unwrap();
+		let _ = client.inner.import(BlockOrigin::File, block).await;
 
 		let info = client.inner.info();
 
@@ -154,8 +152,8 @@ mod tests {
 		assert_eq!(0, info.finalized_number);
 	}
 
-	#[test]
-	fn import_blocks() {
+	#[tokio::test]
+	async fn import_blocks() {
 		sp_tracing::try_init_simple();
 
 		let mut client = Client::new();
@@ -169,7 +167,7 @@ mod tests {
 				.unwrap()
 				.block;
 
-			executor::block_on(client.inner.import(BlockOrigin::File, block)).unwrap();
+			let _ = client.inner.import(BlockOrigin::File, block).await;
 		}
 
 		let info = client.inner.info();
@@ -178,8 +176,8 @@ mod tests {
 		assert_eq!(0, info.finalized_number);
 	}
 
-	#[test]
-	fn import_finalized() {
+	#[tokio::test]
+	async fn import_finalized() {
 		sp_tracing::try_init_simple();
 
 		let mut client = Client::new();
@@ -192,7 +190,7 @@ mod tests {
 			.unwrap()
 			.block;
 
-		executor::block_on(client.inner.import_as_final(BlockOrigin::File, block)).unwrap();
+		let _ = client.inner.import_as_final(BlockOrigin::File, block).await;
 
 		let info = client.inner.info();
 
@@ -200,8 +198,8 @@ mod tests {
 		assert_eq!(1, info.finalized_number);
 	}
 
-	#[test]
-	fn import_justification() {
+	#[tokio::test]
+	async fn import_justification() {
 		sp_tracing::try_init_simple();
 
 		const ENGINE_ID: ConsensusEngineId = *b"SMPL";
@@ -220,7 +218,7 @@ mod tests {
 
 		let j = Justifications::from(j);
 
-		executor::block_on(client.inner.import_justified(BlockOrigin::File, block, j)).unwrap();
+		let _ = client.inner.import_justified(BlockOrigin::File, block, j).await;
 
 		let info = client.inner.info();
 
