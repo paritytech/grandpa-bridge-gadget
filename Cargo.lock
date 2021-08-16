@@ -623,7 +623,7 @@ dependencies = [
  "strum 0.21.0",
  "substrate-test-runtime",
  "substrate-test-runtime-client",
- "tokio 1.9.0",
+ "tokio 1.10.0",
 ]
 
 [[package]]
@@ -2433,7 +2433,7 @@ dependencies = [
  "itoa",
  "pin-project-lite 0.2.7",
  "socket2 0.4.1",
- "tokio 1.9.0",
+ "tokio 1.10.0",
  "tower-service",
  "tracing",
  "want",
@@ -2770,7 +2770,7 @@ dependencies = [
  "jsonrpc-core",
  "lazy_static",
  "log",
- "tokio 1.9.0",
+ "tokio 1.10.0",
  "tokio-stream",
  "tokio-util 0.6.7",
  "unicase",
@@ -4346,7 +4346,7 @@ dependencies = [
  "libc",
  "log",
  "rand 0.7.3",
- "tokio 1.9.0",
+ "tokio 1.10.0",
  "winapi 0.3.9",
 ]
 
@@ -7706,9 +7706,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.9.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b7b349f11a7047e6d1276853e612d152f5e8a352c61917887cc2169e2366b4c"
+checksum = "01cf844b23c6131f624accf65ce0e4e9956a8bb329400ea5bcc26ae3a5c20b0b"
 dependencies = [
  "autocfg",
  "bytes 1.0.1",
@@ -7755,7 +7755,7 @@ checksum = "7b2f3f698253f03119ac0102beaa64f67a67e08074d03a22d18784104543727f"
 dependencies = [
  "futures-core",
  "pin-project-lite 0.2.7",
- "tokio 1.9.0",
+ "tokio 1.10.0",
 ]
 
 [[package]]
@@ -7783,7 +7783,7 @@ dependencies = [
  "futures-sink",
  "log",
  "pin-project-lite 0.2.7",
- "tokio 1.9.0",
+ "tokio 1.10.0",
 ]
 
 [[package]]
