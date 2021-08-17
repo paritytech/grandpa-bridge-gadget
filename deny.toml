@@ -52,11 +52,6 @@ ignore = [
     # build dependency of `libp2p` and `sc_network`. Those two crates
     # need to update their respective deps
     "RUSTSEC-2021-0073",
-    # `libsecp256k1` < 0.5.0 is a dependency of `libp2p-core` and `sc-executor`
-    "RUSTSEC-2021-0076",
-    # `hyper` is a Substrate dependency
-    "RUSTSEC-2021-0078",
-    "RUSTSEC-2021-0079"
 ]
 # Threshold for security vulnerabilities, any vulnerability with a CVSS score
 # lower than the range specified will be ignored. Note that ignored advisories

@@ -1,25 +1,17 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 use std::{sync::Arc, time::Duration};
 
-use beefy_node_runtime::{self, opaque::Block, RuntimeApi};
 use sc_client_api::ExecutorProvider;
 use sc_consensus_aura::{ImportQueueParams, SlotProportion, StartAuraParams};
-use sc_executor::native_executor_instance;
 use sc_finality_grandpa::SharedVoterState;
 use sc_service::{error::Error as ServiceError, Configuration, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_consensus::SlotData;
 use sp_consensus_aura::sr25519::AuthorityPair as AuraPair;
 
-pub use sc_executor::NativeExecutor;
+use beefy_node_runtime::{self, opaque::Block, RuntimeApi};
 
-// Our native executor instance.
-native_executor_instance!(
-	pub Executor,
-	beefy_node_runtime::api::dispatch,
-	beefy_node_runtime::native_version,
-	frame_benchmarking::benchmarking::HostFunctions,
-);
+pub use sc_executor::NativeExecutor;
 
 type FullClient = sc_service::TFullClient<Block, RuntimeApi, Executor>;
 type FullBackend = sc_service::TFullBackend<Block>;
@@ -39,6 +31,20 @@ type ServiceComponents = sc_service::PartialComponents<
 	sc_transaction_pool::FullPool<Block, FullClient>,
 	OtherComponents,
 >;
+
+pub struct Executor;
+
+impl sc_executor::NativeExecutionDispatch for Executor {
+	type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
+
+	fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
+		beefy_node_runtime::api::dispatch(method, data)
+	}
+
+	fn native_version() -> sc_executor::NativeVersion {
+		beefy_node_runtime::native_version()
+	}
+}
 
 pub fn new_partial(config: &Configuration) -> Result<ServiceComponents, ServiceError> {
 	let telemetry = config
