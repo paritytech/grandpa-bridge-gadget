@@ -135,7 +135,7 @@ where
 
 			trace!(target: "beefy-test", "Block {} #{} parent: {}", hash, block.header.number, at);
 
-			executor::block_on(client.import(BlockOrigin::File, block)).expect("block import failed");
+			executor::block_on(client.import(BlockOrigin::NetworkBroadcast, block)).expect("block import failed");
 
 			self.network.service().announce_block(hash, None);
 

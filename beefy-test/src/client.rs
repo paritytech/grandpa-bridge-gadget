@@ -27,6 +27,10 @@ use substrate_test_runtime_client::{Backend, TestClient, TestClientBuilder, Test
 
 use crate::import::AnyBlockImport;
 
+#[cfg(test)]
+#[path = "client_tests.rs"]
+mod tests;
+
 /// A test client.
 #[derive(Clone)]
 pub struct Client {
@@ -115,114 +119,5 @@ impl BlockImport<Block> for Client {
 		self.inner
 			.import_block(block.clear_storage_changes_and_mutate(), cache)
 			.await
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use super::Client;
-
-	use sp_consensus::BlockOrigin;
-	use sp_runtime::{ConsensusEngineId, Justification, Justifications};
-
-	use sc_block_builder::BlockBuilderProvider;
-	use sc_client_api::HeaderBackend;
-
-	use substrate_test_runtime_client::prelude::*;
-
-	#[tokio::test]
-	async fn import() {
-		sp_tracing::try_init_simple();
-
-		let mut client = Client::new();
-
-		let block = client
-			.inner
-			.new_block(Default::default())
-			.unwrap()
-			.build()
-			.unwrap()
-			.block;
-
-		let _ = client.inner.import(BlockOrigin::File, block).await;
-
-		let info = client.inner.info();
-
-		assert_eq!(1, info.best_number);
-		assert_eq!(0, info.finalized_number);
-	}
-
-	#[tokio::test]
-	async fn import_blocks() {
-		sp_tracing::try_init_simple();
-
-		let mut client = Client::new();
-
-		for _ in 0..10 {
-			let block = client
-				.inner
-				.new_block(Default::default())
-				.unwrap()
-				.build()
-				.unwrap()
-				.block;
-
-			let _ = client.inner.import(BlockOrigin::File, block).await;
-		}
-
-		let info = client.inner.info();
-
-		assert_eq!(10, info.best_number);
-		assert_eq!(0, info.finalized_number);
-	}
-
-	#[tokio::test]
-	async fn import_finalized() {
-		sp_tracing::try_init_simple();
-
-		let mut client = Client::new();
-
-		let block = client
-			.inner
-			.new_block(Default::default())
-			.unwrap()
-			.build()
-			.unwrap()
-			.block;
-
-		let _ = client.inner.import_as_final(BlockOrigin::File, block).await;
-
-		let info = client.inner.info();
-
-		assert_eq!(1, info.best_number);
-		assert_eq!(1, info.finalized_number);
-	}
-
-	#[tokio::test]
-	async fn import_justification() {
-		sp_tracing::try_init_simple();
-
-		const ENGINE_ID: ConsensusEngineId = *b"SMPL";
-
-		let mut client = Client::new();
-
-		let block = client
-			.inner
-			.new_block(Default::default())
-			.unwrap()
-			.build()
-			.unwrap()
-			.block;
-
-		let j: Justification = (ENGINE_ID, vec![1, 2, 3]);
-
-		let j = Justifications::from(j);
-
-		let _ = client.inner.import_justified(BlockOrigin::File, block, j).await;
-
-		let info = client.inner.info();
-
-		assert_eq!(1, info.best_number);
-		assert_eq!(1, info.finalized_number);
 	}
 }
