@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use std::{borrow::Cow, pin::Pin};
+use std::{borrow::Cow, pin::Pin, sync::Arc};
 
 use sc_block_builder::{BlockBuilder, BlockBuilderProvider};
 use sc_client_api::{client::BlockImportNotification, FinalityNotification, HeaderBackend};
@@ -55,7 +55,7 @@ pub struct PeerConfig {
 #[allow(dead_code)]
 pub struct Peer<L, BI> {
 	pub(crate) link: L,
-	pub(crate) client: Client,
+	pub(crate) client: Arc<Client>,
 	pub(crate) verifier: TrackingVerifier<Block>,
 	pub(crate) block_import: AnyBlockImport<BI>,
 	pub(crate) select_chain: Option<LongestChain<Backend, Block>>,
@@ -81,8 +81,8 @@ where
 	}
 
 	/// Return a reference to the peer's client
-	pub fn client(&self) -> &Client {
-		&self.client
+	pub fn client(&self) -> Arc<Client> {
+		self.client.clone()
 	}
 
 	/// Return the number of peers this peer is connected to

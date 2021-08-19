@@ -138,7 +138,7 @@ where
 
 /// A [`sp_consensus::block_import::JustificationImport`] implementation that
 /// will always finalize the imported block.
-pub struct Finalizer(pub Client);
+pub struct Finalizer(pub Arc<Client>);
 
 #[async_trait::async_trait]
 impl JustificationImport<runtime::Block> for Finalizer {
