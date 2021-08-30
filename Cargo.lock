@@ -571,7 +571,7 @@ version = "0.1.0"
 dependencies = [
  "hex-literal",
  "parity-scale-codec",
- "scale-info",
+ "scale-info 0.12.0",
  "sp-api",
  "sp-application-crypto",
  "sp-core",
@@ -1632,7 +1632,7 @@ dependencies = [
  "num-traits",
  "parity-scale-codec",
  "parking_lot 0.11.1",
- "scale-info",
+ "scale-info 0.10.0",
 ]
 
 [[package]]
@@ -4006,7 +4006,7 @@ dependencies = [
  "frame-system",
  "pallet-session",
  "parity-scale-codec",
- "scale-info",
+ "scale-info 0.12.0",
  "serde",
  "sp-core",
  "sp-io",
@@ -4032,7 +4032,7 @@ dependencies = [
  "pallet-mmr-primitives",
  "pallet-session",
  "parity-scale-codec",
- "scale-info",
+ "scale-info 0.12.0",
  "serde",
  "sp-core",
  "sp-io",
@@ -6107,6 +6107,19 @@ name = "scale-info"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2e62ff266e136db561a007c84569985805f84a1d5a08278e52c36aacb6e061b"
+dependencies = [
+ "bitvec 0.20.4",
+ "cfg-if 1.0.0",
+ "derive_more",
+ "parity-scale-codec",
+ "scale-info-derive",
+]
+
+[[package]]
+name = "scale-info"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cf40f28c3eca6a9abe66aa368d7475f6c92a626fb5737d131c82c0170b24f36"
 dependencies = [
  "bitvec 0.20.4",
  "cfg-if 1.0.0",
