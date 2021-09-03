@@ -12,9 +12,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use beefy_primitives::{crypto::AuthorityId as BeefyId, ValidatorSet};
-use frame_system::limits;
-use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
@@ -29,6 +26,10 @@ use sp_version::RuntimeVersion;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
+
+use beefy_primitives::{crypto::AuthorityId as BeefyId, ValidatorSet};
+use frame_system::limits;
+use pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 
 // A few exports that help ease life for downstream crates.
 pub use frame_support::{
@@ -209,9 +210,14 @@ impl frame_system::Config for Runtime {
 
 impl pallet_randomness_collective_flip::Config for Runtime {}
 
+parameter_types! {
+	pub const MaxAuthorities: u32 = 32;
+}
+
 impl pallet_aura::Config for Runtime {
 	type AuthorityId = AuraId;
 	type DisabledValidators = ();
+	type MaxAuthorities = MaxAuthorities;
 }
 
 impl pallet_grandpa::Config for Runtime {
@@ -417,7 +423,7 @@ impl_runtime_apis! {
 		}
 
 		fn authorities() -> Vec<AuraId> {
-			Aura::authorities()
+			Aura::authorities().into_inner()
 		}
 	}
 
