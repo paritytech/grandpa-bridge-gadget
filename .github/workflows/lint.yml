@@ -33,4 +33,4 @@ jobs:
         uses:           actions-rs/cargo@master
         with:
           command:      fmt
-          args:         --all -- --check --config imports_granulatiry="Crate"
+          args:         --all -- --check --config imports_granularity="Crate"
