@@ -16,6 +16,7 @@ jobs:
     runs-on:                       ubuntu-latest
     env:
       RUST_BACKTRACE:   full
+      NIGHTLY: nightly
     steps:
       - name:           Cancel Previous Runs
         uses:           styfle/cancel-workflow-action@0.4.1
@@ -32,4 +33,4 @@ jobs:
         uses:           actions-rs/cargo@master
         with:
           command:      fmt
-          args:         --all -- --check --config merge_imports=true
+          args:         --all -- --check --config imports_granulatiry="Crate"
