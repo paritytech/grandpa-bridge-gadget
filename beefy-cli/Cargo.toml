@@ -16,7 +16,7 @@ log = "0.4"
 parity-scale-codec = "2.2"
 structopt = "0.3.21"
 
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "cmichi-tmp-experiment" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "hc-contract-experiment-patched-v0.9.9" }
 
 [dev-dependencies]
 hex-literal = "0.3"
