@@ -27,7 +27,7 @@ use sp_runtime::{
 };
 use sp_std::prelude::*;
 
-use beefy_primitives::{AuthorityIndex, ConsensusLog, ValidatorSet, BEEFY_ENGINE_ID};
+use beefy_primitives::{ConsensusLog, ValidatorSet, BEEFY_ENGINE_ID};
 
 #[cfg(test)]
 mod mock;
@@ -171,11 +171,9 @@ impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
 		}
 	}
 
-	fn on_disabled(i: usize) {
-		let log: DigestItem<T::Hash> = DigestItem::Consensus(
-			BEEFY_ENGINE_ID,
-			ConsensusLog::<T::BeefyId>::OnDisabled(i as AuthorityIndex).encode(),
-		);
+	fn on_disabled(i: u32) {
+		let log: DigestItem<T::Hash> =
+			DigestItem::Consensus(BEEFY_ENGINE_ID, ConsensusLog::<T::BeefyId>::OnDisabled(i).encode());
 
 		<frame_system::Pallet<T>>::deposit_log(log);
 	}
