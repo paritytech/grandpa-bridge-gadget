@@ -16,7 +16,7 @@ log = "0.4"
 parity-scale-codec = "2.2"
 structopt = "0.3.21"
 
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "andre/staking-offences-era" }
 
 [dev-dependencies]
 hex-literal = "0.3"
