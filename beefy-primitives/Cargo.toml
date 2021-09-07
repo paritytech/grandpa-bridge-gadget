@@ -9,16 +9,16 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 codec = { version = "2.0.0", package = "parity-scale-codec", default-features = false, features = ["derive"] }
 scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 
-sp-api = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-application-crypto = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
+sp-api = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
+sp-application-crypto = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
+sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
 
 [dev-dependencies]
 hex-literal = "0.3"
 
-sp-keystore = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-keystore = { git = "https://github.com/paritytech/substrate", branch = "grandpa_finality_logs" }
 
 [features]
 default = ["std"]

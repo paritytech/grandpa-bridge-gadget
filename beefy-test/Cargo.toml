@@ -6,18 +6,18 @@ edition = "2018"
 license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 
 [dependencies]
-sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "grandpa_finality_logs" }
+sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "grandpa_finality_logs" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "grandpa_finality_logs" }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "grandpa_finality_logs" }
 
-sc-block-builder = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sc-consensus = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sc-network = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sc-block-builder = { git = "https://github.com/paritytech/substrate", branch = "grandpa_finality_logs" }
+sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "grandpa_finality_logs" }
+sc-consensus = { git = "https://github.com/paritytech/substrate.git", branch = "grandpa_finality_logs" }
+sc-network = { git = "https://github.com/paritytech/substrate.git", branch = "grandpa_finality_logs" }
 
-substrate-test-runtime-client = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
-substrate-test-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
+substrate-test-runtime-client = { git = "https://github.com/paritytech/substrate.git", branch = "grandpa_finality_logs" }
+substrate-test-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "grandpa_finality_logs" }
 
 beefy-gadget = { path = "../beefy-gadget" }
 beefy-primitives = { path = "../beefy-primitives" }
@@ -32,4 +32,4 @@ strum = { version = "0.21", features = ["derive"] }
 tokio = { version = "1.10", features = ["full"] }
 
 [dev-dependencies]
-sp-tracing = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-tracing = { git = "https://github.com/paritytech/substrate.git", branch = "grandpa_finality_logs" }

@@ -14,22 +14,22 @@ log = { version = "0.4.13", default-features = false }
 scale-info = { version = "1.0", default-features = false, features = ["derive"] }
 serde = { version = "1.0.130", optional = true }
 
-frame-support = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-frame-system = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-pallet-mmr = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-pallet-mmr-primitives = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-pallet-session = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
-sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
+frame-support = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
+frame-system = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
+pallet-mmr = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
+pallet-mmr-primitives = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
+pallet-session = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
+sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
+sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "grandpa_finality_logs" }
 
 beefy-merkle-tree = { path = "../beefy-merkle-tree", default-features = false }
 beefy-primitives = { path = "../beefy-primitives", default-features = false }
 pallet-beefy = { path = "../beefy-pallet", default-features = false }
 
 [dev-dependencies]
-sp-staking = { git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-staking = { git = "https://github.com/paritytech/substrate.git", branch = "grandpa_finality_logs" }
 hex = "0.4"
 hex-literal = "0.3"
 
