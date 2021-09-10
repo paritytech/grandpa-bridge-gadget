@@ -98,3 +98,27 @@ Every time we say “Merkle root/merkelize” we mean `keccak256` binary merkle 
     Authority Set (stored in the contract)
   - We `ecrecover` the signatures and make sure the public keys match the ones we got and the merkle
     proof is valid.
+
+
+
+
+####################
+
+Only one round is always active and it's in either of the modes:
+
+Mandatory mode
+ - force sync to request beefy justifcations for this block
+ - listen to justification imports
+ - vote
+
+Non-mandatory mode
+ - listen to  justification imports
+ - vote on a block according to power-of-two rule
+
+
+How to get the initial state?
+
+
+We gossip votes for the current round.
+
+We gossip justifications for some past rounds?
