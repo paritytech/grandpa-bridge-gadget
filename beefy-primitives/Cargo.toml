@@ -9,16 +9,16 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 codec = { version = "2.0.0", package = "parity-scale-codec", default-features = false, features = ["derive"] }
 scale-info = { version = "0.10.0", default-features = false, features = ["derive"], optional = true }
 
-sp-api = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10" }
-sp-application-crypto = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10" }
-sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10" }
-sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.10" }
+sp-api = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "wk-polkadot-v0.9.10" }
+sp-application-crypto = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "wk-polkadot-v0.9.10" }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "wk-polkadot-v0.9.10" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "wk-polkadot-v0.9.10" }
+sp-std = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "wk-polkadot-v0.9.10" }
 
 [dev-dependencies]
 hex-literal = "0.3"
 
-sp-keystore = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.10" }
+sp-keystore = { git = "https://github.com/paritytech/substrate", branch = "wk-polkadot-v0.9.10" }
 
 [features]
 default = ["std"]
