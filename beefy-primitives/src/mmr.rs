@@ -26,6 +26,7 @@
 //! or are completely standalone, but heavily inspired by Polkadot.
 
 use codec::{Decode, Encode};
+use scale_info::TypeInfo;
 
 /// A standard leaf that gets added every block to the MMR constructed by Substrate's `pallet_mmr`.
 #[derive(Debug, PartialEq, Eq, Clone, Encode, Decode)]

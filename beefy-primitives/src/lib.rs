@@ -39,6 +39,7 @@ pub mod witness;
 pub use commitment::{Commitment, SignedCommitment, VersionedCommitment};
 
 use codec::{Codec, Decode, Encode};
+use scale_info::TypeInfo;
 use sp_core::H256;
 use sp_std::prelude::*;
 
