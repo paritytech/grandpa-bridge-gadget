@@ -91,8 +91,7 @@ deny:
   after_script:
     - mkdir -p ./artifacts
     - echo "___Complete logs can be found in the artifacts___"
-    - cargo deny check advisories 2> advisories.log
-    - cargo deny check bans sources 2> bans_sources.log
+    - cargo deny check --hide-inclusion-graph 2> cargo_deny.log
 
 test:
   stage:                           test
