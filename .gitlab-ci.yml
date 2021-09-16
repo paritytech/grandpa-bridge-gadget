@@ -103,5 +103,5 @@ build:
   stage:                           build
   <<:                              *docker-env
   script:
-    <<:                            *rust-info-script
+    - *rust-info-script
     - cargo build --all --release --verbose
