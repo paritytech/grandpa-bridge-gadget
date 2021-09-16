@@ -2,7 +2,7 @@
 stages:
   - lint
   - test
-  - publish
+  - build
 
 variables:                         &default-vars
   GIT_STRATEGY:                    fetch
