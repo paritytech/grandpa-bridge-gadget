@@ -11,17 +11,14 @@ log = "0.4"
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.64"
 
-jsonrpc-core = "18.0.0"
-jsonrpc-core-client = "18.0.0"
-jsonrpc-derive = "18.0.0"
-jsonrpc-pubsub = "18.0.0"
+jsonrpsee = { git = "http://github.com/paritytech/jsonrpsee", rev = "0b7614884ea24fd1e00ffb406a79d48e0be8dee1", features = ["full"] }
 
 codec = { version = "2.0.0", package = "parity-scale-codec", features = ["derive"] }
 
-sc-rpc = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sc-rpc = { git = "https://github.com/paritytech/substrate", branch = "dp-jsonrpsee-integration-2" }
 
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "master" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "dp-jsonrpsee-integration-2" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "dp-jsonrpsee-integration-2" }
 
 beefy-gadget = { path = "../." }
 beefy-primitives = { path = "../../beefy-primitives" }

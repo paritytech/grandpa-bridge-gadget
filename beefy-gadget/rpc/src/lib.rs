@@ -20,90 +20,67 @@
 
 use beefy_gadget::notification::BeefySignedCommitmentStream;
 use futures::{FutureExt, SinkExt, StreamExt};
-use jsonrpc_derive::rpc;
-use jsonrpc_pubsub::{manager::SubscriptionManager, typed::Subscriber, SubscriptionId};
+use jsonrpsee::{proc_macros::rpc, types::RpcResult, SubscriptionSink};
 use log::warn;
 use sp_runtime::traits::Block as BlockT;
-use std::sync::Arc;
+use sc_rpc::SubscriptionTaskExecutor;
 
 mod notification;
 
 /// Provides RPC methods for interacting with BEEFY.
-#[allow(clippy::needless_return)]
-#[rpc]
+#[rpc(client, server, namespace = "beefy")]
 pub trait BeefyApi<Notification, Hash> {
-	/// RPC Metadata
-	type Metadata;
-
 	/// Returns the block most recently finalized by BEEFY, alongside side its justification.
-	#[pubsub(
-		subscription = "beefy_justifications",
-		subscribe,
-		name = "beefy_subscribeJustifications"
+	#[subscription(
+		name = "subscribeJustifications"
+		aliases = "beefy_justifications",
+		item = Notification,
 	)]
-	fn subscribe_justifications(&self, metadata: Self::Metadata, subscriber: Subscriber<Notification>);
-
-	/// Unsubscribe from receiving notifications about recently finalized blocks.
-	#[pubsub(
-		subscription = "beefy_justifications",
-		unsubscribe,
-		name = "beefy_unsubscribeJustifications"
-	)]
-	fn unsubscribe_justifications(
-		&self,
-		metadata: Option<Self::Metadata>,
-		id: SubscriptionId,
-	) -> jsonrpc_core::Result<bool>;
+	fn subscribe_justifications(&self) -> RpcResult<()>;
 }
 
 /// Implements the BeefyApi RPC trait for interacting with BEEFY.
 pub struct BeefyRpcHandler<Block: BlockT> {
 	signed_commitment_stream: BeefySignedCommitmentStream<Block>,
-	manager: SubscriptionManager,
+	executor: SubscriptionTaskExecutor,
 }
 
-impl<Block: BlockT> BeefyRpcHandler<Block> {
+impl<Block> BeefyRpcHandler<Block>
+where
+	Block: BlockT,
+{
 	/// Creates a new BeefyRpcHandler instance.
-	pub fn new<E>(signed_commitment_stream: BeefySignedCommitmentStream<Block>, executor: E) -> Self
-	where
-		E: futures::task::Spawn + Send + Sync + 'static,
-	{
-		let manager = SubscriptionManager::new(Arc::new(executor));
+	pub fn new(
+		signed_commitment_stream: BeefySignedCommitmentStream<Block>,
+		executor: SubscriptionTaskExecutor
+	) -> Self {
 		Self {
 			signed_commitment_stream,
-			manager,
+			executor,
 		}
 	}
 }
 
-impl<Block> BeefyApi<notification::SignedCommitment, Block> for BeefyRpcHandler<Block>
+impl<Block> BeefyApiServer<notification::SignedCommitment, Block> for BeefyRpcHandler<Block>
 where
 	Block: BlockT,
 {
-	type Metadata = sc_rpc::Metadata;
 
 	fn subscribe_justifications(
 		&self,
-		_metadata: Self::Metadata,
-		subscriber: Subscriber<notification::SignedCommitment>,
-	) {
-		let stream = self
-			.signed_commitment_stream
-			.subscribe()
-			.map(|x| Ok::<_, ()>(Ok(notification::SignedCommitment::new::<Block>(x))));
+		mut sink: SubscriptionSink,
+	) -> RpcResult<()> {
+		// let stream = self
+		//     .signed_commitment_stream
+		//     .subscribe()
+		//     .map(|x| Ok::<_, ()>(Ok(notification::SignedCommitment::new::<Block>(x))));
 
-		self.manager.add(subscriber, |sink| {
+		/*self.executor.spawn(
 			stream
+				.for_each(
 				.forward(sink.sink_map_err(|e| warn!("Error sending notifications: {:?}", e)))
 				.map(|_| ())
-		});
-	}
-
-	fn unsubscribe_justifications(
-		&self,
-		_metadata: Option<Self::Metadata>,
-		id: SubscriptionId,
-	) -> jsonrpc_core::Result<bool> {
-		Ok(self.manager.cancel(id))
+		);*/
+		Ok(())
 	}
 }

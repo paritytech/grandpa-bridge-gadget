@@ -196,7 +196,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 				beefy,
 			};
 
-			Ok(crate::rpc::create_full(deps))
+			crate::rpc::create_full(deps).map_err(Into::into)
 		})
 	};
 
@@ -206,7 +206,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		keystore: keystore_container.sync_keystore(),
 		task_manager: &mut task_manager,
 		transaction_pool: transaction_pool.clone(),
-		rpc_extensions_builder,
+		rpc_builder: rpc_extensions_builder,
 		on_demand: None,
 		remote_blockchain: None,
 		backend: backend.clone(),

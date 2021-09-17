@@ -7,6 +7,7 @@
 
 use std::sync::Arc;
 
+use jsonrpsee::RpcModule;
 use sc_rpc::SubscriptionTaskExecutor;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
@@ -40,7 +41,7 @@ pub struct FullDeps<B: BlockT, C, P> {
 }
 
 /// Instantiate all full RPC extensions.
-pub fn create_full<B, C, P>(deps: FullDeps<B, C, P>) -> jsonrpc_core::IoHandler<sc_rpc::Metadata>
+pub fn create_full<B, C, P>(deps: FullDeps<B, C, P>) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
 	B: BlockT,
 	C: ProvideRuntimeApi<Block>,
@@ -51,10 +52,11 @@ where
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + 'static,
 {
-	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
-	use substrate_frame_rpc_system::{FullSystem, SystemApi};
+	use beefy_gadget_rpc::{BeefyApiServer, BeefyRpcHandler};
+	use pallet_transaction_payment_rpc::{TransactionPaymentApiServer, TransactionPaymentRpc};
+	use substrate_frame_rpc_system::{SystemApiServer, SystemRpc, SystemRpcBackendFull};
 
-	let mut io = jsonrpc_core::IoHandler::default();
+	let mut io = RpcModule::new(());
 	let FullDeps {
 		client,
 		pool,
@@ -67,22 +69,16 @@ where
 		subscription_executor,
 	} = beefy;
 
-	io.extend_with(SystemApi::to_delegate(FullSystem::new(
-		client.clone(),
-		pool,
-		deny_unsafe,
-	)));
-
-	io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(client)));
+	let system_backend = SystemRpcBackendFull::new(client.clone(), pool, deny_unsafe);
+	io.merge(SystemRpc::new(Box::new(system_backend)).into_rpc())?;
+	io.merge(TransactionPaymentRpc::new(client.clone()).into_rpc())?;
 
 	// Extend this RPC with a custom API by using the following syntax.
 	// `YourRpcStruct` should have a reference to a client, which is needed
 	// to call into the runtime.
 	// `io.extend_with(YourRpcTrait::to_delegate(YourRpcStruct::new(ReferenceToClient, ...)));`
 
-	io.extend_with(beefy_gadget_rpc::BeefyApi::to_delegate(
-		beefy_gadget_rpc::BeefyRpcHandler::new(signed_commitment_stream, subscription_executor),
-	));
+	io.merge(BeefyRpcHandler::new(signed_commitment_stream, subscription_executor).into_rpc())?;
 
-	io
+	Ok(io)
 }
