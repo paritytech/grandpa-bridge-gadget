@@ -19,11 +19,15 @@
 #![warn(missing_docs)]
 
 use beefy_gadget::notification::BeefySignedCommitmentStream;
-use futures::{FutureExt, SinkExt, StreamExt};
-use jsonrpsee::{proc_macros::rpc, types::RpcResult, SubscriptionSink};
+use futures::{future, FutureExt, StreamExt};
+use jsonrpsee::{
+	proc_macros::rpc,
+	types::{Error as JsonRpseeError, RpcResult},
+	SubscriptionSink,
+};
 use log::warn;
-use sp_runtime::traits::Block as BlockT;
 use sc_rpc::SubscriptionTaskExecutor;
+use sp_runtime::traits::Block as BlockT;
 
 mod notification;
 
@@ -52,7 +56,7 @@ where
 	/// Creates a new BeefyRpcHandler instance.
 	pub fn new(
 		signed_commitment_stream: BeefySignedCommitmentStream<Block>,
-		executor: SubscriptionTaskExecutor
+		executor: SubscriptionTaskExecutor,
 	) -> Self {
 		Self {
 			signed_commitment_stream,
@@ -65,22 +69,29 @@ impl<Block> BeefyApiServer<notification::SignedCommitment, Block> for BeefyRpcHa
 where
 	Block: BlockT,
 {
+	fn subscribe_justifications(&self, mut sink: SubscriptionSink) -> RpcResult<()> {
+		fn log_err(err: JsonRpseeError) -> bool {
+			log::error!(
+				"Could not send data to beefy_justifications subscription. Error: {:?}",
+				err
+			);
+			false
+		}
 
-	fn subscribe_justifications(
-		&self,
-		mut sink: SubscriptionSink,
-	) -> RpcResult<()> {
-		// let stream = self
-		//     .signed_commitment_stream
-		//     .subscribe()
-		//     .map(|x| Ok::<_, ()>(Ok(notification::SignedCommitment::new::<Block>(x))));
+		let stream = self
+			.signed_commitment_stream
+			.subscribe()
+			.map(|sc| notification::SignedCommitment::new::<Block>(sc));
 
-		/*self.executor.spawn(
+		let fut = async move {
 			stream
-				.for_each(
-				.forward(sink.sink_map_err(|e| warn!("Error sending notifications: {:?}", e)))
-				.map(|_| ())
-		);*/
+				.take_while(|sc| future::ready(sink.send(sc).map_or_else(log_err, |_| true)))
+				.for_each(|_| future::ready(()))
+				.await
+		}
+		.boxed();
+
+		self.executor.execute(fut);
 		Ok(())
 	}
 }
