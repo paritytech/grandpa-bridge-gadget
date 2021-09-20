@@ -11,7 +11,7 @@ beefy-primitives = { version = "0.1", path = "../beefy-primitives" }
 beefy-merkle-tree = { version = "0.1", path = "../beefy-merkle-tree" }
 env_logger = "0.9"
 hex = "0.4"
-libsecp256k1 = "0.6"
+libsecp256k1 = "0.7"
 log = "0.4"
 parity-scale-codec = "2.3"
 structopt = "0.3.21"
