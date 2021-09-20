@@ -11,6 +11,14 @@ variables:                         &default-vars
   CARGO_TARGET_DIR:                "/ci-cache/${CI_PROJECT_NAME}/targets/${CI_COMMIT_REF_NAME}/${CI_JOB_NAME}"
   CI_IMAGE:                        "paritytech/ci-linux:production"
 
+.build-refs:                     &build-refs
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_REF_NAME == "master"
+    - if: $CI_COMMIT_REF_NAME =~ /^v[0-9]+\.[0-9]+.*$/              # i.e. v1.0, v2.1rc1
+
+
 .rust-info-script:                 &rust-info-script
   - rustup show
   - cargo --version
@@ -101,6 +109,7 @@ check:
 
 build:
   stage:                           build
+  <<:                              *build-refs
   <<:                              *docker-env
   script:
     - cargo build --all --release --verbose
