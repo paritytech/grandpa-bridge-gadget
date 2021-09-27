@@ -413,8 +413,8 @@ name = "beefy-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "beefy-merkle-tree",
- "beefy-primitives",
+ "beefy-merkle-tree 4.0.0-dev",
+ "beefy-primitives 4.0.0-dev",
  "env_logger 0.9.0",
  "hex",
  "hex-literal",
@@ -429,7 +429,7 @@ dependencies = [
 name = "beefy-gadget"
 version = "0.1.0"
 dependencies = [
- "beefy-primitives",
+ "beefy-primitives 0.1.0",
  "beefy-test",
  "fnv",
  "futures 0.3.17",
@@ -459,7 +459,7 @@ name = "beefy-gadget-rpc"
 version = "0.1.0"
 dependencies = [
  "beefy-gadget",
- "beefy-primitives",
+ "beefy-primitives 0.1.0",
  "futures 0.3.17",
  "jsonrpc-core",
  "jsonrpc-core-client",
@@ -485,13 +485,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "beefy-merkle-tree"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate?branch=master#b677b3a9d0c6d157b6ca5c1ed19f0ed764038a65"
+dependencies = [
+ "hex",
+ "log",
+ "tiny-keccak",
+]
+
+[[package]]
 name = "beefy-node"
 version = "2.0.0"
 dependencies = [
  "beefy-gadget",
  "beefy-gadget-rpc",
  "beefy-node-runtime",
- "beefy-primitives",
+ "beefy-primitives 0.1.0",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
@@ -527,7 +537,7 @@ dependencies = [
 name = "beefy-node-runtime"
 version = "2.0.0"
 dependencies = [
- "beefy-primitives",
+ "beefy-primitives 0.1.0",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -578,12 +588,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "beefy-primitives"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate?branch=master#b677b3a9d0c6d157b6ca5c1ed19f0ed764038a65"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "beefy-test"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "beefy-gadget",
- "beefy-primitives",
+ "beefy-primitives 0.1.0",
  "futures 0.3.17",
  "futures-core",
  "log",
@@ -4042,7 +4066,7 @@ dependencies = [
 name = "pallet-beefy"
 version = "0.1.0"
 dependencies = [
- "beefy-primitives",
+ "beefy-primitives 0.1.0",
  "frame-support",
  "frame-system",
  "pallet-session",
@@ -4060,8 +4084,8 @@ dependencies = [
 name = "pallet-beefy-mmr"
 version = "0.1.0"
 dependencies = [
- "beefy-merkle-tree",
- "beefy-primitives",
+ "beefy-merkle-tree 0.1.0",
+ "beefy-primitives 0.1.0",
  "frame-support",
  "frame-system",
  "hex",
