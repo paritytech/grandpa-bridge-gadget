@@ -23,12 +23,13 @@ jsonrpc-core = "18.0.0"
 structopt = "0.3.22"
 
 # local dependencies
-beefy-primitives = { version = "0.1.0", path = "../../beefy-primitives" }
-beefy-gadget = { version = "0.1.0", path = "../../beefy-gadget" }
-beefy-gadget-rpc = { version = "0.1.0", path = "../../beefy-gadget/rpc" }
 beefy-node-runtime = { path = "../runtime", version = "2.0.0" }
 
 # Substrate dependencies
+beefy-primitives = { git = "https://github.com/paritytech/substrate", branch = "master" }
+beefy-gadget = { git = "https://github.com/paritytech/substrate", branch = "master" }
+beefy-gadget-rpc = { git = "https://github.com/paritytech/substrate", branch = "master" }
+
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "master" }
 frame-benchmarking-cli = { git = "https://github.com/paritytech/substrate", branch = "master" }
 pallet-transaction-payment-rpc = { git = "https://github.com/paritytech/substrate", branch = "master" }
