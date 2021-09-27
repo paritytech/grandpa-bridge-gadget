@@ -53,7 +53,7 @@ In addition to that the current status as well as a preliminary roadmap is prese
 This project is an auxiliary repository for `BEEFY` utility, testing and example code. The `BEEFY` core components
 have been added to [Substrate](https://github.com/paritytech/substrate).
 
-This repository also used to keep track of `BEEFY` related issues, i.e. even issues regarding `BEEFY` core functionality, which is now part of [Substrate](https://github.com/paritytech/substrate), should be filed against **this** repository and **not** [Substrate](https://github.com/paritytech/substrate) itself.
+This repository is also used to keep track of `BEEFY` related issues, i.e. even issues regarding `BEEFY` core functionality, which is now part of [Substrate](https://github.com/paritytech/substrate), should be filed against **this** repository and **not** [Substrate](https://github.com/paritytech/substrate) itself.
 
 ```
 ├── beefy-cli         // BEEFY utilities and testing aids
