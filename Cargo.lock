@@ -455,11 +455,59 @@ dependencies = [
 ]
 
 [[package]]
+name = "beefy-gadget"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate?branch=master#b677b3a9d0c6d157b6ca5c1ed19f0ed764038a65"
+dependencies = [
+ "beefy-primitives 4.0.0-dev",
+ "fnv",
+ "futures 0.3.17",
+ "log",
+ "parity-scale-codec",
+ "parking_lot 0.11.2",
+ "sc-client-api",
+ "sc-keystore",
+ "sc-network",
+ "sc-network-gossip",
+ "sc-utils",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-arithmetic",
+ "sp-blockchain",
+ "sp-core",
+ "sp-keystore",
+ "sp-runtime",
+ "substrate-prometheus-endpoint",
+ "thiserror",
+ "wasm-timer",
+]
+
+[[package]]
 name = "beefy-gadget-rpc"
 version = "0.1.0"
 dependencies = [
- "beefy-gadget",
+ "beefy-gadget 0.1.0",
  "beefy-primitives 0.1.0",
+ "futures 0.3.17",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "jsonrpc-pubsub",
+ "log",
+ "parity-scale-codec",
+ "sc-rpc",
+ "serde",
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
+name = "beefy-gadget-rpc"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate?branch=master#b677b3a9d0c6d157b6ca5c1ed19f0ed764038a65"
+dependencies = [
+ "beefy-gadget 4.0.0-dev",
+ "beefy-primitives 4.0.0-dev",
  "futures 0.3.17",
  "jsonrpc-core",
  "jsonrpc-core-client",
@@ -498,10 +546,10 @@ dependencies = [
 name = "beefy-node"
 version = "2.0.0"
 dependencies = [
- "beefy-gadget",
- "beefy-gadget-rpc",
+ "beefy-gadget 4.0.0-dev",
+ "beefy-gadget-rpc 4.0.0-dev",
  "beefy-node-runtime",
- "beefy-primitives 0.1.0",
+ "beefy-primitives 4.0.0-dev",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "jsonrpc-core",
@@ -537,7 +585,7 @@ dependencies = [
 name = "beefy-node-runtime"
 version = "2.0.0"
 dependencies = [
- "beefy-primitives 0.1.0",
+ "beefy-primitives 4.0.0-dev",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -547,7 +595,7 @@ dependencies = [
  "hex-literal",
  "pallet-aura",
  "pallet-balances",
- "pallet-beefy",
+ "pallet-beefy 4.0.0-dev",
  "pallet-grandpa",
  "pallet-mmr",
  "pallet-randomness-collective-flip",
@@ -606,7 +654,7 @@ name = "beefy-test"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "beefy-gadget",
+ "beefy-gadget 0.1.0",
  "beefy-primitives 0.1.0",
  "futures 0.3.17",
  "futures-core",
@@ -4081,6 +4129,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-beefy"
+version = "4.0.0-dev"
+source = "git+https://github.com/paritytech/substrate?branch=master#b677b3a9d0c6d157b6ca5c1ed19f0ed764038a65"
+dependencies = [
+ "beefy-primitives 4.0.0-dev",
+ "frame-support",
+ "frame-system",
+ "pallet-session",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-beefy-mmr"
 version = "0.1.0"
 dependencies = [
@@ -4092,7 +4156,7 @@ dependencies = [
  "hex-literal",
  "libsecp256k1 0.7.0",
  "log",
- "pallet-beefy",
+ "pallet-beefy 0.1.0",
  "pallet-mmr",
  "pallet-mmr-primitives",
  "pallet-session",
