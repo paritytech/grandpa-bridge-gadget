@@ -19,7 +19,11 @@ use beefy_primitives::{
 	MmrRootHash, ValidatorSet, ValidatorSetId,
 };
 
-pub mod keyring;
+mod error;
+mod keyring;
+
+pub use error::Error;
+pub use keyring::Keyring;
 
 /// Identifier for a finalized block at a specific height.
 pub type BlockNumber = u64;
