@@ -1,4 +1,4 @@
-// Copyright (C) 2020 Parity Technologies (UK) Ltd.
+// Copyright (C) 2021 Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -19,6 +19,8 @@ use beefy_primitives::{
 	MmrRootHash, ValidatorSet, ValidatorSetId,
 };
 
+pub mod keyring;
+
 /// Identifier for a finalized block at a specific height.
 pub type BlockNumber = u64;
 
@@ -31,4 +33,12 @@ pub type SignedCommitment = beefy_primitives::SignedCommitment<BlockNumber, MmrR
 pub struct LightClient {
 	// BEEFY validator set
 	validator_set: ValidatorSet<Public>,
+}
+
+impl LightClient {
+	pub fn new() -> LightClient {
+		LightClient {
+			validator_set: ValidatorSet::empty(),
+		}
+	}
 }
