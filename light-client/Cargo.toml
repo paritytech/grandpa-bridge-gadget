@@ -8,6 +8,8 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 [dependencies]
 
 # Substrate dependencies
+codec = { version = "2.3.0", package = "parity-scale-codec", features = ["derive"] }
+
 sc-keystore = { git = "https://github.com/paritytech/substrate", branch = "master" }
 
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }

@@ -14,11 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use std::sync::Arc;
-
-use sc_keystore::LocalKeystore;
 use sp_core::{ecdsa, keccak_256, Pair};
-use sp_keystore::SyncCryptoStorePtr;
 
 use beefy_primitives::crypto;
 
@@ -69,8 +65,4 @@ impl From<Keyring> for ecdsa::Pair {
 	fn from(k: Keyring) -> Self {
 		k.pair().into()
 	}
-}
-
-fn keystore() -> SyncCryptoStorePtr {
-	Arc::new(LocalKeystore::in_memory())
 }

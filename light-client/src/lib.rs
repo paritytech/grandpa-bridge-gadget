@@ -45,4 +45,8 @@ impl LightClient {
 			validator_set: ValidatorSet::empty(),
 		}
 	}
+
+	pub fn import(&mut self, signed: SignedCommitment) -> Result<(), Error> {
+		Err(Error::Commitment("not implemented yet".to_string()))
+	}
 }
