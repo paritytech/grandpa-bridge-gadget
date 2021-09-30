@@ -18,14 +18,14 @@ use sp_core::H256;
 
 use codec::Encode;
 
-use light_client::{Commitment, Keyring, LightClient, SignedCommitment};
+use light_client::{Client, Commitment, Keyring, SignedCommitment};
 
 #[test]
-fn import_signed_commitment() {
-	let mut client = LightClient::new();
+fn import_with_initial_validator_set() {
+	let mut client = Client::new();
 
 	let commitment = Commitment {
-		payload: H256::from_low_u64_le(42),
+		payload: (H256::from_low_u64_le(42), 1),
 		block_number: 2,
 		validator_set_id: 0,
 	};

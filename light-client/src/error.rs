@@ -32,7 +32,7 @@ unsafe impl Sync for Error {}
 impl std::fmt::Display for Error {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		match self {
-			Error::Commitment(msg) => write!(f, "validate commitment error: `{}`", msg)?,
+			Error::Commitment(msg) => write!(f, "verify commitment error: `{}`", msg)?,
 			Error::Proof(msg) => write!(f, "verify proof error: `{}`", msg)?,
 		}
 
@@ -43,10 +43,12 @@ impl std::fmt::Display for Error {
 impl std::fmt::Debug for Error {
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		match self {
-			Error::Commitment(msg) => write!(f, "validate commitment error: `{}`", msg)?,
+			Error::Commitment(msg) => write!(f, "verify commitment error: `{}`", msg)?,
 			Error::Proof(msg) => write!(f, "verify proof error: `{}`", msg)?,
 		}
 
 		Ok(())
 	}
 }
+
+impl std::error::Error for Error {}

@@ -14,39 +14,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use beefy_primitives::{
-	crypto::{Public, Signature},
-	MmrRootHash, ValidatorSet, ValidatorSetId,
-};
+use beefy_primitives::{MmrRootHash, ValidatorSetId};
 
+mod client;
 mod error;
 mod keyring;
 
+pub use client::Client;
 pub use error::Error;
 pub use keyring::Keyring;
 
 /// Identifier for a finalized block at a specific height.
 pub type BlockNumber = u64;
 
-/// Commitment for a finalized block at [`BlockNumber`] containing a [`MmrRootHash`] as payload.
-pub type Commitment = beefy_primitives::Commitment<BlockNumber, MmrRootHash>;
+/// Commitment for a finalized block at [`BlockNumber`]. The commitment payload is s tuple of
+/// a [`MmrRootHash`] and a [`ValidatorSetId`].
+///
+/// The [`ValidatorSetId`] is the set id of the **next** validator set.
+///
+pub type Commitment = beefy_primitives::Commitment<BlockNumber, (MmrRootHash, ValidatorSetId)>;
 
 /// A [`Commitment`] containing a matching [`Signature`] from each validator of the current active [`ValidatorSet`].
-pub type SignedCommitment = beefy_primitives::SignedCommitment<BlockNumber, MmrRootHash>;
-
-pub struct LightClient {
-	// BEEFY validator set
-	validator_set: ValidatorSet<Public>,
-}
-
-impl LightClient {
-	pub fn new() -> LightClient {
-		LightClient {
-			validator_set: ValidatorSet::empty(),
-		}
-	}
-
-	pub fn import(&mut self, signed: SignedCommitment) -> Result<(), Error> {
-		Err(Error::Commitment("not implemented yet".to_string()))
-	}
-}
+///
+pub type SignedCommitment = beefy_primitives::SignedCommitment<BlockNumber, (MmrRootHash, ValidatorSetId)>;

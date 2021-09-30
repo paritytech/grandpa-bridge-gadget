@@ -53,6 +53,11 @@ impl Keyring {
 	pub fn to_seed(self) -> String {
 		format!("//{}", self)
 	}
+
+	pub fn verify(key: &crypto::Public, sig: &crypto::Signature, msg: &[u8]) -> bool {
+		let msg = keccak_256(msg);
+		ecdsa::Pair::verify_prehashed(sig.as_ref(), &msg, key.as_ref())
+	}
 }
 
 impl From<Keyring> for crypto::Pair {
