@@ -63,27 +63,26 @@ impl Client {
 		let SignedCommitment { commitment, signatures } = signed.clone();
 
 		if self.active_set.id != commitment.validator_set_id {
-			return Err(Error::Commitment(format!(
-				"invalid validator set id: got {} want {}",
-				commitment.validator_set_id, self.active_set.id
-			)));
+			return Err(Error::InvalidValidatorSet {
+				got: commitment.validator_set_id,
+				want: self.active_set.id,
+			});
 		}
 
 		let best_known = self.latest_commitment.as_ref().map(|c| c.block_number).unwrap_or(0);
 
 		if commitment.block_number <= best_known {
-			return Err(Error::Commitment(format!(
-				"stale block number: got {} want {}",
-				commitment.block_number, best_known
-			)));
+			return Err(Error::StaleBlock {
+				got: commitment.block_number,
+				best_known,
+			});
 		}
 
 		if signatures.len() != self.active_set.validators.len() {
-			return Err(Error::Commitment(format!(
-				"insufficient number of validator signatures: got {} want {}",
-				signatures.len(),
-				self.active_set.validators.len()
-			)));
+			return Err(Error::InsufficientSignatures {
+				got: signatures.len(),
+				want: self.active_set.validators.len(),
+			});
 		}
 
 		self.verify_signatures(signed)?;
@@ -93,11 +92,10 @@ impl Client {
 
 	fn verify_signatures(&self, signed: SignedCommitment) -> Result<(), Error> {
 		if signed.no_of_signatures() < self.signature_threshold() {
-			return Err(Error::Commitment(format!(
-				"insufficient number of signatures: got {} want {}",
-				signed.no_of_signatures(),
-				self.signature_threshold()
-			)));
+			return Err(Error::InsufficientSignatures {
+				got: signed.no_of_signatures(),
+				want: self.signature_threshold(),
+			});
 		}
 
 		let valid = signed
@@ -111,11 +109,10 @@ impl Client {
 			.count();
 
 		if valid < self.signature_threshold() {
-			return Err(Error::Commitment(format!(
-				"insufficient valid signatures: got {} want {}",
-				valid,
-				self.signature_threshold()
-			)));
+			return Err(Error::InsufficientValidSignatures {
+				got: valid,
+				want: self.signature_threshold(),
+			});
 		}
 
 		Ok(())

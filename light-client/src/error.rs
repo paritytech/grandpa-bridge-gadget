@@ -19,12 +19,20 @@ use core::{
 	write,
 };
 
+use crate::BlockNumber;
+
 use displaydoc::Display;
 
 #[derive(Display, Debug, PartialEq, Eq, Clone)]
 pub enum Error {
-	#[displaydoc("verify commitment error: `{0}`")]
-	Commitment(String),
+	#[displaydoc("invalid validator set id: got {got:?} want {want:?}")]
+	InvalidValidatorSet { got: u64, want: u64 },
+	#[displaydoc("stale block number: got {got:?} best-known {best_known:?}")]
+	StaleBlock { got: BlockNumber, best_known: BlockNumber },
+	#[displaydoc("insufficient number of validator signatures: got {got:?} want {want:?}")]
+	InsufficientSignatures { got: usize, want: usize },
+	#[displaydoc("insufficient valid signatures: got {got:?} want {want:?}")]
+	InsufficientValidSignatures { got: usize, want: usize },
 	#[displaydoc("verify proof error: `{0}`")]
 	Proof(String),
 }
