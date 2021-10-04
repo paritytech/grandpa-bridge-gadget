@@ -14,21 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use core::{
-	marker::{Send, Sync},
-	write,
-};
+pub extern crate alloc;
 
-use displaydoc::Display;
-
-#[derive(Display, Debug, PartialEq, Eq, Clone)]
-pub enum Error {
-	#[displaydoc("verify commitment error: `{0}`")]
-	Commitment(String),
-	#[displaydoc("verify proof error: `{0}`")]
-	Proof(String),
-}
-
-unsafe impl Send for Error {}
-
-unsafe impl Sync for Error {}
+use alloc::fmt::format;
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;

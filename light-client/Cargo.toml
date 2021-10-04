@@ -8,13 +8,19 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 [dependencies]
 
 # Substrate dependencies
-codec = { version = "2.3.0", package = "parity-scale-codec", features = ["derive"] }
+codec = { version = "2.3.0", package = "parity-scale-codec", default-features = false, features = ["derive"] }
+displaydoc = { version = "0.2", default-features = false}
 
-sc-keystore = { git = "https://github.com/paritytech/substrate", branch = "master" }
+beefy-primitives = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
+sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "master" }
-sp-keystore = { git = "https://github.com/paritytech/substrate", branch = "master" }
+strum = { version = "0.21", default-features = false, features = ["derive"] }
 
-beefy-primitives = { git = "https://github.com/paritytech/substrate", branch = "master" }
-
-strum = { version = "0.21", features = ["derive"] }
+[features]
+default = ["std"]
+std = [
+    "beefy-primitives/std",
+	"codec/std",
+    "displaydoc/std",
+    "sp-core/std",
+]

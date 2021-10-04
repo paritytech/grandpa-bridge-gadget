@@ -14,6 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(feature = "std")]
+include!("std.rs");
+
+#[cfg(not(feature = "std"))]
+include!("no_std.rs");
+
 use beefy_primitives::{MmrRootHash, ValidatorSetId};
 
 mod client;
