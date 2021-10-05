@@ -25,7 +25,7 @@ fn import_with_initial_validator_set() {
 	let mut client = Client::new();
 
 	let commitment = Commitment {
-		payload: (H256::from_low_u64_le(42), 1),
+		payload: (H256::from_low_u64_le(42)),
 		block_number: 2,
 		validator_set_id: 0,
 	};

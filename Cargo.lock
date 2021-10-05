@@ -116,6 +116,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "arber"
+version = "0.1.0-dev"
+source = "git+https://github.com/adoerr/arber?branch=main#0657b48244ab30285692fb816ea1b7820f4e6c62"
+dependencies = [
+ "blake2",
+ "displaydoc",
+ "parity-scale-codec",
+]
+
+[[package]]
 name = "arrayref"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3317,6 +3327,7 @@ dependencies = [
 name = "light-client"
 version = "0.1.0"
 dependencies = [
+ "arber",
  "beefy-primitives",
  "displaydoc",
  "parity-scale-codec",

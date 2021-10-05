@@ -11,6 +11,8 @@ license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 codec = { version = "2.3.0", package = "parity-scale-codec", default-features = false, features = ["derive"] }
 displaydoc = { version = "0.2", default-features = false}
 
+arber = { git = "https://github.com/adoerr/arber", default-features = false, branch = "main" }
+
 beefy-primitives = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 sp-core = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
 
@@ -19,6 +21,7 @@ strum = { version = "0.21", default-features = false, features = ["derive"] }
 [features]
 default = ["std"]
 std = [
+    "arber/std",
     "beefy-primitives/std",
 	"codec/std",
     "displaydoc/std",
