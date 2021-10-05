@@ -27,6 +27,7 @@ use beefy_primitives::MmrRootHash;
 mod client;
 mod error;
 mod keyring;
+mod mmr;
 
 pub use client::Client;
 pub use error::Error;
