@@ -7,6 +7,8 @@ It can be thought of as an (optional) Bridge-specific Gadget to the GRANDPA Fina
 The Protocol piggybacks on many assumptions provided by GRANDPA, and is required to be built
 on top of it to work correctly.
 
+**Note that the** `BEEFY` **core components have been move to the** [Substrate](https://github.com/paritytech/substrate) **repository**
+
 🚧 BEEFY is currently under construction - a hardhat is recommended beyond this point 🚧
 
 ## Contents
@@ -48,31 +50,15 @@ In addition to that the current status as well as a preliminary roadmap is prese
 
 ## Project Layout
 
-What follows is an overview of how the project repository is laid out. The main components are the
-`beefy-gadget` which is a POC of the BEEFY round logic. `beefy-pallet` which is mainly a thin
-integration layer over the session pallet and keeps track of the current authorities.
-Finally the BEEFY `primitives` crate which contains most of the type definitions for the
-BEEFY protocol.
+This project is an auxiliary repository for `BEEFY` utility, testing and example code. The `BEEFY` core components
+have been added to [Substrate](https://github.com/paritytech/substrate).
 
-The `primitives` crate also contains a test [light_client](.primitives/tests/light_client/) which demonstrates how BEEFY would
-be utilized by a light client implementation.
+This repository is also used to keep track of `BEEFY` related issues, i.e. even issues regarding `BEEFY` core functionality, which is now part of [Substrate](https://github.com/paritytech/substrate), should be filed against **this** repository and **not** [Substrate](https://github.com/paritytech/substrate) itself.
 
 ```
 ├── beefy-cli         // BEEFY utilities and testing aids
 │  └── ...
-├── beefy-gadget      // The BEEFY gadget
-│  └── ...
-├── beefy-merkle-tree // A Binary Merkle-Tree for Substrate runtime usage
-│  └──  ...
-├── beefy-mmr-pallet  // BEEFY and Merkle Moutain Range (MMR) together in one pallet
-│  └──  ...
 ├── beefy-node        // A Substrate node running the BEEFY gadget
-│  └──  ...
-├── beefy-pallet      // The BEEFY pallet.
-│  └──  ...
-├── beefy-primitives  // The BEEFY primitives crate includig a test light client
-│  └──  ...
-├── beefy-test        // The BEEFY test support library
 │  └──  ...
 ├── docs              // Documentation
 │  └──  ...
