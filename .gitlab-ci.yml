@@ -76,9 +76,9 @@ clippy:
   <<:                              *docker-env
   # FIXME: with cache the job is stuck on locked `.cargo-lock` files
   variables:
-    CARGO_TARGET_DIR:              "/tmp"
-    SCCACHE_DIR:                   "/tmp"
-    CARGO_HOME:                    "/tmp"
+    CARGO_TARGET_DIR:              "/builds/parity/grandpa-bridge-gadget"
+    SCCACHE_DIR:                   "/builds/parity/grandpa-bridge-gadget"
+    CARGO_HOME:                    "/builds/parity/grandpa-bridge-gadget"
   before_script:
     - *rust-info-script
     - sccache -s
