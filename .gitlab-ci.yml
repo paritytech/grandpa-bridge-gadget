@@ -74,7 +74,7 @@ fmt:
 clippy:
   stage:                           lint
   <<:                              *docker-env
-  # FIXME: mounted causes container hang
+  # FIXME: mounted volume causes container hang
   variables:
     CARGO_TARGET_DIR:              ""
   script:
