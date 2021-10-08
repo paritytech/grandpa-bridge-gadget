@@ -77,6 +77,8 @@ clippy:
   # FIXME: with cache the job is stuck on locked `.cargo-lock` files
   variables:
     CARGO_TARGET_DIR:              "/tmp"
+    SCCACHE_DIR:                   "/tmp"
+    CARGO_HOME:                    "/tmp"
   before_script:
     - *rust-info-script
     - sccache -s
