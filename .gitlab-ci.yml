@@ -24,7 +24,7 @@ variables:                         &default-vars
   - rustup +nightly show
   - cargo +nightly --version
   - bash --version
-  - sccache -s
+  # - sccache -s
 
 .docker-env:                       &docker-env
   image:                           "${CI_IMAGE}"
@@ -80,7 +80,6 @@ clippy:
     RUSTC_WRAPPER:                 ""
   before_script:
     - *rust-info-script
-    # - sccache -s
   script:
     - RUSTFLAGS="-D warnings" cargo +nightly clippy --all --verbose
   tags:
