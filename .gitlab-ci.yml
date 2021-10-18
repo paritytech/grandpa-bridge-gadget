@@ -80,7 +80,7 @@ clippy:
     RUSTC_WRAPPER:                 ""
   before_script:
     - *rust-info-script
-    - sccache -s
+    # - sccache -s
   script:
     - RUSTFLAGS="-D warnings" cargo +nightly clippy --all --verbose
   tags:
