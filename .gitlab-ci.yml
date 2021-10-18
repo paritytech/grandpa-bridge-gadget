@@ -73,16 +73,13 @@ fmt:
 clippy:
   stage:                           lint
   <<:                              *docker-env
-  # FIXME: with cache the job is stuck on locked `.cargo-lock` files
-  variables:
-    CARGO_TARGET_DIR:              "/builds/parity/grandpa-bridge-gadget"
-    SCCACHE_DIR:                   "/builds/parity/grandpa-bridge-gadget"
-    CARGO_HOME:                    "/builds/parity/grandpa-bridge-gadget"
   before_script:
     - *rust-info-script
     - sccache -s
   script:
-    - RUSTFLAGS="-D warnings" cargo +nightly clippy --all --verbose
+    - RUSTFLAGS="-D warnings" cargo +nightly clippy -p beefy-cli --verbose
+    - RUSTFLAGS="-D warnings" cargo +nightly clippy -p beefy-node-runtime --verbose
+    - RUSTFLAGS="-D warnings" cargo +nightly clippy -p beefy-node --verbose
 
 #### stage:                       test
 
