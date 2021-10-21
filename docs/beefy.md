@@ -4,105 +4,177 @@ Related issues:
 - [Merkle Mountain Range for Efficient Bridges](https://github.com/paritytech/parity-bridges-common/issues/263)
 - [Grandpa Super Light Client](https://github.com/paritytech/parity-bridges-common/issues/323)
 
-### TL;DR / Rationale
+BEEFY is a consensus protocol designed with efficient trustless bridging in mind. It means
+that building a light client of BEEFY protocol should be optimized for restricted environments
+like Ethereum Smart Contracts or On-Chain State Transition Function (e.g. Substrate Runtime).
+Note that BEEFY is not a standalone protocol, it is meant to be running alongside GRANDPA, a
+finality gadget created for Substrate/Polkadot ecosystem. More details about GRANDPA can be found in
+the [whitepaper](https://github.com/w3f/consensus/blob/master/pdf/grandpa.pdf).
 
-The idea is that we have an extra round of signatures after GRANDPA for which we'll use the Ethereum
-standard secp256k1 ECDSA, which I understand that is already supported by Substrate.  The advantages
-of doing the signatures outside GRANDPA are that aside from not touching existing code, we can have
-all validators sign the same thing, rather than potentially different blocks and having to deal with
-equivocations in GRANDPA.  Aside from that, it also gives the advantage that although all honest
-validators sign it, so we get 2/3 of validators signatures, we only need to check that over 1/3 of
-validators sign it, since honest validators would only sig if they see it is already final.
+Following document is a semi-formal description of the protocol augmented with high-level
+implementation suggestions and notes. Any changes to the implementation in Substrate repository
+should be preceded by updates to this document.
 
-This means that we could verify finality interactively like this:
-- We give the light client the thing that was signed, a bit field of validators who signed it, a
-  Merkle root of a tree of signatures on it and a few arbitrary signatures the light client then asks
-  for a few random signatures of those validators who signed it.
-- We give these signatures and their Merkle proofs.
-- The light client would previously have a Merkle root of all public keys and we'll need to give
-Merkle proofs of the public keys along with the signatures.
-- For the Ethereum on-chain light client, for 2, we would generate the random challenges using a
-pseudo-random finstion seeded by the block hash of the block exactly 100 blocks later or the like.
-  - I think we can query the last 255 block hashes using solidity so this should be fine.
+Current Version: 0.1.0
 
-### General Notes
-Every time we say “Merkle root/merkelize” we mean `keccak256` binary merkle tree compatible with
-`merkletreejs` library (see `beefy-merkle-tree` crate).
+# Introduction
 
-### BEEFY Substrate Pallet
-- Tracks a list of secp256k1 public keys on-chain (BEEFY frame runtime).
-- The pallet hooks up into the session lifecycle.
-- Whenever the set is signalled we add a digest item to the header which contains a list of all
-  Public Keys
-- Stores the checkpoint (starting block), where we actually start this secondary protocol.
-- Migration for session keys (session pallet) is required to support this extra key.
+The original motiviation for introducing BEEFY is stemming from inefficiencies of building
+GRANDPA light client in restricted environments.
 
-### BeefyToMmr Converter Pallet
-- Take the list of validators from the (BEEFY Pallet) and merkelize them once per epoch (probably
-  right after session change is triggered)
-- Insert the merkle root hash of the secp256k1 public keys into the MMR
+1. GRANDPA uses `sr25519` signatures and finality proof requires `2N/3 + 1` of valid signatures
+   (where `N` is the size of current validator set).
+1. GRANDPA finalizes `Headers`, which by default in Substrate is at least `100 bytes` (3 hashes +
+   block number). Additionally the finality proof may contain `votes_ancestries` which are also
+   headers, so the total size is inflated by that. This extraneuous data is useless for the light
+   client though.
+1. Since GRANDPA depends on the header format, which is customizable in Substrate, it makes it hard
+   to build a "Generic Light Client" which would be able to support multiple different chains.
 
-### BEEFY Service (Client)
-- On the client side Grandpa produces a stream of finalized events and our new component (BEEFY)
-  should:
-  - Fetch the finalized block header
-  - Retrieve the digest and update the Authority Set (Grandpa guarantees finalizing blocks that
-    signal change).
-  - Or assume there was no change and keep the previous one
-- “The things we vote on” is pluggable:
-  - We can either use the Digest which contains MMR root hash
-  - Or we can retrieve this from Offchain DB (MMR root hash pushed via Indexing API)
-- Produce & gossip a vote on “the thing to be voted on” and start collecting signatures of others
-  (we have to support multiple “things to be voted on” - the rounds happens concurrently)
-  - We need to vote for every epoch change block (the ones that contain BEEFY Digest item)
-  - If there is no such (pending) block, we vote roughly for
-    ```
-       // obviously block_to_sign_on has to be <= last_finalized_block.
-       block_to_sign_on = last_block_with_signed_mmr_root
-        + Max(
-            2,
-            NextPowerOfTwo((last_finalized_block - last_block_with_signed_mmr_root) / 2),
-        )
-    ```
-      - Every time we are voting on a block, we call it a round
-  - The round progresses concurrently - we might have multiple rounds happening at the same time.
-  - The epoch change round HAS to be run to completion.
-  - If we change the epoch we SHOULD cancel all previous rounds.
-- Proofs for BEEFY should contain the signatures to make sure during sync we can easily verify that
-  the transitions were done correctly.
-  - The sync needs to be extended to fetch BEEFY justifications if we find them missing. (optional
-    for MVP)
-  - At the start we query the runtime to learn about the starting block and the initial set.
-- Migration for existing blocks in the database to support multiple justifications: `Vec<(ConsensusEngineId, Blob)>`
-- The BEEFY-justifications for epoch blocks are part of the blockchain database - there probably
-  should be an RPC to retrieve them.
-- Other non-epoch BEEFY-justifications can be stored only in memory (no need to persist them at all).
-- RPC side:
-  - Secondary-finalized-block-stream, something like grandpa_justifications RPC (Jon’s PR)
-  - On-demand retrieval of BEEFY-justifications from epoch-blocks stored in the DB.
-    (getBlock is enough - cause it returns all justifications)
+Hence the goals of BEEFY are:
 
-#### Brain dump for the ETH contract:
-1. Imports:
-  - `MerkleMountRangeRootHash`
-  - `CurrentBlockHash`
-  - MerkleRoot of PublicKeys of the next Authority Set
-  - Bit-vec of validators that signed (only accept if there is enough signatures)
-  - Merkle root of all signatures
-2. Starts interactive verification process
-  - Pick ⅓ validators that signed at random
-  - Request their signatures
-3. Required signatures are then submitted:
-  - We get ⅓ signatures + merkle proof that all of them were part of the initial set
-  - We get ⅓ public keys (or their hashes) + merkle proof that they are part of the current
-    Authority Set (stored in the contract)
-  - We `ecrecover` the signatures and make sure the public keys match the ones we got and the merkle
-    proof is valid.
+1. Allow customisation of crypto to adapt for different targets. Support thresholds signatures as
+   well eventually.
+1. Minimize the size of the "signed payload" and the finality proof.
+1. Unify data types and use backward-compatible versioning so that the protocol can be extended
+   (additional payload, different crypto) without breaking existing light clients.
+
+BEEFY is required to be running on top of GRANDPA. This allows us to take couple of shortcuts:
+1. BEEFY validator set is **the same** as GRANDPA's (i.e. the same bonded actors), they might be
+   identified by different session keys though.
+1. BEEFY runs on **finalized** canonical chain, i.e. no forks (note [Misbehavior](#2-misbehavior)
+   section though).
+1. From a single validator perspective, BEEFY has at most one active voting round. Since GRANDPA
+   validators are reaching finality, we assume they are on-line and well-connected and have
+   similar view of the state of the blockchain.
+
+## Ethereum
+
+Initial version of BEEFY was made to enable efficient bridging with Ethereum, where the light client
+is a Solidity Smart Contract compiled to EVM bytecode. Hence the choice of the initial cryptography
+for BEEFY: `secp256k1` and usage of `keccak256` hashing function. See more in
+[Data Formats](#2-data-formats) section.
+
+# The BEEFY Protocol
+
+## Mental Model
+
+BEEFY should be considered as an extra voting round done by GRANDPA validators for the current best
+finalized block. Similarily to how GRANDPA is lagging behind best produced (non-finalized) block,
+BEEFY is going to lag behind best GRANDPA (finalized) block.
+
+```
+                       ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐
+                       │      │ │      │ │      │ │      │ │      │
+                       │  B1  │ │  B2  │ │  B3  │ │  B4  │ │  B5  │
+                       │      │ │      │ │      │ │      │ │      │
+                       └──────┘ └───▲──┘ └──────┘ └───▲──┘ └───▲──┘
+                                    │                 │        │
+     Best BEEFY block───────────────┘                 │        │
+                                                      │        │
+     Best GRANDPA block───────────────────────────────┘        │
+                                                               │
+     Best produced block───────────────────────────────────────┘
+
+```
+
+A pseudo-algorithm of behavior for a fully-synced BEEFY validator is:
+
+```
+loop {
+  let (best_beefy_block, best_grandpa_block) = wait_for_best_blocks();
+
+  let block_to_vote_on = choose_next_beefy_block(
+    best_beefy_block,
+    best_grandpa_block
+  );
+
+  let payload_to_vote_on = retrieve_payload(block_to_vote_on);
+
+  let commitment = (block_to_vote_on, payload_to_vote_on);
+
+  let signature = sign_with_current_session_key(commitment);
+
+  broadcast_vote(commitment, signature);
+}
+```
+
+Read more about the details in [Implementation](#1-implementation) section.
+
+## Details
+
+Before we jump into describing how BEEFY works in details, let's agree on the terms we are going to
+use and actors in the system. All nodes in the network need to participate in the BEEFY networking
+protocol, but we can identify two distinct actors though: **regular nodes** and **BEEFY validators**.
+Validators are expected to actively participate in the protocol, by producing and broadcasting
+**votes**. Votes are simply their signatures over a **Commitment**. A Commitment consists of a
+**payload** (an opaque blob of bytes extracted from a block or state at that block) and **block
+number** from which this payload originates. Additionally Commitment contains BEEFY **validator
+set id** at that particular block. Note the block is finalized, so there is no ambiguity despite
+using block number instead of a hash. A collection of **votes**, or rather
+a Commitment and a collection of signatures is going to be called **Signed Commitment**. A valid
+(see later for the rules) Signed Commitment is also called a **BEEFY Justification** or
+**BEEFY Finality Proof**. For more details on the actual data structures please see
+[Data Formats](#2-data-formats).
+
+A **round** is an attempt by BEEFY validators to produce BEEFY Justification. **Round number** is
+simply defined as a block number (or rather the Commitment for that block number) the validators are
+voting for. Rounds ends when the next round starts or when we receive all expected votes from all
+validators.
+
+Validators are expected to:
+1. Produce & broadcast vote for
+
+### Session boundaries
+
+TODO
+
+### Catch up
+
+TODO
+
+### Gossip
+
+TODO
+
+## Misbehavior
+
+TODO
+
+# Implementation
+
+TODO
+
+## On-Chain Pallet
+
+TODO
+
+## BEEFY Worker
+
+TODO
+
+## Data Formats
+
+TODO
+
+# BEEFY & MMR
+
+TODO
+
+# Light Client Design
+
+TODO
+
+## Substrate Runtime
+
+TODO
+
+## Solidity Smart Contract
+
+TODO
 
 
-
-
-####################
+# Assorted notes
 
 Only one round is always active and it's in either of the modes:
 
