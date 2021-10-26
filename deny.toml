@@ -48,11 +48,11 @@ notice = "warn"
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.
 ignore = [
-    # `wasmtime` needs to be updated for Substrate upstream
-    "RUSTSEC-2021-0110",
     # `time` is a dependency of `chrono`, which needs to be updated in 
     # Substrate.
     "RUSTSEC-2020-0071",
+	# `chrono` is a Substrate dependency
+	"RUSTSEC-2020-0159"
 
 ]
 # Threshold for security vulnerabilities, any vulnerability with a CVSS score
