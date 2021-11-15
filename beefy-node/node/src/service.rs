@@ -73,7 +73,7 @@ pub fn new_partial(config: &Configuration) -> Result<ServiceComponents, ServiceE
 	let client = Arc::new(client);
 
 	let telemetry = telemetry.map(|(worker, telemetry)| {
-		task_manager.spawn_handle().spawn("telemetry", worker.run());
+		task_manager.spawn_handle().spawn("telemetry", None, worker.run());
 		telemetry
 	});
 
@@ -161,7 +161,6 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		transaction_pool: transaction_pool.clone(),
 		spawn_handle: task_manager.spawn_handle(),
 		import_queue,
-		on_demand: None,
 		block_announce_validator_builder: None,
 		warp_sync: Some(warp_sync),
 	})?;
@@ -208,8 +207,6 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 		task_manager: &mut task_manager,
 		transaction_pool: transaction_pool.clone(),
 		rpc_extensions_builder,
-		on_demand: None,
-		remote_blockchain: None,
 		backend: backend.clone(),
 		system_rpc_tx,
 		config,
@@ -259,7 +256,9 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 		// the AURA authoring task is considered essential, i.e. if it
 		// fails we take down the service with it.
-		task_manager.spawn_essential_handle().spawn_blocking("aura", aura);
+		task_manager
+			.spawn_essential_handle()
+			.spawn_blocking("aura", Some("block-authoring"), aura);
 	}
 
 	// if the node isn't actively participating in consensus then it doesn't
@@ -283,6 +282,7 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 	// Start the BEEFY bridge gadget.
 	task_manager.spawn_essential_handle().spawn_blocking(
 		"beefy-gadget",
+		None,
 		beefy_gadget::start_beefy_gadget::<_, _, _, _>(beefy_params),
 	);
 
@@ -316,9 +316,11 @@ pub fn new_full(mut config: Configuration) -> Result<TaskManager, ServiceError> 
 
 		// the GRANDPA voter task is considered infallible, i.e.
 		// if it fails we take down the service with it.
-		task_manager
-			.spawn_essential_handle()
-			.spawn_blocking("grandpa-voter", sc_finality_grandpa::run_grandpa_voter(grandpa_config)?);
+		task_manager.spawn_essential_handle().spawn_blocking(
+			"grandpa-voter",
+			None,
+			sc_finality_grandpa::run_grandpa_voter(grandpa_config)?,
+		);
 	}
 
 	network_starter.start_network();
