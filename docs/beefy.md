@@ -22,7 +22,7 @@ Current Version: 0.1.0
 The original motiviation for introducing BEEFY is stemming from inefficiencies of building
 GRANDPA light client in restricted environments.
 
-1. GRANDPA uses `sr25519` signatures and finality proof requires `2N/3 + 1` of valid signatures
+1. GRANDPA uses `ed25519` signatures and finality proof requires `2N/3 + 1` of valid signatures
    (where `N` is the size of current validator set).
 1. GRANDPA finalizes `Headers`, which by default in Substrate is at least `100 bytes` (3 hashes +
    block number). Additionally the finality proof may contain `votes_ancestries` which are also
@@ -108,7 +108,8 @@ use and actors in the system. All nodes in the network need to participate in th
 protocol, but we can identify two distinct actors though: **regular nodes** and **BEEFY validators**.
 Validators are expected to actively participate in the protocol, by producing and broadcasting
 **votes**. Votes are simply their signatures over a **Commitment**. A Commitment consists of a
-**payload** (an opaque blob of bytes extracted from a block or state at that block) and **block
+**payload** (an opaque blob of bytes extracted from a block or state at that block, expected to be some
+form of crypto accumulator (like Merkle Tree Hash or Merkle Mountain Range Root Hash)) and **block
 number** from which this payload originates. Additionally Commitment contains BEEFY **validator
 set id** at that particular block. Note the block is finalized, so there is no ambiguity despite
 using block number instead of a hash. A collection of **votes**, or rather
@@ -119,13 +120,13 @@ a Commitment and a collection of signatures is going to be called **Signed Commi
 
 A **round** is an attempt by BEEFY validators to produce BEEFY Justification. **Round number** is
 simply defined as a block number (or rather the Commitment for that block number) the validators are
-voting for. Rounds ends when the next round starts or when we receive all expected votes from all
+voting for. Round ends when the next round is started or when we receive all expected votes from all
 validators.
 
 Validators are expected to:
 1. Produce & broadcast vote for
 
-### Session boundaries
+### Round Progression / Boundaries / Selection
 
 TODO
 
@@ -134,6 +135,9 @@ TODO
 TODO
 
 ### Gossip
+
+Global topic for "what round I'm on messages"
+Round-specific topics.
 
 TODO
 
@@ -153,11 +157,11 @@ TODO
 
 TODO
 
-## Data Formats
+# BEEFY & MMR (Polkadot implementation)
 
 TODO
 
-# BEEFY & MMR
+## Data Formats
 
 TODO
 
