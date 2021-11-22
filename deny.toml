@@ -52,7 +52,9 @@ ignore = [
     # Substrate.
     "RUSTSEC-2020-0071",
 	# `chrono` is a Substrate dependency
-	"RUSTSEC-2020-0159"
+	"RUSTSEC-2020-0159",
+    # `tokio` is a Substrate dependency
+    "RUSTSEC-2021-0124"
 
 ]
 # Threshold for security vulnerabilities, any vulnerability with a CVSS score
