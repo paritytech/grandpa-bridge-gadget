@@ -6,7 +6,7 @@ edition = "2021"
 license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
 
 [dependencies]
-anyhow = "1.0.44"
+anyhow = "1.0.47"
 env_logger = "0.9"
 hex = "0.4"
 libsecp256k1 = "0.7"
