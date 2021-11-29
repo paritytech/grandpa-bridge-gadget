@@ -119,27 +119,111 @@ a Commitment and a collection of signatures is going to be called **Signed Commi
 [Data Formats](#2-data-formats).
 
 A **round** is an attempt by BEEFY validators to produce BEEFY Justification. **Round number** is
-simply defined as a block number (or rather the Commitment for that block number) the validators are
-voting for. Round ends when the next round is started or when we receive all expected votes from all
-validators.
+simply defined as a block number the validators are voting for, or to be more precise, the
+Commitment for that block number. Round ends when the next round is started or when we receive ALL
+expected votes from ALL validators.
 
-Validators are expected to:
-1. Produce & broadcast vote for
+Regular nodes are expected to:
+1. Receive & validate votes for the current round and broadcast them to their peers.
+1. Receive & validate BEEFY Justifications and broadcast them to their peers.
+1. Return BEEFY Justifications for [**Mandatory Blocks**](3-round-selection) on demand.
+1. Optionally return BEEFY Justifications for non-mandatory blocks on demand.
 
-### Round Progression / Boundaries / Selection
+Validators are expected to additionally:
+1. Produce & broadcast vote for the current round.
 
-TODO
+Both kinds of actors are expected to fully participate in the protocol ONLY IF they believe they
+are up-to-date with the rest of the network, i.e. they are fully synced.
+
+See [Initial Sync](3-initial-sync) section for details on how to sync BEEFY.
+
+### Round Selection
+
+Every node (both regular nodes and validators) need to determine locally what they believe
+current round number is. The choice is based on their knowledge of:
+
+1. Best GRANDPA finalized block number (`best_grandpa`).
+1. Best BEEFY finalized block number (`best_beefy`).
+1. Starting block of current session (`session_start`).
+
+**Session** means a period of time (or rather blocks) where validator set (keys) do not change.
+See `pallet_session` for implementation details in `FRAME` context. Since we piggy-back on GRANDPA,
+session boundaries for BEEFY are exactly the same as the ones for GRANDPA.
+
+We define two kinds of blocks from the perspective of BEEFY protocol:
+1. **Mandatory Blocks**
+2. **Non-mandatory Blocks**
+
+Mandatory blocks are the ones that MUST have BEEFY justification. That means that the validators
+will always start and conclude a round at mandatory blocks. For non-mandatory blocks, there may
+or may not be a justification and validators may never choose these blocks to start a round.
+
+Every **first block in** each **session** is considered a **mandatory block**. All other blocks in
+the session are non-mandatory, however validators are encouraged to finalize as many blocks as
+possible to enable lower latency for light clients and hence end users. Since GRANDPA is considering
+session boundary blocks as mandatory as well, `session_start` block will always have both GRANDPA
+and BEEFY Justification. (TODO [ToDr] Clarify with Andre if this is `session_start` or session end).
+
+Therefore, to determine current round number nodes use a formula:
+
+```
+round_number =
+      (1 - M) * session_start
+   +        M * (best_beefy + NEXT_POWER_OF_TWO(best_grandpa - best_beefy))
+```
+
+where:
+
+- `M` is `1` if mandatory block in current session is already finalized and `0` otherwise.
+- `NEXT_POWER_OF_TWO(x)` returns the smallest number greater or equal to `x` that is a power of two.
+
+The mental model for round selection is to first finalize the mandatory block and then to attempt
+to pick a block taking into account how fast BEEFY catches up with GRANDPA. In case GRANDPA makes
+progress, but BEEFY seems to be lagging behind, validators are changing rounds less often to increase
+the chance of concluding them.
+
+As mentioned earlier, every time the node picks a new `round_number` (and validator casts a vote) it
+ends the previous one, no matter if finality was reached (i.e. the round concluded) or not. Votes
+for an inactive round should not be propagated.
 
 ### Catch up
 
-TODO
+Note that every session is guaranteed to have at least one BEEFY-finalized block. However it also means
+that the round at mandatory block must be concluded even though, a new session has already started
+(i.e. the on-chain component has selected a new validator set and GRANDPA might have already
+finalized the transition). In such case BEEFY must "catch up" the previous sessions and make sure to
+conclude rounds for mandatory blocks.
+
+### Initial Sync
+
+It's all rainbows and unicorns when the node is fully synced with the network. However during cold
+startup it will have hard time determining the current round number. Because of that nodes that
+are not fully synced should not participate in BEEFY protocol at all.
+
+During the sync we should make sure to also fetch BEEFY justifications for all mandatory blocks.
+This can happen asynchronously, but validators, before starting to vote, need to be certain
+about the last session that contains a concluded round on mandatory block in order to initiate the
+catch up procedure.
 
 ### Gossip
 
-Global topic for "what round I'm on messages"
-Round-specific topics.
+Nodes participating in BEEFY protocol are expected to gossip messages around. The protocol defines
+following messages:
 
-TODO
+1. Votes for the current round,
+2. BEEFY Justifications for recently concluded rounds,
+3. BEEFY Justification for the latest mandatory block,
+4. Validator Status.
+
+Each message is additionally associated with a **topic**, which can be either:
+1. the round number (i.e. topic associated with a particular round),
+2. or the global topic (independent from the rounds).
+
+Round-specific topic should only be used to gossip the votes, other messages are gossiped
+periodically on the global topic. Let's now dive into description of the messages.
+
+
+TODO specific messages
 
 ## Misbehavior
 
