@@ -146,7 +146,7 @@ current round number is. The choice is based on their knowledge of:
 1. Best BEEFY finalized block number (`best_beefy`).
 1. Starting block of current session (`session_start`).
 
-**Session** means a period of time (or rather blocks) where validator set (keys) do not change.
+**Session** means a period of time (or rather number of blocks) where validator set (keys) do not change.
 See `pallet_session` for implementation details in `FRAME` context. Since we piggy-back on GRANDPA,
 session boundaries for BEEFY are exactly the same as the ones for GRANDPA.
 
@@ -158,18 +158,23 @@ Mandatory blocks are the ones that MUST have BEEFY justification. That means tha
 will always start and conclude a round at mandatory blocks. For non-mandatory blocks, there may
 or may not be a justification and validators may never choose these blocks to start a round.
 
+//TODO [ToDr] Since Mandatory Block needs to be GRANDPA finalized we might need to wait a bit.
+
+//TODO [ToDr] How to figure out the `session_start` block?
+
 Every **first block in** each **session** is considered a **mandatory block**. All other blocks in
 the session are non-mandatory, however validators are encouraged to finalize as many blocks as
 possible to enable lower latency for light clients and hence end users. Since GRANDPA is considering
 session boundary blocks as mandatory as well, `session_start` block will always have both GRANDPA
-and BEEFY Justification. (TODO [ToDr] Clarify with Andre if this is `session_start` or session end).
+and BEEFY Justification. (TODO [ToDr] Check with Al/Alfonso if there is any benefit of having
+mandatory GRANDPA & BEEFY justification on the same block).
 
 Therefore, to determine current round number nodes use a formula:
 
 ```
 round_number =
       (1 - M) * session_start
-   +        M * (best_beefy + NEXT_POWER_OF_TWO(best_grandpa - best_beefy))
+   +        M * (best_beefy + NEXT_POWER_OF_TWO((best_grandpa - best_beefy + 1) / 2))
 ```
 
 where:
@@ -177,14 +182,21 @@ where:
 - `M` is `1` if mandatory block in current session is already finalized and `0` otherwise.
 - `NEXT_POWER_OF_TWO(x)` returns the smallest number greater or equal to `x` that is a power of two.
 
-The mental model for round selection is to first finalize the mandatory block and then to attempt
-to pick a block taking into account how fast BEEFY catches up with GRANDPA. In case GRANDPA makes
-progress, but BEEFY seems to be lagging behind, validators are changing rounds less often to increase
-the chance of concluding them.
+In other words, the round number should be the last mandatory block if it does not have
+justification yet or the highest GRANDPA-finalized block, whose block number difference with
+`best_beefy` block is a power of two. The mental model for round selection is to first finalize
+the mandatory block and then to attempt to pick a block taking into account how fast BEEFY catches
+up with GRANDPA. In case GRANDPA makes progress, but BEEFY seems to be lagging behind, validators
+are changing rounds less often to increase the chance of concluding them.
 
 As mentioned earlier, every time the node picks a new `round_number` (and validator casts a vote) it
 ends the previous one, no matter if finality was reached (i.e. the round concluded) or not. Votes
 for an inactive round should not be propagated.
+
+//ToDo [ToDr] Better heuristic from Al: in the next beefy round, consider the finalized blocks that
+come after the last beefy-signed block, and select the one whose block number that can be divided
+by 2 the most times.
+(i.e it's forgiving if validators don't agree on neither best beefy block nor best grandpa block)
 
 ### Catch up
 
@@ -213,7 +225,6 @@ following messages:
 1. Votes for the current round,
 2. BEEFY Justifications for recently concluded rounds,
 3. BEEFY Justification for the latest mandatory block,
-4. Validator Status.
 
 Each message is additionally associated with a **topic**, which can be either:
 1. the round number (i.e. topic associated with a particular round),
@@ -222,8 +233,22 @@ Each message is additionally associated with a **topic**, which can be either:
 Round-specific topic should only be used to gossip the votes, other messages are gossiped
 periodically on the global topic. Let's now dive into description of the messages.
 
+- **Votes**
+  - Votes are sent on the round-specific topic.
+  - Vote is considered valid when:
+    - The commitment matches local commitment.
+    - The validator is part of the current validator set.
+    - The signature is correct.
 
-TODO specific messages
+- **BEEFY Justification**
+  - Justifications are sent on the global topic.
+  - Justification is considered valid when:
+    - It is for a recent (implementation specific) round or the latest mandatory round.
+    - It has at least `2/3rd + 1` valid signatures.
+    - Signatorees are part of the current validator set.
+  - Mandatory justifications should be announced periodically.
+
+// TODO [ToDr] Clarify with Andre if Validator Status messages are even useful.
 
 ## Misbehavior
 
