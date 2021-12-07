@@ -57,10 +57,12 @@ for BEEFY: `secp256k1` and usage of `keccak256` hashing function. See more in
 
 <details>
 <summary>Future: Supporting multiple crypto.</summary>
+
 While BEEFY currently works with `secp256k1` signatures, we intend in the future to support multiple
 signature schemes.
 This means that multiple kinds of `SignedCommitment`s might exist and only together they form a full
 `BEEFY Justification` (see more in [naming details](2-details)).
+
 </details>
 
 # The BEEFY Protocol
@@ -134,7 +136,7 @@ expected votes from ALL validators.
 Regular nodes are expected to:
 1. Receive & validate votes for the current round and broadcast them to their peers.
 1. Receive & validate BEEFY Justifications and broadcast them to their peers.
-1. Return BEEFY Justifications for [**Mandatory Blocks**](3-round-selection) on demand.
+1. Return BEEFY Justifications for [**Mandatory Blocks**](#3-round-selection) on demand.
 1. Optionally return BEEFY Justifications for non-mandatory blocks on demand.
 
 Validators are expected to additionally:
@@ -143,7 +145,7 @@ Validators are expected to additionally:
 Both kinds of actors are expected to fully participate in the protocol ONLY IF they believe they
 are up-to-date with the rest of the network, i.e. they are fully synced.
 
-See [Initial Sync](3-initial-sync) section for details on how to sync BEEFY.
+See [Initial Sync](#3-initial-sync) section for details on how to sync BEEFY.
 
 ### Round Selection
 
@@ -174,8 +176,10 @@ and BEEFY Justification.
 
 <details>
 <summary>Extra considerations regarding mandatory blocks choice.</summary>
+
 (TODO [ToDr] Check with Al/Alfonso if there is any benefit of having
 mandatory GRANDPA & BEEFY justification on the same block).
+
 </details>
 
 Therefore, to determine current round number nodes use a formula:
@@ -205,7 +209,7 @@ for an inactive round should not be propagated.
 Note that since BEEFY only votes for GRANDPA-finalized blocks, `session_start` here actually means:
 "the latest session for which the start of is GRANDPA-finalized", i.e. block production might have
 already progressed, but BEEFY needs to first finalize the mandatory block of the older session. See
-[Catch up](3-catch-up) for more details and also consult [Lean BEEFY](2-lean-beefy).
+[Catch up](#3-catch-up) for more details and also consult [Lean BEEFY](#2-lean-beefy).
 
 In a good networking conditions BEEFY may end up finalizing each and every block (if GRANDPA does
 the same). Practically, with short block times, it's going to be rare and might be excessive, so
@@ -217,10 +221,12 @@ any round.
 
 <details>
 <summary>Future: New round selection.</summary>
+
 Better heuristic from Al: in the next beefy round, consider the finalized blocks that
 come after the last beefy-signed block, and select the one whose block number that can be divided
 by 2 the most times.
 (i.e it's forgiving if validators don't agree on neither best beefy block nor best grandpa block)
+
 </details>
 
 ### Catch up
@@ -272,7 +278,7 @@ periodically on the global topic. Let's now dive into description of the message
     - It is for a recent (implementation specific) round or the latest mandatory round.
     - It has at least `2/3rd + 1` valid signatures.
     - Signatorees are part of the current validator set.
-  - Mandatory justifications should be announced periodically (see also [Lean BEEFY](2-lean-beefy)).
+  - Mandatory justifications should be announced periodically (see also [Lean BEEFY](#2-lean-beefy)).
 
 ## Misbehavior
 
