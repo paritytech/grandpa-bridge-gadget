@@ -55,6 +55,14 @@ is a Solidity Smart Contract compiled to EVM bytecode. Hence the choice of the i
 for BEEFY: `secp256k1` and usage of `keccak256` hashing function. See more in
 [Data Formats](#2-data-formats) section.
 
+<details>
+<summary>Future: Supporting multiple crypto.</summary>
+While BEEFY currently works with `secp256k1` signatures, we intend in the future to support multiple
+signature schemes.
+This means that multiple kinds of `SignedCommitment`s might exist and only together they form a full
+`BEEFY Justification` (see more in [naming details](2-details)).
+</details>
+
 # The BEEFY Protocol
 
 ## Mental Model
@@ -158,16 +166,17 @@ Mandatory blocks are the ones that MUST have BEEFY justification. That means tha
 will always start and conclude a round at mandatory blocks. For non-mandatory blocks, there may
 or may not be a justification and validators may never choose these blocks to start a round.
 
-//TODO [ToDr] Since Mandatory Block needs to be GRANDPA finalized we might need to wait a bit.
-
-//TODO [ToDr] How to figure out the `session_start` block?
-
 Every **first block in** each **session** is considered a **mandatory block**. All other blocks in
 the session are non-mandatory, however validators are encouraged to finalize as many blocks as
 possible to enable lower latency for light clients and hence end users. Since GRANDPA is considering
 session boundary blocks as mandatory as well, `session_start` block will always have both GRANDPA
-and BEEFY Justification. (TODO [ToDr] Check with Al/Alfonso if there is any benefit of having
+and BEEFY Justification.
+
+<details>
+<summary>Extra considerations regarding mandatory blocks choice.</summary>
+(TODO [ToDr] Check with Al/Alfonso if there is any benefit of having
 mandatory GRANDPA & BEEFY justification on the same block).
+</details>
 
 Therefore, to determine current round number nodes use a formula:
 
@@ -193,18 +202,35 @@ As mentioned earlier, every time the node picks a new `round_number` (and valida
 ends the previous one, no matter if finality was reached (i.e. the round concluded) or not. Votes
 for an inactive round should not be propagated.
 
-//ToDo [ToDr] Better heuristic from Al: in the next beefy round, consider the finalized blocks that
+Note that since BEEFY only votes for GRANDPA-finalized blocks, `session_start` here actually means:
+"the latest session for which the start of is GRANDPA-finalized", i.e. block production might have
+already progressed, but BEEFY needs to first finalize the mandatory block of the older session. See
+[Catch up](3-catch-up) for more details and also consult [Lean BEEFY](2-lean-beefy).
+
+In a good networking conditions BEEFY may end up finalizing each and every block (if GRANDPA does
+the same). Practically, with short block times, it's going to be rare and might be excessive, so
+it's suggested for implementations to introduce a `min_delta` parameter which will limit the amount
+of started rounds. The affected component of the formula would be: `best_beefy + MAX(min_delta,
+NEXT_POWER_OF_TWO(...))`, so we start a new round only if the power-of-two component is greater than
+the min delta. Note that if `round_number > best_grandpa` the validators are not expected to start
+any round.
+
+<details>
+<summary>Future: New round selection.</summary>
+Better heuristic from Al: in the next beefy round, consider the finalized blocks that
 come after the last beefy-signed block, and select the one whose block number that can be divided
 by 2 the most times.
 (i.e it's forgiving if validators don't agree on neither best beefy block nor best grandpa block)
+</details>
 
 ### Catch up
 
-Note that every session is guaranteed to have at least one BEEFY-finalized block. However it also means
+Every session is guaranteed to have at least one BEEFY-finalized block. However it also means
 that the round at mandatory block must be concluded even though, a new session has already started
 (i.e. the on-chain component has selected a new validator set and GRANDPA might have already
 finalized the transition). In such case BEEFY must "catch up" the previous sessions and make sure to
-conclude rounds for mandatory blocks.
+conclude rounds for mandatory blocks. Note that older sessions must obviously be finalized by the
+validator set at that point in time, not the latest/current one.
 
 ### Initial Sync
 
@@ -246,17 +272,38 @@ periodically on the global topic. Let's now dive into description of the message
     - It is for a recent (implementation specific) round or the latest mandatory round.
     - It has at least `2/3rd + 1` valid signatures.
     - Signatorees are part of the current validator set.
-  - Mandatory justifications should be announced periodically.
-
-// TODO [ToDr] Clarify with Andre if Validator Status messages are even useful.
+  - Mandatory justifications should be announced periodically (see also [Lean BEEFY](2-lean-beefy)).
 
 ## Misbehavior
 
-TODO
+Similarily to other PoS protocols, BEEFY considers casting two different votes in the same round a
+misbehavior. I.e. for a particular `round_number`, the validator produces signatures for 2 different
+`Commitment`s and broadcasts them. This is called **equivocation**.
+
+On top of this, voting on an incorrect **payload** is considered a misbehavior as well, since
+because we piggy-back on GRANDPA there is no ambiguity in terms of the fork validators should be
+voting for.
+
+Misbehavior should be penalized. If more validators misbehave in the exact same `round` the penalty
+should be more severe, up to the entire bonded stake in case we reach `2/3rd + 1` misbehaving
+validators.
+
+// TODO [ToDr] Penalization formula.
+// TODO [ToDr] If there are misbehaving validators in GRANDPA should we penalize them twice?
+IMHO yes, cause they should be relying on GRANDPA finality proof, not just the votes.
 
 # Implementation
 
 TODO
+
+- What if grandpa < beefy?
+- Missing mandatory blocks
+- Extra assumptions and consequences (session start block selection) [Lean BEEFY]
+
+
+//TODO [ToDr] How to figure out the `session_start` block?
+ - with additional 2/3rds assumption we just take the best session we see
+ - in the future we need to take the first session that comes right after `best_beefy` block.
 
 ## On-Chain Pallet
 
@@ -265,6 +312,11 @@ TODO
 ## BEEFY Worker
 
 TODO
+
+## Lean BEEFY
+
+// TODO [ToDr] Mandatory justifications are helping out with gadget<>sync comms, but they are abit
+of a hack.
 
 # BEEFY & MMR (Polkadot implementation)
 
