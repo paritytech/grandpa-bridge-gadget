@@ -22,7 +22,7 @@ pub fn parse_hex(hex: &str) -> anyhow::Result<Vec<u8>> {
 	let s = if hex.starts_with("0x") {
 		&hex.as_bytes()[2..]
 	} else {
-		&hex.as_bytes()
+		hex.as_bytes()
 	};
 
 	Ok(hex::decode(s)?)
