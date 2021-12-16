@@ -306,6 +306,20 @@ TODO
 - Missing mandatory blocks
 - Extra assumptions and consequences (session start block selection) [Lean BEEFY]
 
+///
+When we start the worker, we should:
+1. Ask the Client for the Best BEEFY block
+   (TODO: what if we don't have that API?)
+2. Traverse up to "Session Length" number of blocks forward to find a session transition.
+3. Figure out if we need to vote on the mandatory block of the next session
+   (i.e. we are doing BEEFY Catch-up)
+4. or if we can follow the power-of-two rule.
+
+With LEAN BEEFY:
+1. Start with Best GRANDPA block
+2. Traverse up to "Session Length" number of blocks backwards to find the session start block.
+3. ASSUME this block is BEEFY-finalized, even though we haven't seen BEEFY Justification.
+
 
 //TODO [ToDr] How to figure out the `session_start` block?
  - with additional 2/3rds assumption we just take the best session we see
