@@ -1,3 +1,12 @@
+default:
+  interruptible:                   true
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - unknown_failure
+      - api_failure
+
 stages:
   - lint
   - test
@@ -32,23 +41,11 @@ variables:                         &default-vars
     - *rust-info-script
     - ./scripts/ci/pre_cache.sh
     - sccache -s
-  retry:
-    max: 2
-    when:
-      - runner_system_failure
-      - unknown_failure
-      - api_failure
   interruptible:                   true
   tags:
     - linux-docker
 
 .kubernetes-env:                   &kubernetes-env
-  retry:
-    max: 2
-    when:
-      - runner_system_failure
-      - unknown_failure
-      - api_failure
   interruptible:                   true
   tags:
     - kubernetes-parity-build
@@ -82,8 +79,6 @@ clippy:
     - *rust-info-script
   script:
     - RUSTFLAGS="-D warnings" cargo +nightly clippy --all --verbose
-  tags:
-    - kubernetes-parity-build
 
 #### stage:                       test
 
