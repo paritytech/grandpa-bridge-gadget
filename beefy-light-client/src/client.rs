@@ -31,10 +31,8 @@ impl Client {
 	/// Return a [`Client`] using an intial validator set.
 	pub fn new() -> Client {
 		Client {
-			active_set: ValidatorSet {
-				validators: vec![Keyring::Alice.public()],
-				id: 0,
-			},
+			active_set: ValidatorSet::new(vec![Keyring::Alice.public()], 0)
+				.expect("Non-empty validator set is valid; qed"),
 			next_id: None,
 			latest_commitment: None,
 		}
@@ -55,10 +53,10 @@ impl Client {
 	fn verify_signed(&self, signed: SignedCommitment) -> Result<Commitment, Error> {
 		let SignedCommitment { commitment, signatures } = signed.clone();
 
-		if self.active_set.id != commitment.validator_set_id {
+		if self.active_set.id() != commitment.validator_set_id {
 			return Err(Error::InvalidValidatorSet {
 				got: commitment.validator_set_id,
-				want: self.active_set.id,
+				want: self.active_set.id(),
 			});
 		}
 
@@ -71,10 +69,10 @@ impl Client {
 			});
 		}
 
-		if signatures.len() != self.active_set.validators.len() {
+		if signatures.len() != self.active_set.len() {
 			return Err(Error::InsufficientSignatures {
 				got: signatures.len(),
-				want: self.active_set.validators.len(),
+				want: self.active_set.len(),
 			});
 		}
 
@@ -91,13 +89,17 @@ impl Client {
 			});
 		}
 
+		let encoded_commitment = signed.commitment.encode();
+
 		let valid = signed
 			.clone()
 			.signatures
 			.into_iter()
-			.zip(self.active_set.validators.iter())
-			.filter(|(sig, _)| sig.is_some())
-			.map(|(sig, key)| Keyring::verify(key, &sig.unwrap(), &*signed.commitment.encode()))
+			.zip(self.active_set.validators().iter())
+			.filter_map(|(sig, key)| sig.map(|sig| (sig, key)))
+			.map(|(sig, key)| {
+				Keyring::verify(key, &sig, &*encoded_commitment)
+			})
 			.filter(|b| *b)
 			.count();
 
@@ -112,6 +114,6 @@ impl Client {
 	}
 
 	fn signature_threshold(&self) -> usize {
-		2 * self.active_set.validators.len() / 3 + 1
+		2 * self.active_set.len() / 3 + 1
 	}
 }

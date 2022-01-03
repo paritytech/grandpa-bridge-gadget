@@ -25,7 +25,7 @@ include!("std.rs");
 #[cfg(not(feature = "std"))]
 include!("no_std.rs");
 
-use beefy_primitives::MmrRootHash;
+use beefy_primitives::crypto::Signature;
 
 mod client;
 mod error;
@@ -36,16 +36,8 @@ pub use client::Client;
 pub use error::Error;
 pub use keyring::Keyring;
 
-/// Identifier for a finalized block at a specific height.
 pub type BlockNumber = u64;
 
-/// Commitment for a finalized block at [`BlockNumber`]. The commitment payload is s tuple of
-/// a [`MmrRootHash`] and a [`ValidatorSetId`].
-///
-/// The [`ValidatorSetId`] is the set id of the **next** validator set.
-///
-pub type Commitment = beefy_primitives::Commitment<BlockNumber, MmrRootHash>;
+pub type Commitment = beefy_primitives::Commitment<BlockNumber>;
 
-/// A [`Commitment`] containing a matching [`Signature`] from each validator of the current active [`ValidatorSet`].
-///
-pub type SignedCommitment = beefy_primitives::SignedCommitment<BlockNumber, MmrRootHash>;
+pub type SignedCommitment = beefy_primitives::SignedCommitment<BlockNumber, Signature>;
