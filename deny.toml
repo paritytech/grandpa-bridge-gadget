@@ -48,12 +48,13 @@ notice = "warn"
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.
 ignore = [
-    # `time` is a dependency of `chrono`, which needs to be updated in 
+    # `time` is a dependency of `chrono`, which needs to be updated in
     # Substrate.
     "RUSTSEC-2020-0071",
-	# `chrono` is a Substrate dependency
-	"RUSTSEC-2020-0159"
-
+    # `chrono` is a Substrate dependency
+    "RUSTSEC-2020-0159",
+    # `lru=0.6.6` is a Substrate dependency
+    "RUSTSEC-2021-0130"
 ]
 # Threshold for security vulnerabilities, any vulnerability with a CVSS score
 # lower than the range specified will be ignored. Note that ignored advisories
@@ -74,9 +75,7 @@ unlicensed = "deny"
 # List of explictly allowed licenses
 # See https://spdx.org/licenses/ for list of possible licenses
 # [possible values: any SPDX 3.7 short identifier (+ optional exception)].
-allow = [
-    "BlueOak-1.0.0"
-]
+allow = []
 # List of explictly disallowed licenses
 # See https://spdx.org/licenses/ for list of possible licenses
 # [possible values: any SPDX 3.7 short identifier (+ optional exception)].

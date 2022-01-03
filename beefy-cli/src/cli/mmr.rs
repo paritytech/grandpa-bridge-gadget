@@ -15,10 +15,15 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::cli::utils::Bytes;
-use beefy_primitives::mmr::MmrLeaf;
+use beefy_primitives::mmr::{MmrLeaf, MmrLeafVersion};
 use parity_scale_codec::{Decode, Encode};
 use sp_core::H256;
 use structopt::StructOpt;
+
+// Hardcoded leaf version from Rococo/Polkadot runtime.
+fn polkadot_leaf_version() -> MmrLeafVersion {
+	MmrLeafVersion::new(0, 0)
+}
 
 /// MMR related commands
 #[derive(StructOpt)]
@@ -46,7 +51,7 @@ impl Mmr {
 		match self {
 			Self::DecodeLeaf { leaf } => {
 				// We support both `MmrLeaf` directly or a `DataOrHash::Data(MmrLeaf)` variant.
-				// Since `00` cannot be a beginnig of SCALE-encoded Vec, we do a dummy detection
+				// Since `00` cannot be a beginning of SCALE-encoded Vec, we do a dummy detection
 				// below.
 				let mut leaf_content = if leaf.0.get(0) == Some(&0) {
 					&leaf.0[1..]
@@ -55,6 +60,20 @@ impl Mmr {
 				};
 				let leaf: Vec<u8> = Decode::decode(&mut leaf_content)?;
 				let leaf: MmrLeaf<u32, H256, H256> = Decode::decode(&mut &*leaf)?;
+				let (decoded_major, decoded_minor) = leaf.version.split();
+				let (known_major, known_minor) = polkadot_leaf_version().split();
+				if decoded_major != known_major {
+					return Err(anyhow::format_err!(
+						"Incompatible decoded leaf major: {} vs {}",
+						decoded_major,
+						known_major
+					));
+				} else if decoded_minor != known_minor {
+					println!(
+						"Warning: decoded leaf version minor {} != expected leaf version minor {}.",
+						decoded_minor, known_minor
+					);
+				}
 				println!("{:?}", leaf);
 			}
 			Self::StorageKey { prefix, pos } => {
