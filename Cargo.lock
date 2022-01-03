@@ -484,6 +484,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "beefy-light-client"
+version = "0.1.0"
+dependencies = [
+ "arber",
+ "beefy-primitives",
+ "displaydoc",
+ "parity-scale-codec",
+ "sp-core",
+ "strum 0.21.0",
+]
+
+[[package]]
 name = "beefy-merkle-tree"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=master#a524cfd579b5cfa00ee7aea475a3a08cb42dc160"
@@ -3321,18 +3333,6 @@ dependencies = [
  "cc",
  "pkg-config",
  "vcpkg",
-]
-
-[[package]]
-name = "light-client"
-version = "0.1.0"
-dependencies = [
- "arber",
- "beefy-primitives",
- "displaydoc",
- "parity-scale-codec",
- "sp-core",
- "strum 0.21.0",
 ]
 
 [[package]]

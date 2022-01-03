@@ -8,5 +8,5 @@ members = [
     "beefy-cli",
     "beefy-node/node",
     "beefy-node/runtime",
-    "light-client",
+    "beefy-light-client",
 ]

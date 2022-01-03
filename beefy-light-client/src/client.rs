@@ -14,29 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-// TODO: add Default to ValidatorSet
-#![allow(clippy::new_without_default)]
-
 use codec::Encode;
-
 use beefy_primitives::{crypto::Public, ValidatorSet, ValidatorSetId};
-
 use crate::{Commitment, Error, Keyring, SignedCommitment};
 
 pub struct Client {
-	// active validator set
+	/// active validator set
 	active_set: ValidatorSet<Public>,
-
-	// next expected validator set id
+	/// next expected validator set id
 	next_id: Option<ValidatorSetId>,
-
-	// latest valid commitment
+	/// latest valid commitment
 	latest_commitment: Option<Commitment>,
 }
 
 impl Client {
 	/// Return a [`Client`] using an intial validator set.
-	///
 	pub fn new() -> Client {
 		Client {
 			active_set: ValidatorSet {
@@ -48,6 +40,7 @@ impl Client {
 		}
 	}
 
+	/// Verify and import a [`SignedCommitment`].
 	pub fn import(&mut self, signed: SignedCommitment) -> Result<(), Error> {
 		let commitment = self.verify_signed(signed)?;
 

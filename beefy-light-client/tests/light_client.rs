@@ -18,7 +18,7 @@ use sp_core::H256;
 
 use codec::Encode;
 
-use light_client::{Client, Commitment, Keyring, SignedCommitment};
+use beefy_light_client::{Client, Commitment, Keyring, SignedCommitment};
 
 #[test]
 fn import_with_initial_validator_set() {
