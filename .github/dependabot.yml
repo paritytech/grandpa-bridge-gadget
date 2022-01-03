@@ -23,6 +23,9 @@ updates:
   - dependency-name: substrate-*
     versions:
     - ">= 0"
+  - dependency-name: beefy-*
+    versions:
+    - ">= 0"
   - dependency-name: serde_json
     versions:
     - 1.0.62
