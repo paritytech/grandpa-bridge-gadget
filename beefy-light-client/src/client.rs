@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use codec::Encode;
-use beefy_primitives::{crypto::Public, ValidatorSet, ValidatorSetId};
 use crate::{Commitment, Error, Keyring, SignedCommitment};
+use beefy_primitives::{crypto::Public, ValidatorSet, ValidatorSetId};
+use codec::Encode;
 
 pub struct Client {
 	/// active validator set
@@ -97,9 +97,7 @@ impl Client {
 			.into_iter()
 			.zip(self.active_set.validators().iter())
 			.filter_map(|(sig, key)| sig.map(|sig| (sig, key)))
-			.map(|(sig, key)| {
-				Keyring::verify(key, &sig, &*encoded_commitment)
-			})
+			.map(|(sig, key)| Keyring::verify(key, &sig, &*encoded_commitment))
 			.filter(|b| *b)
 			.count();
 
