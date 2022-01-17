@@ -130,8 +130,13 @@ a Commitment and a collection of signatures is going to be called **Signed Commi
 
 A **round** is an attempt by BEEFY validators to produce BEEFY Justification. **Round number** is
 simply defined as a block number the validators are voting for, or to be more precise, the
-Commitment for that block number. Round ends when the next round is started or when we receive ALL
-expected votes from ALL validators.
+Commitment for that block number. Round ends when the next round is started, which may happen when
+one of the events occur:
+1. Either the node collects `2/3rd + 1` valid votes for that round.
+2. Or the node receives a BEEFY Justification for a block greater than the current best BEEFY block.
+
+In both cases the node proceeds to determining the new round number using
+[Round Selection](#3-round-selection) procedure.
 
 Regular nodes are expected to:
 1. Receive & validate votes for the current round and broadcast them to their peers.
@@ -143,7 +148,8 @@ Validators are expected to additionally:
 1. Produce & broadcast vote for the current round.
 
 Both kinds of actors are expected to fully participate in the protocol ONLY IF they believe they
-are up-to-date with the rest of the network, i.e. they are fully synced.
+are up-to-date with the rest of the network, i.e. they are fully synced. Before this happens,
+the node should stay completely passive with regards to the BEEFY protocol.
 
 See [Initial Sync](#3-initial-sync) section for details on how to sync BEEFY.
 
@@ -211,13 +217,13 @@ Note that since BEEFY only votes for GRANDPA-finalized blocks, `session_start` h
 already progressed, but BEEFY needs to first finalize the mandatory block of the older session. See
 [Catch up](#3-catch-up) for more details and also consult [Lean BEEFY](#2-lean-beefy).
 
-In a good networking conditions BEEFY may end up finalizing each and every block (if GRANDPA does
+In good networking conditions BEEFY may end up finalizing each and every block (if GRANDPA does
 the same). Practically, with short block times, it's going to be rare and might be excessive, so
-it's suggested for implementations to introduce a `min_delta` parameter which will limit the amount
-of started rounds. The affected component of the formula would be: `best_beefy + MAX(min_delta,
-NEXT_POWER_OF_TWO(...))`, so we start a new round only if the power-of-two component is greater than
-the min delta. Note that if `round_number > best_grandpa` the validators are not expected to start
-any round.
+it's suggested for implementations to introduce a `min_delta` parameter which will limit the
+frequency with which new rounds are started. The affected component of the formula would be:
+`best_beefy + MAX(min_delta, NEXT_POWER_OF_TWO(...))`, so we start a new round only if the
+power-of-two component is greater than the min delta. Note that if `round_number > best_grandpa`
+the validators are not expected to start any round.
 
 <details>
 <summary>Future: New round selection.</summary>
@@ -274,9 +280,9 @@ periodically on the global topic. Let's now dive into description of the message
 
 - **BEEFY Justification**
   - Justifications are sent on the global topic.
-  - Justification is considered valid when:
+  - Justification is considered worthwhile to gossip when:
     - It is for a recent (implementation specific) round or the latest mandatory round.
-    - It has at least `2/3rd + 1` valid signatures.
+    - All signatures are valid and there is at least `2/3rd + 1` of them.
     - Signatorees are part of the current validator set.
   - Mandatory justifications should be announced periodically (see also [Lean BEEFY](#2-lean-beefy)).
 
@@ -286,13 +292,12 @@ Similarily to other PoS protocols, BEEFY considers casting two different votes i
 misbehavior. I.e. for a particular `round_number`, the validator produces signatures for 2 different
 `Commitment`s and broadcasts them. This is called **equivocation**.
 
-On top of this, voting on an incorrect **payload** is considered a misbehavior as well, since
-because we piggy-back on GRANDPA there is no ambiguity in terms of the fork validators should be
-voting for.
+On top of this, voting on an incorrect **payload** is considered a misbehavior as well, and since
+we piggy-back on GRANDPA there is no ambiguity in terms of the fork validators should be voting for.
 
 Misbehavior should be penalized. If more validators misbehave in the exact same `round` the penalty
-should be more severe, up to the entire bonded stake in case we reach `2/3rd + 1` misbehaving
-validators.
+should be more severe, up to the entire bonded stake in case we reach `1/3rd + 1` validators
+misbehaving.
 
 // TODO [ToDr] Penalization formula.
 // TODO [ToDr] If there are misbehaving validators in GRANDPA should we penalize them twice?
