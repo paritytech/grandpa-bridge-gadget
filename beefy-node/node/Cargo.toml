@@ -20,7 +20,7 @@ substrate-build-script-utils = { git = "https://github.com/paritytech/substrate"
 
 [dependencies]
 jsonrpc-core = "18.0.0"
-structopt = "0.3.22"
+structopt = "0.3.26"
 
 # local dependencies
 beefy-node-runtime = { path = "../runtime", version = "2.0.0" }
