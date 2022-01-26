@@ -92,11 +92,11 @@ A pseudo-algorithm of behavior for a fully-synced BEEFY validator is:
 
 ```
 loop {
-  let (best_beefy_block, best_grandpa_block) = wait_for_best_blocks();
+  let (best_beefy, best_grandpa) = wait_for_best_blocks();
 
   let block_to_vote_on = choose_next_beefy_block(
-    best_beefy_block,
-    best_grandpa_block
+    best_beefy,
+    best_grandpa
   );
 
   let payload_to_vote_on = retrieve_payload(block_to_vote_on);
@@ -299,9 +299,14 @@ Misbehavior should be penalized. If more validators misbehave in the exact same 
 should be more severe, up to the entire bonded stake in case we reach `1/3rd + 1` validators
 misbehaving.
 
+<details>
+<summary>Open questions</summary>
+
 // TODO [ToDr] Penalization formula.
 // TODO [ToDr] If there are misbehaving validators in GRANDPA should we penalize them twice?
 IMHO yes, cause they should be relying on GRANDPA finality proof, not just the votes.
+
+</details>
 
 # Implementation
 
@@ -340,8 +345,40 @@ TODO
 
 ## Lean BEEFY
 
-// TODO [ToDr] Mandatory justifications are helping out with gadget<>sync comms, but they are abit
-of a hack.
+To simplify the initial implementation of BEEFY, we are taking a bunch of shortcuts. These
+shotcuts are described in this section and are collectively called "Lean BEEFY".
+
+Lean BEEFY is based on additional assumption of validators always being able to complete the
+mandatory round, i.e. there is at least `2/3rd + 1` validators on-line during the session long
+enough to conclude at least one round. Based on this assumption, we further relax some requirements
+to simplify the implementation.
+
+### Justifications Sync
+
+The nodes are not required to sync BEEFY justifications in order, nor they are expected to
+have all justifications for mandatory blocks. Since the assumption is that these mandatory rounds
+have been concluded the nodes assume that justifications are available somewhere, and since BEEFY
+piggy-backs on GRANDPA, it's further assumed that since GRANDPA finalized blocks, BEEFY had to
+correctly finalize the same blocks as well.
+
+Implementation wise, this means that it's not required to plug into the block import pipeline or
+alter any `sync` logic. The node can only import justifications that it sees being gossiped when it's
+on-line. The complete sync of justifications for mandatory blocks can be implemented later.
+
+### Round Selection
+
+Since the node does not necessarily have justifications for mandatory blocks, when it sees GRANDPA
+moving to a new session, it can assume BEEFY has moved to that new session as well. Hence the
+`best_beefy` block number can immediatelly be set to the mandatory block number of the previous
+session, despite the fact the node does not have the justification for that block yet.
+
+### Mandatory Justification Gossip
+
+Due to the lack of `sync` alterations, that would ensure all justifications for mandatory blocks
+are fetched and imported to the local database, the node, after going on-line will miss recent
+justifications. To help out with justification propagation mandatory justifications are gossiped
+on the global topic as described in the [Gossip](#3-Gossip) section. While they are not strictly
+necessary for neither BEEFY nor Lean BEEFY, practically this should make the consensus more robust.
 
 # BEEFY & MMR (Polkadot implementation)
 
@@ -363,24 +400,3 @@ TODO
 
 TODO
 
-
-# Assorted notes
-
-Only one round is always active and it's in either of the modes:
-
-Mandatory mode
- - force sync to request beefy justifcations for this block
- - listen to justification imports
- - vote
-
-Non-mandatory mode
- - listen to  justification imports
- - vote on a block according to power-of-two rule
-
-
-How to get the initial state?
-
-
-We gossip votes for the current round.
-
-We gossip justifications for some past rounds?
