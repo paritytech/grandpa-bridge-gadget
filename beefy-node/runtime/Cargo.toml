@@ -23,7 +23,7 @@ version = "2.0.0"
 [dependencies]
 hex-literal = { optional = true, version = "0.3" }
 scale-info = { version = "1.0", default-features = false, features = ["derive"] }
-serde = { features = ["derive"], optional = true, version = "1.0.133" }
+serde = { features = ["derive"], optional = true, version = "1.0.136" }
 
 # Substrate dependencies
 beefy-primitives = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "master" }
