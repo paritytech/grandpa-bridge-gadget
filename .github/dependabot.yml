@@ -30,3 +30,7 @@ updates:
     versions:
     - 1.0.62
   rebase-strategy: disabled
+- package-ecosystem: github-actions
+  directory: '/'
+  schedule:
+    interval: daily
