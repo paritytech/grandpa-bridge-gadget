@@ -24,7 +24,7 @@
 
 ## Bridges
 
-We want to be able &ldquo;bridge&rdquo; different blockchains. We do so by safely sharing and verifying
+We want to be able to &ldquo;bridge&rdquo; different blockchains. We do so by safely sharing and verifying
 information about each chain&rsquo;s state, i.e. blockchain A should be able to verify that blockchain `B`
 is at block #X.
 
@@ -40,7 +40,7 @@ exists in this block will never be reverted.
 
 ## GRANDPA
 
-GRANDPA is our finality gadget. It allows a set of nodes to come to BFT agreement on what is the
+GRANDPA is our finality gadget. It allows a set of nodes to come to [BFT](https://en.wikipedia.org/wiki/Byzantine_fault) agreement on what is the
 canonical chain. It requires that 2/3 of the validator set agrees on a prefix of the canonical
 chain, which then becomes finalized.
 
@@ -87,7 +87,7 @@ This creates two sets of inefficiencies:
   all of the votes&rsquo; ancestries.
 
 Additionally, since our interim goal is to bridge to Ethereum there is also a difficulty related to
-&ldquo;incompatible&rdquo; crypto schemes. We use \`ed25519\` signatures in GRANDPA which we can&rsquo;t efficiently
+&ldquo;incompatible&rdquo; crypto schemes. We use [\`ed25519\`](https://wiki.polkadot.network/docs/learn-keys#why-was-ed25519-selected-over-secp256k1) signatures in GRANDPA which we can&rsquo;t efficiently
 verify in the EVM.
 
 <a id="orgebc8f64"></a>
@@ -119,13 +119,13 @@ Merkle mountain ranges are just merkle trees with an efficient `append` operatio
 
 ## New round of BFT agreement
 
-To overcome the difficulty with GRANDPA finality proofs we will run a separate round of BFT
+To overcome the difficulty with GRANDPA finality proofs we will run a separate round of [BFT](https://en.wikipedia.org/wiki/Byzantine_fault)
 agreement where each voter will be voting on the same thing. Namely, each voter will be voting on
 the MMR root of the latest block finalized by GRANDPA.
 
 This is a completely separate protocol from GRANDPA but which piggybacks on it.
 
-Using ECDSA for easier Ethereum compatibility.
+Using [ECDSA](https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm) for easier Ethereum compatibility.
 
 <a id="org0427b66"></a>
 
