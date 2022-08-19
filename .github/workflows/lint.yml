@@ -18,18 +18,18 @@ jobs:
       RUST_BACKTRACE:   full
     steps:
       - name:           Cancel Previous Runs
-        uses:           styfle/cancel-workflow-action@0.9.1
+        uses:           styfle/cancel-workflow-action@bb6001c4ea612bf59c3abfc4756fbceee4f870c7 # 0.10.0
         with:
           access_token: ${{ github.token }}
       - name:           Checkout sources & submodules
-        uses:           actions/checkout@master
+        uses:           actions/checkout@v3
         with:
           fetch-depth:  5
           submodules:   recursive
       - name:           Add rustfmt
         run:            rustup component add rustfmt
       - name:           rust-fmt check
-        uses:           actions-rs/cargo@master
+        uses:           actions-rs/cargo@v1
         with:
           command:      fmt
           args:         --all -- --check --config merge_imports=true
