@@ -1,3 +1,7 @@
+**Note that the** `BEEFY` **core components have been move to the**
+[Substrate](https://github.com/paritytech/substrate) **repository** and this repo has been
+marked as read-only.
+
 # BEEFY
 **BEEFY** (**B**ridge **E**fficiency **E**nabling **F**inality **Y**ielder) is a secondary
 protocol running along GRANDPA Finality to support efficient bridging with non-Substrate
@@ -6,8 +10,6 @@ blockchains, currently mainly ETH mainnet.
 It can be thought of as an (optional) Bridge-specific Gadget to the GRANDPA Finality protocol.
 The Protocol piggybacks on many assumptions provided by GRANDPA, and is required to be built
 on top of it to work correctly.
-
-**Note that the** `BEEFY` **core components have been move to the** [Substrate](https://github.com/paritytech/substrate) **repository**
 
 🚧 BEEFY is currently under construction - a hardhat is recommended beyond this point 🚧
 
